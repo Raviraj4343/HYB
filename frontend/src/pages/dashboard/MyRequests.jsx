@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import { 
   HandHeart, Clock, MapPin, ChevronRight, Loader2, 
   AlertCircle, RefreshCw, Plus, Filter
@@ -16,6 +17,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 const MyRequests = () => {
   const { user } = useAuth();
+  const { socket } = useSocket();
   const [myRequests, setMyRequests] = useState([]);
   const [myResponses, setMyResponses] = useState([]);
   const [isLoadingRequests, setIsLoadingRequests] = useState(true);
@@ -26,6 +28,25 @@ const MyRequests = () => {
     fetchMyRequests();
     fetchMyResponses();
   }, []);
+
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const handleRealtimeRefresh = () => {
+      fetchMyRequests();
+      fetchMyResponses();
+    };
+
+    socket.on('request:changed', handleRealtimeRefresh);
+    socket.on('notification:new', handleRealtimeRefresh);
+    socket.on('connect', handleRealtimeRefresh);
+
+    return () => {
+      socket.off('request:changed', handleRealtimeRefresh);
+      socket.off('notification:new', handleRealtimeRefresh);
+      socket.off('connect', handleRealtimeRefresh);
+    };
+  }, [socket]);
 
   const fetchMyRequests = async () => {
     setIsLoadingRequests(true);
