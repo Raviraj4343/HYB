@@ -121,19 +121,19 @@ const Dashboard = () => {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45 }}
-        className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(135deg,rgba(20,184,166,0.16),rgba(59,130,246,0.08)_45%,rgba(15,23,42,0.4))] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.18)] lg:p-8"
+        className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(135deg,rgba(20,184,166,0.14),rgba(59,130,246,0.08)_45%,rgba(255,255,255,0.72))] p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] dark:bg-[linear-gradient(135deg,rgba(20,184,166,0.16),rgba(59,130,246,0.08)_45%,rgba(15,23,42,0.4))] dark:shadow-[0_24px_60px_rgba(0,0,0,0.18)] lg:p-8"
       >
         <div className="absolute right-0 top-0 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
         <div className="relative flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl">
-            <Badge className="mb-4 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/90">
+            <Badge className="mb-4 rounded-full border border-primary/10 bg-white/65 px-3 py-1 text-xs font-medium text-foreground shadow-sm dark:border-white/10 dark:bg-white/10 dark:text-white/90">
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
               Community workspace
             </Badge>
-            <h2 className="text-3xl font-display font-bold text-white sm:text-4xl">
+            <h2 className="text-3xl font-display font-bold text-foreground dark:text-white sm:text-4xl">
               Welcome back, {firstName}
             </h2>
-            <p className="mt-3 max-w-xl text-sm leading-7 text-white/72 sm:text-base">
+            <p className="mt-3 max-w-xl text-sm leading-7 text-foreground/72 dark:text-white/72 sm:text-base">
               Your dashboard is ready. Track requests, continue conversations, and keep your profile sharp.
             </p>
           </div>
@@ -151,7 +151,7 @@ const Dashboard = () => {
             <Button
               asChild
               variant="secondary"
-              className="h-12 rounded-2xl border border-white/10 bg-white/10 text-white hover:bg-white/14"
+              className="h-12 rounded-2xl border border-border/70 bg-white/70 text-foreground shadow-sm hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/14"
             >
               <Link to="/dashboard/requests">Browse Requests</Link>
             </Button>
