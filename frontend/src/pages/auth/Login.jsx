@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff, Loader2, Mail, Lock, Users, Sparkles } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Loader2, Mail, Lock, Users, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Login = () => {
@@ -153,12 +153,30 @@ const Login = () => {
             </div>
 
 
-          <Card className="border-0 shadow-2xl rounded-lg">
-            <CardHeader className="space-y-1 text-center pb-4">
-              <CardTitle className="text-2xl font-display">Welcome back</CardTitle>
+          <Card className="rounded-2xl border border-border/60 bg-card/95 shadow-2xl backdrop-blur">
+            <CardHeader className="space-y-4 pb-4">
+              <div className="flex items-center justify-between">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="rounded-full px-3 text-muted-foreground hover:text-foreground"
+                  onClick={() => navigate(-1)}
+                >
+                  <ArrowLeft className="mr-1 h-4 w-4" />
+                  Back
+                </Button>
+                <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                  HYB
+                </div>
+              </div>
+
+              <div className="text-center">
+                <CardTitle className="text-2xl font-display">Welcome back</CardTitle>
               <CardDescription>
                 Sign in to your account to continue
               </CardDescription>
+              </div>
             </CardHeader>
             
             <form onSubmit={handleSubmit}>
