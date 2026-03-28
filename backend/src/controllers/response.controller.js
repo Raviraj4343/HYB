@@ -7,6 +7,7 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { request } from "express";
+import { createAndEmitNotification, emitChatListRefresh, emitRequestChanged } from "../utils/realtime.js";
 
 
 const createResponse = asyncHandler(async (req, res) => {
@@ -52,13 +53,14 @@ const createResponse = asyncHandler(async (req, res) => {
     await response.populate("responder", "fullName userName avatar");
     
     try {
-      await Notification.create({
-          user: request.requestedBy,
-          type: "new_response",
-          request: request._id,
-          title: `${req.user.fullName} wants to help`,
-          message: `${req.user.fullName} want to help with your request`
+      await createAndEmitNotification({
+        user: request.requestedBy,
+        type: "new_response",
+        request: request._id,
+        title: `${req.user.fullName} wants to help`,
+        message: `${req.user.fullName} want to help with your request`
       });
+      emitRequestChanged("response_created", { _id: request._id });
     } catch (error) {
       console.log("Notification error", error.message);
     }
@@ -202,7 +204,7 @@ const acceptResponse = asyncHandler(async (req, res) => {
   }
 
   try {
-    await Notification.create({
+    await createAndEmitNotification({
       user: response.responder,
       type: "response_accepted",
       request: request._id,
@@ -212,6 +214,9 @@ const acceptResponse = asyncHandler(async (req, res) => {
   } catch (error) {
     console.error("Notification error:", error.message);
   }
+
+  emitRequestChanged("response_accepted", request.toObject());
+  emitChatListRefresh([ownerId, response.responder]);
 
   res.status(200).json(
     new ApiResponse(200, { response }, "Response accepted successfully")
@@ -247,7 +252,7 @@ const rejectResponse = asyncHandler(async (req, res) => {
   await response.save();
 
   try {
-    await Notification.create({
+    await createAndEmitNotification({
       user: response.responder,
       type: "response_rejected",
       request: request._id,
@@ -257,6 +262,8 @@ const rejectResponse = asyncHandler(async (req, res) => {
   } catch (error) {
      console.log("Notification error:", error.message);
   }
+
+  emitRequestChanged("response_rejected", { _id: request._id });
 
   res.status(200).json(
     new ApiResponse(200, { response }, "Response rejected successfully")
