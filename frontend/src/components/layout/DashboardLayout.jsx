@@ -244,21 +244,7 @@ const DashboardLayout = () => {
                   <img src="/logo.png" alt="HYB logo" className="h-8 w-8 object-contain" />
                 </Link>
 
-                <div className="flex min-w-0 items-center gap-3">
-                  {canGoBack && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-10 rounded-full border border-border/70 bg-card/70 px-3 text-muted-foreground hover:text-foreground"
-                      onClick={() => navigate(-1)}
-                    >
-                      <ArrowLeft className="mr-1.5 h-4 w-4" />
-                      Back
-                    </Button>
-                  )}
-                  <h1 className="truncate text-2xl font-display font-bold text-foreground">{pageTitle}</h1>
-                </div>
+                <h1 className="truncate text-2xl font-display font-bold text-foreground">{pageTitle}</h1>
               </div>
 
               <div className="flex items-center gap-2 sm:gap-3">
@@ -343,6 +329,20 @@ const DashboardLayout = () => {
           </header>
 
           <main className="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
+            {canGoBack && (
+              <div className="mb-5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-10 rounded-full border border-border/70 bg-card/80 px-3 text-muted-foreground shadow-sm hover:border-primary/30 hover:bg-card hover:text-foreground"
+                  onClick={() => navigate(-1)}
+                >
+                  <ArrowLeft className="mr-1.5 h-4 w-4" />
+                  Back
+                </Button>
+              </div>
+            )}
             <Outlet />
           </main>
         </div>
