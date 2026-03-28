@@ -1,14 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
-
-const POLL_INTERVAL = 5000; // 5 seconds for chat
+import { useSocket } from '../context/SocketContext';
 
 export const useChat = (chatId, enabled = true) => {
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const intervalRef = useRef(null);
-  const lastMessageIdRef = useRef(null);
+  const { socket } = useSocket();
 
   const fetchMessages = useCallback(async () => {
     if (!enabled || !chatId) return;
@@ -16,11 +14,7 @@ export const useChat = (chatId, enabled = true) => {
     try {
       setIsLoading(true);
       const response = await api.get(`/chat/${chatId}/messages`);
-      const data = response.data.data.messages || [];
-      setMessages(data);
-      if (data.length > 0) {
-        lastMessageIdRef.current = data[data.length - 1]._id;
-      }
+      setMessages(response.data.data.messages || []);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -44,9 +38,7 @@ export const useChat = (chatId, enabled = true) => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      const newMessage = response.data.data.message;
-      setMessages(prev => [...prev, newMessage]);
-      return { success: true, message: newMessage };
+      return { success: true, message: response.data.data.message };
     } catch (err) {
       console.error('Failed to send message:', err);
       return { success: false, error: err.message };
@@ -58,32 +50,66 @@ export const useChat = (chatId, enabled = true) => {
 
     try {
       await api.delete(`/chat/${chatId}/messages/${messageId}`);
-      setMessages(prev => prev.filter(m => m._id !== messageId));
     } catch (err) {
       console.error('Failed to delete message:', err);
     }
   }, [chatId]);
 
-  // Initial fetch
   useEffect(() => {
     if (enabled && chatId) {
       fetchMessages();
     }
   }, [enabled, chatId, fetchMessages]);
 
-  // Polling
   useEffect(() => {
-    if (enabled && chatId) {
-      intervalRef.current = setInterval(fetchMessages, POLL_INTERVAL);
-    }
+    if (!socket || !enabled || !chatId) return undefined;
+
+    socket.emit('chat:join', chatId);
+
+    const handleNewMessage = ({ chatId: incomingChatId, message }) => {
+      if (incomingChatId !== chatId) return;
+      setMessages((prev) => (
+        prev.some((item) => item._id === message._id) ? prev : [...prev, message]
+      ));
+    };
+
+    const handleDeletedMessage = ({ chatId: incomingChatId, messageId, deletedAt }) => {
+      if (incomingChatId !== chatId) return;
+      setMessages((prev) => prev.map((message) => (
+        message._id === messageId
+          ? {
+              ...message,
+              content: null,
+              image: null,
+              isDeleted: true,
+              deletedAt,
+            }
+          : message
+      )));
+    };
+
+    socket.on('chat:message:new', handleNewMessage);
+    socket.on('chat:message:deleted', handleDeletedMessage);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      socket.emit('chat:leave', chatId);
+      socket.off('chat:message:new', handleNewMessage);
+      socket.off('chat:message:deleted', handleDeletedMessage);
     };
-  }, [enabled, chatId, fetchMessages]);
+  }, [socket, enabled, chatId]);
+
+  useEffect(() => {
+    if (!socket || !enabled || !chatId) return undefined;
+
+    const handleReconnect = () => {
+      fetchMessages();
+    };
+
+    socket.on('connect', handleReconnect);
+    return () => {
+      socket.off('connect', handleReconnect);
+    };
+  }, [socket, enabled, chatId, fetchMessages]);
 
   return {
     messages,
@@ -99,7 +125,7 @@ export const useChatList = (enabled = true) => {
   const [chats, setChats] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const intervalRef = useRef(null);
+  const { socket } = useSocket();
 
   const fetchChats = useCallback(async () => {
     if (!enabled) return;
@@ -124,17 +150,20 @@ export const useChatList = (enabled = true) => {
   }, [enabled, fetchChats]);
 
   useEffect(() => {
-    if (enabled) {
-      intervalRef.current = setInterval(fetchChats, 15000); // 15 seconds
-    }
+    if (!socket || !enabled) return undefined;
+
+    const handleRefresh = () => {
+      fetchChats();
+    };
+
+    socket.on('chat:list:refresh', handleRefresh);
+    socket.on('connect', handleRefresh);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      socket.off('chat:list:refresh', handleRefresh);
+      socket.off('connect', handleRefresh);
     };
-  }, [enabled, fetchChats]);
+  }, [socket, enabled, fetchChats]);
 
   return {
     chats,
