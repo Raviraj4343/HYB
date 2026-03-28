@@ -1,6 +1,8 @@
 import { Router } from "express";
 import {
   registerUser,
+  verifyEmail,
+  resendVerificationCode,
   loginUser,
   logoutUser,
   getCurrentUser,
@@ -21,6 +23,8 @@ router.post(
   handleMulterError,         
   registerUser
 );
+router.post("/verify-email", verifyEmail);
+router.post("/resend-verification-code", resendVerificationCode);
 router.post("/login", loginUser);
 router.post("/logout", verifyJWT, logoutUser);
 
