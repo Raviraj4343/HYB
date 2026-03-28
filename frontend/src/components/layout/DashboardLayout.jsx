@@ -25,14 +25,6 @@ import { useNotifications } from '../../hooks/useNotifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -86,18 +78,18 @@ const DashboardLayout = () => {
       to={item.path}
       onClick={() => mobile && setIsMobileSidebarOpen(false)}
       className={cn(
-        'group flex items-center gap-3 rounded-2xl px-4 py-3 transition-all duration-200',
+        'group flex items-center gap-3 rounded-[1.35rem] px-4 py-3.5 transition-all duration-200',
         isActive(item.path)
-          ? 'bg-primary text-primary-foreground shadow-[0_12px_30px_rgba(20,184,166,0.24)]'
-          : 'text-sidebar-foreground hover:bg-sidebar-accent/90 hover:text-sidebar-accent-foreground'
+          ? 'bg-[linear-gradient(135deg,hsl(var(--primary))_0%,rgba(59,130,246,0.92)_100%)] text-primary-foreground shadow-[0_16px_34px_rgba(20,184,166,0.28)]'
+          : 'text-sidebar-foreground hover:bg-sidebar-accent/95 hover:text-sidebar-accent-foreground hover:shadow-sm'
       )}
     >
       <div
         className={cn(
-          'flex h-10 w-10 items-center justify-center rounded-xl transition-colors',
+          'flex h-11 w-11 items-center justify-center rounded-2xl transition-all duration-200',
           isActive(item.path)
-            ? 'bg-black/10'
-            : 'bg-sidebar-accent text-muted-foreground group-hover:bg-white/60 group-hover:text-foreground'
+            ? 'bg-black/10 ring-1 ring-white/10'
+            : 'bg-sidebar-accent text-muted-foreground group-hover:bg-white/70 group-hover:text-foreground'
         )}
       >
         <item.icon className="h-5 w-5" />
@@ -118,39 +110,42 @@ const DashboardLayout = () => {
     </Link>
   );
 
-  const sidebarContent = (
+  const sidebarContent = (mobile = false) => (
     <>
       <div className="px-5 pt-5">
         <Link
           to="/dashboard"
-          className="flex items-center gap-3 rounded-3xl border border-sidebar-border/80 bg-sidebar-accent/70 px-4 py-4 shadow-sm"
+          className="flex items-center gap-3 rounded-[1.7rem] border border-sidebar-border/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] px-4 py-4 shadow-[0_12px_30px_rgba(0,0,0,0.12)]"
           onClick={() => setIsMobileSidebarOpen(false)}
         >
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 ring-1 ring-primary/10">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 ring-1 ring-primary/15 shadow-inner">
             <img src="/logo.png" alt="HYB Logo" className="h-9 w-9 object-contain" />
           </div>
           <div>
-            <p className="text-lg font-display font-bold text-sidebar-foreground">HYB</p>
+            <p className="text-lg font-display font-bold tracking-tight text-sidebar-foreground">HYB</p>
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Help Your Buddy</p>
           </div>
         </Link>
       </div>
 
       <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-6 custom-scrollbar">
-        {navItems.map((item) => renderNavLink(item, true))}
+        <div className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">
+          Main Menu
+        </div>
+        {navItems.map((item) => renderNavLink(item, mobile))}
 
         {(user?.role === 'admin' || user?.role === 'moderator') && (
           <Link
             to="/dashboard/admin/reports"
-            onClick={() => setIsMobileSidebarOpen(false)}
+            onClick={() => mobile && setIsMobileSidebarOpen(false)}
             className={cn(
-              'mt-4 flex items-center gap-3 rounded-2xl px-4 py-3 transition-all duration-200',
+              'mt-4 flex items-center gap-3 rounded-[1.35rem] px-4 py-3.5 transition-all duration-200',
               location.pathname.startsWith('/dashboard/admin')
-                ? 'bg-destructive text-destructive-foreground'
-                : 'text-sidebar-foreground hover:bg-sidebar-accent/90 hover:text-sidebar-accent-foreground'
+                ? 'bg-destructive text-destructive-foreground shadow-lg'
+                : 'text-sidebar-foreground hover:bg-sidebar-accent/95 hover:text-sidebar-accent-foreground'
             )}
           >
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-black/10">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-black/10">
               <Flag className="h-5 w-5" />
             </div>
             <span className="font-medium">Reports</span>
@@ -159,9 +154,9 @@ const DashboardLayout = () => {
       </nav>
 
       <div className="border-t border-sidebar-border/80 p-4">
-        <div className="rounded-3xl border border-sidebar-border/80 bg-sidebar-accent/70 p-4">
+        <div className="rounded-[1.7rem] border border-sidebar-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-4 shadow-[0_10px_24px_rgba(0,0,0,0.08)]">
           <div className="mb-4 flex items-center gap-3">
-            <Avatar className="h-11 w-11 border border-sidebar-border">
+            <Avatar className="h-12 w-12 border border-sidebar-border shadow-sm">
               <AvatarImage src={user?.avatar} alt={user?.fullName} />
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                 {getInitials(user?.fullName)}
@@ -173,18 +168,47 @@ const DashboardLayout = () => {
             </div>
           </div>
 
+          {!mobile && (
+            <Button
+              onClick={() => navigate('/dashboard/requests/create')}
+              className="mb-3 h-11 w-full rounded-2xl btn-gradient-primary shadow-lg"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              New Request
+            </Button>
+          )}
+
           <Button
-            onClick={() => navigate('/dashboard/requests/create')}
-            className="mb-2 h-11 w-full rounded-2xl btn-gradient-primary"
+            variant="ghost"
+            className="mb-1 h-10 w-full justify-start rounded-2xl text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            onClick={() => {
+              navigate('/dashboard/profile');
+              if (mobile) setIsMobileSidebarOpen(false);
+            }}
           >
-            <Plus className="mr-2 h-4 w-4" />
-            New Request
+            <User className="mr-2 h-4 w-4" />
+            Profile
           </Button>
 
           <Button
             variant="ghost"
-            className="h-10 w-full justify-start rounded-2xl text-muted-foreground hover:text-foreground"
-            onClick={handleLogout}
+            className="mb-1 h-10 w-full justify-start rounded-2xl text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            onClick={() => {
+              navigate('/dashboard/settings');
+              if (mobile) setIsMobileSidebarOpen(false);
+            }}
+          >
+            <Settings className="mr-2 h-4 w-4" />
+            Settings
+          </Button>
+
+          <Button
+            variant="ghost"
+            className="h-10 w-full justify-start rounded-2xl text-muted-foreground hover:bg-destructive/8 hover:text-destructive"
+            onClick={() => {
+              if (mobile) setIsMobileSidebarOpen(false);
+              handleLogout();
+            }}
           >
             <LogOut className="mr-2 h-4 w-4" />
             Logout
@@ -197,8 +221,8 @@ const DashboardLayout = () => {
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.08),_transparent_28%),radial-gradient(circle_at_right,_rgba(59,130,246,0.08),_transparent_24%)] bg-background">
       <div className="flex min-h-screen">
-        <aside className="hidden lg:flex lg:w-80 lg:flex-col lg:border-r lg:border-sidebar-border/80 lg:bg-sidebar/88 lg:backdrop-blur-xl">
-          {sidebarContent}
+        <aside className="hidden lg:flex lg:w-80 lg:flex-col lg:border-r lg:border-sidebar-border/80 lg:bg-[linear-gradient(180deg,rgba(17,24,39,0.92),rgba(17,24,39,0.84))] lg:backdrop-blur-2xl">
+          {sidebarContent(false)}
         </aside>
 
         <AnimatePresence>
@@ -212,54 +236,61 @@ const DashboardLayout = () => {
                 onClick={() => setIsMobileSidebarOpen(false)}
               />
               <motion.aside
-                initial={{ x: -320 }}
+                initial={{ x: 320 }}
                 animate={{ x: 0 }}
-                exit={{ x: -320 }}
+                exit={{ x: 320 }}
                 transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-                className="fixed inset-y-0 left-0 z-50 flex w-[290px] flex-col border-r border-sidebar-border bg-sidebar shadow-2xl lg:hidden"
+                className="fixed inset-y-0 right-0 z-50 flex w-[320px] max-w-[92vw] flex-col border-l border-sidebar-border bg-[linear-gradient(180deg,rgba(17,24,39,0.98),rgba(17,24,39,0.95))] shadow-2xl backdrop-blur-2xl lg:hidden"
               >
-                <div className="flex items-center justify-between px-4 pt-4">
-                  <div className="text-sm font-semibold text-muted-foreground">Navigation</div>
+                <div className="flex items-center justify-between border-b border-sidebar-border/70 px-5 py-4">
+                  <div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">Menu</div>
+                    <div className="mt-1 text-base font-semibold text-sidebar-foreground">Navigation</div>
+                  </div>
                   <button
                     onClick={() => setIsMobileSidebarOpen(false)}
-                    className="rounded-xl p-2 text-muted-foreground transition hover:bg-sidebar-accent hover:text-foreground"
+                    className="rounded-2xl border border-sidebar-border/70 bg-white/5 p-2 text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
-                {sidebarContent}
+                {sidebarContent(true)}
               </motion.aside>
             </>
           )}
         </AnimatePresence>
 
         <div className="flex min-h-screen flex-1 flex-col">
-          <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur-xl">
-            <div className="flex h-20 items-center justify-between px-4 sm:px-6 lg:px-10">
+          <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 shadow-[0_10px_30px_rgba(0,0,0,0.08)] backdrop-blur-2xl">
+            <div className="flex h-28 items-center justify-between px-5 sm:px-6 lg:h-32 lg:px-10">
               <div className="flex min-w-0 items-center gap-4">
                 <Link
                   to="/dashboard"
-                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border/70 bg-card/70 shadow-sm"
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] border border-border/70 bg-card/85 shadow-[0_10px_24px_rgba(0,0,0,0.10)]"
                 >
-                  <img src="/logo.png" alt="HYB logo" className="h-8 w-8 object-contain" />
+                  <img src="/logo.png" alt="HYB logo" className="h-9 w-9 object-contain" />
                 </Link>
 
-                <h1 className="truncate text-2xl font-display font-bold text-foreground">{pageTitle}</h1>
+                <div className="min-w-0">
+                  <h1 className="truncate text-2xl font-display font-bold tracking-tight text-foreground lg:text-[2rem]">
+                    {pageTitle}
+                  </h1>
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center gap-2 pr-1 sm:gap-3 sm:pr-0">
                 <div className="hidden xl:block relative w-72">
                   <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     placeholder="Search requests, chats, people..."
-                    className="h-11 rounded-2xl border-border/70 bg-card/70 pl-11"
+                    className="h-12 rounded-[1.1rem] border-border/70 bg-card/80 pl-11 shadow-sm"
                   />
                 </div>
 
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-2xl border border-border/70 bg-card/70"
+                  className="h-12 w-12 rounded-[1.1rem] border border-border/70 bg-card/80 shadow-sm"
                   onClick={toggleTheme}
                 >
                   {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -268,7 +299,7 @@ const DashboardLayout = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative rounded-2xl border border-border/70 bg-card/70"
+                  className="relative h-12 w-12 rounded-[1.1rem] border border-border/70 bg-card/80 shadow-sm"
                   onClick={() => navigate('/dashboard/notifications')}
                 >
                   <Bell className="h-5 w-5" />
@@ -281,49 +312,11 @@ const DashboardLayout = () => {
 
                 <button
                   onClick={() => setIsMobileSidebarOpen(true)}
-                  className="rounded-2xl border border-border/70 bg-card/70 p-2.5 text-muted-foreground transition hover:text-foreground lg:hidden"
+                  className="rounded-[1.1rem] border border-border/70 bg-card/80 p-3 text-muted-foreground shadow-sm transition hover:border-primary/30 hover:text-foreground lg:hidden"
+                  aria-label="Open navigation menu"
                 >
                   <Menu className="h-5 w-5" />
                 </button>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="rounded-2xl border border-border/70 bg-card/70 p-1.5 transition hover:border-primary/40">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={user?.avatar} alt={user?.fullName} />
-                        <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                          {getInitials(user?.fullName)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </button>
-                  </DropdownMenuTrigger>
-
-                  <DropdownMenuContent align="end" className="w-60 rounded-2xl">
-                    <DropdownMenuLabel>
-                      <div className="flex flex-col">
-                        <span className="truncate font-medium">{user?.fullName}</span>
-                        <span className="truncate text-xs text-muted-foreground">@{user?.userName}</span>
-                      </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate('/dashboard/profile')}>
-                      <User className="mr-2 h-4 w-4" />
-                      Profile
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/dashboard/settings')}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleLogout}
-                      className="text-destructive focus:text-destructive"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </div>
             </div>
           </header>
