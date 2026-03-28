@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowRight,
   BellRing,
   CheckCircle2,
   HelpCircle,
+  ArrowUpRight,
   MessageSquare,
   Plus,
   Sparkles,
@@ -66,15 +66,6 @@ const Dashboard = () => {
       iconBg: 'bg-sky-500/15 text-sky-300',
       path: '/dashboard/chats',
     },
-    {
-      label: 'Help Count',
-      value: user?.helpCount || 0,
-      hint: 'Times you have helped others',
-      icon: TrendingUp,
-      accent: 'from-emerald-500/20 to-green-500/5',
-      iconBg: 'bg-emerald-500/15 text-emerald-300',
-      path: '/dashboard/my-requests',
-    },
   ];
 
   const quickActions = [
@@ -82,18 +73,24 @@ const Dashboard = () => {
       title: 'Create a Request',
       description: 'Ask for help with a clear title and urgency.',
       icon: Plus,
+      accent: 'from-primary/20 to-cyan-500/5',
+      iconBg: 'bg-primary/15 text-primary',
       path: '/dashboard/requests/create',
     },
     {
       title: 'Browse Requests',
       description: 'Find someone you can help right now.',
       icon: Zap,
+      accent: 'from-sky-500/20 to-indigo-500/5',
+      iconBg: 'bg-sky-500/15 text-sky-300',
       path: '/dashboard/requests',
     },
     {
       title: 'Open Chats',
       description: 'Jump back into active conversations.',
       icon: MessageSquare,
+      accent: 'from-emerald-500/20 to-teal-500/5',
+      iconBg: 'bg-emerald-500/15 text-emerald-300',
       path: '/dashboard/chats',
     },
   ];
@@ -103,6 +100,20 @@ const Dashboard = () => {
     'Keep your branch, year, and profile photo updated.',
     'Reply quickly in chats to build trust.',
   ];
+
+  const allTiles = [
+    overviewCards[0] ? { ...overviewCards[0], kind: 'live' } : null,
+    quickActions[0] ? { ...quickActions[0], kind: 'action' } : null,
+    overviewCards[1] ? { ...overviewCards[1], kind: 'live' } : null,
+    quickActions[1] ? { ...quickActions[1], kind: 'action' } : null,
+  ].filter(Boolean);
+
+  const tileMotion = {
+    initial: { opacity: 0, y: 20, scale: 0.98 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    whileHover: { y: -10, scale: 1.015 },
+    transition: { duration: 0.28, ease: 'easeOut' },
+  };
 
   return (
     <div className="space-y-8">
@@ -130,7 +141,7 @@ const Dashboard = () => {
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button
               asChild
-              className="h-12 rounded-2xl bg-white text-slate-900 shadow-xl hover:bg-white/92"
+              className="h-12 rounded-2xl btn-gradient-primary text-primary-foreground shadow-xl hover:opacity-95"
             >
               <Link to="/dashboard/requests/create">
                 <Plus className="mr-2 h-4 w-4" />
@@ -142,101 +153,99 @@ const Dashboard = () => {
               variant="secondary"
               className="h-12 rounded-2xl border border-white/10 bg-white/10 text-white hover:bg-white/14"
             >
-              <Link to="/dashboard/profile">View Profile</Link>
+              <Link to="/dashboard/requests">Browse Requests</Link>
             </Button>
           </div>
         </div>
       </motion.section>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        {overviewCards.map((card, index) => (
+      <section
+        className="gap-6"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+          alignItems: 'stretch',
+        }}
+      >
+        {allTiles.map((tile, index) => (
           <motion.div
-            key={card.label}
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, delay: 0.05 * index }}
+            key={tile.label || tile.title}
+            initial={tileMotion.initial}
+            animate={tileMotion.animate}
+            whileHover={tileMotion.whileHover}
+            transition={{ ...tileMotion.transition, delay: 0.06 * index }}
+            className="group min-w-0"
+            style={{ width: '100%' }}
           >
             <Card
-              className={`cursor-pointer overflow-hidden rounded-[1.75rem] border border-border/70 bg-gradient-to-br ${card.accent} shadow-lg transition hover:-translate-y-1 hover:border-primary/30`}
-              onClick={() => navigate(card.path)}
+              className={`relative h-full min-h-[260px] cursor-pointer overflow-hidden rounded-[1.6rem] border border-border/70 bg-gradient-to-br ${tile.accent} shadow-[0_18px_45px_rgba(0,0,0,0.18)] transition-all duration-300 group-hover:border-primary/35 group-hover:shadow-[0_22px_60px_rgba(20,184,166,0.12)]`}
+              onClick={() => navigate(tile.path)}
             >
-              <CardContent className="p-6">
-                <div className="mb-5 flex items-start justify-between">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${card.iconBg}`}>
-                    <card.icon className="h-5 w-5" />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.10),transparent_34%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-80" />
+              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-3xl opacity-70 transition-opacity duration-300 group-hover:opacity-100" />
+              <CardContent className="flex h-full flex-col p-6">
+                <div className="mb-6 flex items-start justify-between gap-4">
+                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tile.iconBg} ring-1 ring-white/10 transition-all duration-300 group-hover:scale-105`}>
+                    <tile.icon className="h-5 w-5" />
                   </div>
-                  <span className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Live</span>
+                  <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                    {tile.kind === 'live' ? 'Live' : 'Action'}
+                  </span>
                 </div>
-                <div className="text-3xl font-display font-bold text-foreground">{card.value}</div>
-                <div className="mt-2 text-base font-medium text-foreground">{card.label}</div>
-                <p className="mt-1 text-sm leading-6 text-muted-foreground">{card.hint}</p>
+                {tile.kind === 'live' ? (
+                  <>
+                    <div className="text-4xl font-display font-bold tracking-tight text-foreground">{tile.value}</div>
+                    <div className="mt-3 text-xl font-display font-semibold text-foreground">{tile.label}</div>
+                    <p className="mt-2 max-w-[28rem] text-sm leading-6 text-muted-foreground">{tile.hint}</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-xl font-display font-semibold text-foreground">{tile.title}</div>
+                    <p className="mt-2 max-w-[28rem] text-sm leading-6 text-muted-foreground">{tile.description}</p>
+                  </>
+                )}
+                <div className="mt-auto pt-6">
+                  <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-black/10 px-4 py-3 text-sm text-foreground/88 transition-colors duration-300 group-hover:border-primary/20 group-hover:bg-black/15">
+                    <span>{tile.kind === 'live' ? 'Open now' : 'Launch'}</span>
+                    <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
         ))}
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
-        <motion.section
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-        >
-          <Card className="rounded-[1.75rem] border border-border/70 bg-card/95 shadow-lg">
-            <CardHeader className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle className="text-xl font-display">Quick Actions</CardTitle>
-                <CardDescription>Start something useful in one click.</CardDescription>
+      <motion.section
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+      >
+        <Card className="rounded-[1.75rem] border border-border/70 bg-[linear-gradient(135deg,rgba(250,204,21,0.12),rgba(251,146,60,0.06))] shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl font-display">
+              <BellRing className="h-5 w-5 text-amber-300" />
+              Better Habits
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {tips.map((tip) => (
+              <div key={tip} className="flex items-start gap-3 rounded-2xl bg-black/10 px-4 py-3">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                <p className="text-sm leading-6 text-foreground/90">{tip}</p>
               </div>
-              <Button variant="ghost" size="sm" asChild className="rounded-full px-3">
-                <Link to="/dashboard/requests">
-                  Explore all
-                  <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
-            </CardHeader>
-            <CardContent className="grid gap-4 p-6 sm:grid-cols-3">
-              {quickActions.map((action) => (
-                <button
-                  key={action.title}
-                  onClick={() => navigate(action.path)}
-                  className="rounded-[1.5rem] border border-border/70 bg-background/60 p-5 text-left transition hover:border-primary/30 hover:bg-primary/5"
-                >
-                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                    <action.icon className="h-5 w-5" />
-                  </div>
-                  <div className="font-medium text-foreground">{action.title}</div>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{action.description}</p>
-                </button>
-              ))}
-            </CardContent>
-          </Card>
-        </motion.section>
-
-        <motion.section
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.15 }}
-          className="space-y-6"
-        >
-          <Card className="rounded-[1.75rem] border border-border/70 bg-[linear-gradient(135deg,rgba(250,204,21,0.12),rgba(251,146,60,0.06))] shadow-lg">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl font-display">
-                <BellRing className="h-5 w-5 text-amber-300" />
-                Better Habits
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {tips.map((tip) => (
-                <div key={tip} className="flex items-start gap-3 rounded-2xl bg-black/10 px-4 py-3">
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
-                  <p className="text-sm leading-6 text-foreground/90">{tip}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </motion.section>
-      </div>
+            ))}
+            <div className="flex items-center justify-between rounded-2xl bg-black/10 px-4 py-3 text-sm">
+              <span className="text-foreground/80">Help Count</span>
+              <Badge className="rounded-full bg-emerald-500/12 text-emerald-300">
+                <TrendingUp className="mr-1.5 h-3.5 w-3.5" />
+                {user?.helpCount || 0}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.section>
     </div>
   );
 };
