@@ -93,7 +93,7 @@ const Login = () => {
               <img
                 src="/logo.png"
                 alt="HYB logo"
-                className="w-14 h-14 object-contain"
+                className="w-12 h-12 object-contain"
               />
               <span className="text-2xl font-bold text-primary">
                 HYB
@@ -145,7 +145,7 @@ const Login = () => {
               <img
                 src="/logo.png"
                 alt="HYB logo"
-                className="w-14 h-14 object-contain"
+                className="w-11 h-11 object-contain"
               />
               {/* <span className="text-3xl font-display font-bold gradient-text">
                 HYB
@@ -153,8 +153,8 @@ const Login = () => {
             </div>
 
 
-          <Card className="border-0 shadow-xl">
-            <CardHeader className="space-y-1 text-center pb-6">
+          <Card className="border-0 shadow-2xl rounded-lg">
+            <CardHeader className="space-y-1 text-center pb-4">
               <CardTitle className="text-2xl font-display">Welcome back</CardTitle>
               <CardDescription>
                 Sign in to your account to continue
@@ -162,7 +162,7 @@ const Login = () => {
             </CardHeader>
             
             <form onSubmit={handleSubmit}>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-5">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
@@ -228,7 +228,13 @@ const Login = () => {
                 </Button>
                 <div className="w-full flex items-center justify-between">
                   <p className="text-sm">
-                    <Link to="/forgot-password" className="text-sm text-primary hover:underline">Forgot password?</Link>
+                    <Link
+                      to="/forgot-password"
+                      state={{ email: formData.email.trim().toLowerCase() }}
+                      className="text-sm text-primary font-medium hover:underline"
+                    >
+                      Forgot password?
+                    </Link>
                   </p>
                   <p className="text-center text-sm text-muted-foreground">
                     Don't have an account?{' '}

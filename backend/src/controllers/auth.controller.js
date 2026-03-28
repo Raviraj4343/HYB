@@ -21,13 +21,14 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   const { fullName, userName, email, password, branch, year, hostel } = req.body;
+  const normalizedEmail = email?.trim().toLowerCase();
 
   const existingUser = await User.findOne({
-    $or: [{ email }, { userName }]
+    $or: [{ email: normalizedEmail }, { userName }]
   });
 
   if (existingUser) {
-    if (existingUser.email === email) {
+    if (existingUser.email === normalizedEmail) {
       throw new ApiError(400, "Email already registered");
     }
     if (existingUser.userName === userName) {
@@ -39,7 +40,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const user = await User.create({
     fullName,
     userName,
-    email,
+    email: normalizedEmail,
     password,
     branch,
     year,
@@ -62,12 +63,13 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+  const normalizedEmail = email?.trim().toLowerCase();
 
-  if (!email || !password) {
+  if (!normalizedEmail || !password) {
     throw new ApiError(400, "Please provide email and password");
   }
 
-  const user = await User.findOne({ email }).select("+password");
+  const user = await User.findOne({ email: normalizedEmail }).select("+password");
 
   if (!user) {
     throw new ApiError(401, "Invalid credentials");
@@ -205,13 +207,13 @@ const changeUserPassword = asyncHandler(async (req, res) => {
 
 // --- Forgot password: send verification code to user's email ---
 const forgotPassword = asyncHandler(async (req, res) => {
-  const { email } = req.body;
+  const normalizedEmail = req.body.email?.trim().toLowerCase();
 
-  if (!email) {
+  if (!normalizedEmail) {
     throw new ApiError(400, 'Please provide an email');
   }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: normalizedEmail });
 
   if (!user) {
     // Do not reveal whether email exists
@@ -244,13 +246,14 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
 // --- Verify reset code ---
 const verifyResetCode = asyncHandler(async (req, res) => {
-  const { email, code } = req.body;
+  const normalizedEmail = req.body.email?.trim().toLowerCase();
+  const code = req.body.code?.trim();
 
-  if (!email || !code) {
+  if (!normalizedEmail || !code) {
     throw new ApiError(400, 'Please provide email and code');
   }
 
-  const user = await User.findOne({ email }).select('+resetPasswordCode +resetPasswordExpires');
+  const user = await User.findOne({ email: normalizedEmail }).select('+resetPasswordCode +resetPasswordExpires');
 
   if (!user || !user.resetPasswordCode) {
     throw new ApiError(400, 'Invalid or expired code');
@@ -266,13 +269,15 @@ const verifyResetCode = asyncHandler(async (req, res) => {
 
 // --- Reset password using code ---
 const resetPassword = asyncHandler(async (req, res) => {
-  const { email, code, newPassword } = req.body;
+  const normalizedEmail = req.body.email?.trim().toLowerCase();
+  const code = req.body.code?.trim();
+  const { newPassword } = req.body;
 
-  if (!email || !code || !newPassword) {
+  if (!normalizedEmail || !code || !newPassword) {
     throw new ApiError(400, 'Please provide email, code and new password');
   }
 
-  const user = await User.findOne({ email }).select('+resetPasswordCode +resetPasswordExpires +password');
+  const user = await User.findOne({ email: normalizedEmail }).select('+resetPasswordCode +resetPasswordExpires +password');
 
   if (!user || user.resetPasswordCode !== code || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
     throw new ApiError(400, 'Invalid or expired code');
