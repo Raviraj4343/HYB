@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
+import { useSocket } from '../../context/SocketContext';
 import { 
   HelpCircle, Search, Filter, Clock, MapPin, 
   MessageSquare, Phone, ChevronRight, Loader2, 
@@ -48,6 +49,7 @@ const RequestsList = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const { socket } = useSocket();
   
   const category = searchParams.get('category') || 'all';
   const urgency = searchParams.get('urgency') || 'all';
@@ -55,6 +57,22 @@ const RequestsList = () => {
   useEffect(() => {
     fetchRequests();
   }, [category, urgency]);
+
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const handleRequestChanged = () => {
+      fetchRequests();
+    };
+
+    socket.on('request:changed', handleRequestChanged);
+    socket.on('connect', handleRequestChanged);
+
+    return () => {
+      socket.off('request:changed', handleRequestChanged);
+      socket.off('connect', handleRequestChanged);
+    };
+  }, [socket, category, urgency]);
 
   const fetchRequests = async () => {
     setIsLoading(true);
