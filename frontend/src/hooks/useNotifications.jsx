@@ -1,18 +1,17 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
-
-const POLL_INTERVAL = 30000; // 30 seconds
+import { useSocket } from '../context/SocketContext';
 
 export const useNotifications = (enabled = true) => {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const intervalRef = useRef(null);
+  const { socket } = useSocket();
 
   const fetchNotifications = useCallback(async () => {
     if (!enabled) return;
-    
+
     try {
       setIsLoading(true);
       const response = await api.get('/notification');
@@ -31,10 +30,10 @@ export const useNotifications = (enabled = true) => {
   const markAsRead = useCallback(async (notificationId) => {
     try {
       await api.put(`/notification/${notificationId}/read`);
-      setNotifications(prev =>
-        prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n)
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setNotifications((prev) => prev.map((notification) => (
+        notification._id === notificationId ? { ...notification, isRead: true } : notification
+      )));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
     }
@@ -43,7 +42,7 @@ export const useNotifications = (enabled = true) => {
   const markAllAsRead = useCallback(async () => {
     try {
       await api.put('/notification/read-all');
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setNotifications((prev) => prev.map((notification) => ({ ...notification, isRead: true })));
       setUnreadCount(0);
     } catch (err) {
       console.error('Failed to mark all as read:', err);
@@ -53,36 +52,67 @@ export const useNotifications = (enabled = true) => {
   const deleteNotification = useCallback(async (notificationId) => {
     try {
       await api.delete(`/notification/${notificationId}`);
-      setNotifications(prev => prev.filter(n => n._id !== notificationId));
-      setUnreadCount(prev => {
-        const notification = notifications.find(n => n._id === notificationId);
-        return notification && !notification.isRead ? prev - 1 : prev;
+      setNotifications((prev) => {
+        const target = prev.find((notification) => notification._id === notificationId);
+        if (target && !target.isRead) {
+          setUnreadCount((count) => Math.max(0, count - 1));
+        }
+        return prev.filter((notification) => notification._id !== notificationId);
       });
     } catch (err) {
       console.error('Failed to delete notification:', err);
     }
-  }, [notifications]);
+  }, []);
 
-  // Initial fetch
   useEffect(() => {
     if (enabled) {
       fetchNotifications();
     }
   }, [enabled, fetchNotifications]);
 
-  // Polling
   useEffect(() => {
-    if (enabled) {
-      intervalRef.current = setInterval(fetchNotifications, POLL_INTERVAL);
-    }
+    if (!socket || !enabled) return undefined;
+
+    const handleNotificationNew = ({ notification }) => {
+      setNotifications((prev) => (
+        prev.some((item) => item._id === notification._id)
+          ? prev
+          : [notification, ...prev]
+      ));
+    };
+
+    const handleNotificationUpdated = ({ notification }) => {
+      setNotifications((prev) => prev.map((item) => (
+        item._id === notification._id ? notification : item
+      )));
+    };
+
+    const handleNotificationDeleted = ({ notificationId }) => {
+      setNotifications((prev) => prev.filter((item) => item._id !== notificationId));
+    };
+
+    const handleNotificationCount = ({ unreadCount: nextUnreadCount }) => {
+      setUnreadCount(nextUnreadCount || 0);
+    };
+
+    const handleReconnect = () => {
+      fetchNotifications();
+    };
+
+    socket.on('notification:new', handleNotificationNew);
+    socket.on('notification:updated', handleNotificationUpdated);
+    socket.on('notification:deleted', handleNotificationDeleted);
+    socket.on('notification:count', handleNotificationCount);
+    socket.on('connect', handleReconnect);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      socket.off('notification:new', handleNotificationNew);
+      socket.off('notification:updated', handleNotificationUpdated);
+      socket.off('notification:deleted', handleNotificationDeleted);
+      socket.off('notification:count', handleNotificationCount);
+      socket.off('connect', handleReconnect);
     };
-  }, [enabled, fetchNotifications]);
+  }, [socket, enabled, fetchNotifications]);
 
   return {
     notifications,
