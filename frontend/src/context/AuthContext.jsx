@@ -1,10 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import api, { 
-  setAuthToken, 
-  setRefreshToken, 
-  getStoredUser, 
-  setStoredUser, 
-  clearAuthData 
+import api, {
+  setAuthToken,
+  setRefreshToken,
+  setStoredUser,
+  clearAuthData
 } from '../api/axios';
 import { toast } from 'sonner';
 
@@ -22,7 +21,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 🔐 Initialize auth on app load
   useEffect(() => {
     const initializeAuth = async () => {
       const token = localStorage.getItem('accessToken');
@@ -39,7 +37,7 @@ export const AuthProvider = ({ children }) => {
         const userData = response.data.data.user;
         setUser(userData);
         setStoredUser(userData);
-      } catch (error) {
+      } catch {
         clearAuthData();
         setUser(null);
       } finally {
@@ -50,7 +48,6 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  // 📝 Register
   const register = useCallback(async (userData) => {
     try {
       const hasFile = userData.avatar instanceof File;
@@ -68,24 +65,47 @@ export const AuthProvider = ({ children }) => {
         response = await api.post('/auth/register', userData);
       }
 
-      const { user: newUser, accessToken, refreshToken } = response.data.data;
-
-      setAuthToken(accessToken);
-      setRefreshToken(refreshToken);
-      setStoredUser(newUser);
-      setUser(newUser);
-
-      toast.success('Account created successfully! 🎉');
-      return { success: true, user: newUser };
+      const payload = response.data.data || {};
+      toast.success(response.data.message || 'Verification code sent');
+      return { success: true, ...payload };
     } catch (error) {
       const message = error.message || 'Registration failed';
       toast.error(message);
       return { success: false, error: message };
     }
-
   }, []);
 
-  // 🔑 Login
+  const verifyRegistration = useCallback(async (email, code) => {
+    try {
+      const response = await api.post('/auth/verify-email', { email, code });
+      const { user: verifiedUser, accessToken, refreshToken } = response.data.data;
+
+      setAuthToken(accessToken);
+      setRefreshToken(refreshToken);
+      setStoredUser(verifiedUser);
+      setUser(verifiedUser);
+
+      toast.success('Email verified successfully');
+      return { success: true, user: verifiedUser };
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || 'Verification failed';
+      toast.error(message);
+      return { success: false, error: message };
+    }
+  }, []);
+
+  const resendVerificationCode = useCallback(async (email) => {
+    try {
+      const response = await api.post('/auth/resend-verification-code', { email });
+      toast.success(response.data.message || 'Verification code sent');
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || 'Failed to resend code';
+      toast.error(message);
+      return { success: false, error: message };
+    }
+  }, []);
+
   const login = useCallback(async (email, password) => {
     try {
       const response = await api.post('/auth/login', { email, password });
@@ -96,7 +116,7 @@ export const AuthProvider = ({ children }) => {
       setStoredUser(loggedInUser);
       setUser(loggedInUser);
 
-      toast.success(`Welcome back, ${loggedInUser.fullName}! 👋`);
+      toast.success(`Welcome back, ${loggedInUser.fullName}!`);
       return { success: true, user: loggedInUser };
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed';
@@ -105,12 +125,11 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // 🚪 Logout
   const logout = useCallback(async () => {
     try {
       await api.post('/auth/logout');
     } catch (_) {
-      // ignore API failure
+      // Ignore API failure.
     } finally {
       clearAuthData();
       setUser(null);
@@ -118,34 +137,31 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
- const updateAvatar = useCallback(async (file) => {
-  try {
-    const formData = new FormData();
-    formData.append("avatar", file);
+  const updateAvatar = useCallback(async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
 
-    const response = await api.put("/user/avatar", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data", // 🔥 IMPORTANT
-      },
-    });
+      const response = await api.put('/user/avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
 
-    const updatedUser = response.data.data.user;
+      const updatedUser = response.data.data.user;
 
-    setUser(updatedUser);
-    setStoredUser(updatedUser);
+      setUser(updatedUser);
+      setStoredUser(updatedUser);
 
-    toast.success("Avatar updated successfully 🖼️");
-    return { success: true, user: updatedUser };
-  } catch (error) {
-    const message = error.response?.data?.message || "Avatar upload failed";
-    toast.error(message);
-    return { success: false, error: message };
-  }
-   }, []);
+      toast.success('Avatar updated successfully');
+      return { success: true, user: updatedUser };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Avatar upload failed';
+      toast.error(message);
+      return { success: false, error: message };
+    }
+  }, []);
 
-
-
-  // 👤 Update profile
   const updateProfile = useCallback(async (profileData) => {
     try {
       const formData = new FormData();
@@ -160,7 +176,7 @@ export const AuthProvider = ({ children }) => {
 
       setUser(updatedUser);
       setStoredUser(updatedUser);
-      toast.success('Profile updated successfully ✨');
+      toast.success('Profile updated successfully');
 
       return { success: true, user: updatedUser };
     } catch (error) {
@@ -170,7 +186,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // 🔄 Refresh user
   const refreshUser = useCallback(async () => {
     try {
       const response = await api.get('/auth/me');
@@ -187,6 +202,8 @@ export const AuthProvider = ({ children }) => {
     user,
     isLoading,
     register,
+    verifyRegistration,
+    resendVerificationCode,
     login,
     logout,
     updateProfile,
@@ -200,4 +217,3 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
-
