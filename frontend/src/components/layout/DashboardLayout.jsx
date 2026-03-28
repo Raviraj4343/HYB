@@ -237,30 +237,27 @@ const DashboardLayout = () => {
           <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur-xl">
             <div className="flex h-20 items-center justify-between px-4 sm:px-6 lg:px-10">
               <div className="flex min-w-0 items-center gap-4">
-                <button
-                  onClick={() => setIsMobileSidebarOpen(true)}
-                  className="rounded-2xl border border-border/70 bg-card/70 p-2.5 text-muted-foreground transition hover:text-foreground lg:hidden"
+                <Link
+                  to="/dashboard"
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border/70 bg-card/70 shadow-sm"
                 >
-                  <Menu className="h-5 w-5" />
-                </button>
+                  <img src="/logo.png" alt="HYB logo" className="h-8 w-8 object-contain" />
+                </Link>
 
-                <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Workspace</p>
-                  <div className="flex items-center gap-3">
-                    {canGoBack && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-9 rounded-full border border-border/70 bg-card/70 px-3 text-muted-foreground hover:text-foreground"
-                        onClick={() => navigate(-1)}
-                      >
-                        <ArrowLeft className="mr-1.5 h-4 w-4" />
-                        Back
-                      </Button>
-                    )}
-                    <h1 className="truncate text-2xl font-display font-bold text-foreground">{pageTitle}</h1>
-                  </div>
+                <div className="flex min-w-0 items-center gap-3">
+                  {canGoBack && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-10 rounded-full border border-border/70 bg-card/70 px-3 text-muted-foreground hover:text-foreground"
+                      onClick={() => navigate(-1)}
+                    >
+                      <ArrowLeft className="mr-1.5 h-4 w-4" />
+                      Back
+                    </Button>
+                  )}
+                  <h1 className="truncate text-2xl font-display font-bold text-foreground">{pageTitle}</h1>
                 </div>
               </div>
 
@@ -295,6 +292,13 @@ const DashboardLayout = () => {
                     </span>
                   )}
                 </Button>
+
+                <button
+                  onClick={() => setIsMobileSidebarOpen(true)}
+                  className="rounded-2xl border border-border/70 bg-card/70 p-2.5 text-muted-foreground transition hover:text-foreground lg:hidden"
+                >
+                  <Menu className="h-5 w-5" />
+                </button>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
