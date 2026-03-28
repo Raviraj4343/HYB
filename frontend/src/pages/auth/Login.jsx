@@ -93,7 +93,7 @@ const Login = () => {
               <img
                 src="/logo.png"
                 alt="HYB logo"
-                className="w-10 h-10 object-contain"
+                className="w-14 h-14 object-contain"
               />
               <span className="text-2xl font-bold text-primary">
                 HYB
@@ -145,11 +145,11 @@ const Login = () => {
               <img
                 src="/logo.png"
                 alt="HYB logo"
-                className="w-10 h-10 object-contain"
+                className="w-14 h-14 object-contain"
               />
-              <span className="text-3xl font-display font-bold gradient-text">
+              {/* <span className="text-3xl font-display font-bold gradient-text">
                 HYB
-              </span>
+              </span> */}
             </div>
 
 
@@ -226,16 +226,20 @@ const Login = () => {
                     'Sign in'
                   )}
                 </Button>
-                
-                <p className="text-center text-sm text-muted-foreground">
-                  Don't have an account?{' '}
-                  <Link 
-                    to="/register" 
-                    className="font-medium text-primary hover:underline"
-                  >
-                    Create account
-                  </Link>
-                </p>
+                <div className="w-full flex items-center justify-between">
+                  <p className="text-sm">
+                    <Link to="/forgot-password" className="text-sm text-primary hover:underline">Forgot password?</Link>
+                  </p>
+                  <p className="text-center text-sm text-muted-foreground">
+                    Don't have an account?{' '}
+                    <Link 
+                      to="/register" 
+                      className="font-medium text-primary hover:underline"
+                    >
+                      Create account
+                    </Link>
+                  </p>
+                </div>
               </CardFooter>
             </form>
           </Card>
