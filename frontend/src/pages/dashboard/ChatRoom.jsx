@@ -126,7 +126,9 @@ const ChatRoom = () => {
                       className="rounded-lg mb-2 max-w-full"
                     />
                   )}
-                  {message.content && (
+                  {message.isDeleted ? (
+                    <p className="text-sm italic opacity-70">Message deleted</p>
+                  ) : message.content && (
                     <p className="text-sm">{message.content}</p>
                   )}
                   <p className={cn(
