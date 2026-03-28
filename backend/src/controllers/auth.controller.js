@@ -4,6 +4,7 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { sendMail } from "../utils/mailer.js";
+import { buildAuthCodeEmail } from "../utils/mailer.js";
 
 
 // helper senetize user
@@ -14,6 +15,35 @@ const sanitizeUser = (user) => {
   return userObj;
 };
 
+const generateVerificationPayload = () => ({
+  code: Math.floor(100000 + Math.random() * 900000).toString(),
+  expires: new Date(Date.now() + 15 * 60 * 1000),
+});
+
+const sendVerificationCodeEmail = async (email, code, fullName = "there") => {
+  const subject = "Verify your HYB account";
+  const { text, html } = buildAuthCodeEmail({
+    title: "Verify your email",
+    subtitle: `Hi ${fullName}, enter this code to finish creating your HYB account.`,
+    code,
+    note: "This verification code expires in 15 minutes.",
+  });
+
+  await sendMail({ to: email, subject, text, html });
+};
+
+const sendPasswordResetCodeEmail = async (email, code) => {
+  const subject = "Your HYB password reset code";
+  const { text, html } = buildAuthCodeEmail({
+    title: "Reset your password",
+    subtitle: "Use this code to reset your HYB password.",
+    code,
+    note: "This reset code expires in 15 minutes.",
+  });
+
+  await sendMail({ to: email, subject, text, html });
+};
+
 
 const registerUser = asyncHandler(async (req, res) => {
   if (!req.body) {
@@ -22,43 +52,176 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const { fullName, userName, email, password, branch, year, hostel } = req.body;
   const normalizedEmail = email?.trim().toLowerCase();
+  const normalizedUserName = userName?.trim().toLowerCase();
 
   const existingUser = await User.findOne({
-    $or: [{ email: normalizedEmail }, { userName }]
+    $or: [{ email: normalizedEmail }, { userName: normalizedUserName }]
   });
 
   if (existingUser) {
-    if (existingUser.email === normalizedEmail) {
-      throw new ApiError(400, "Email already registered");
-    }
-    if (existingUser.userName === userName) {
-      throw new ApiError(400, "Username already taken");
+    if (existingUser.isEmailVerified) {
+      if (existingUser.email === normalizedEmail) {
+        throw new ApiError(400, "Email already registered");
+      }
+      if (existingUser.userName === normalizedUserName) {
+        throw new ApiError(400, "Username already taken");
+      }
     }
   }
 
-  const userCount = await User.countDocuments();
-  const user = await User.create({
-    fullName,
-    userName,
-    email: normalizedEmail,
-    password,
-    branch,
-    year,
-    hostel,
-    role:userCount === 0 ? "admin" : "user"
-  });
-  const accessToken = user.generateAccessToken();
+  let avatarUrl = null;
+
+  if (req.file) {
+    const uploadedAvatar = await uploadOnCloudinary(req.file.path);
+
+    if (!uploadedAvatar?.url) {
+      throw new ApiError(500, "Avatar upload failed");
+    }
+
+    avatarUrl = uploadedAvatar.url;
+  }
+
+  const { code, expires } = generateVerificationPayload();
+  let user;
+
+  if (existingUser && !existingUser.isEmailVerified) {
+    if (existingUser.avatar && avatarUrl) {
+      await deleteFromCloudinary(existingUser.avatar);
+    }
+
+    existingUser.fullName = fullName;
+    existingUser.userName = normalizedUserName;
+    existingUser.email = normalizedEmail;
+    existingUser.password = password;
+    existingUser.branch = branch;
+    existingUser.year = year;
+    existingUser.hostel = hostel;
+    existingUser.avatar = avatarUrl || existingUser.avatar;
+    existingUser.emailVerificationCode = code;
+    existingUser.emailVerificationExpires = expires;
+    existingUser.isEmailVerified = false;
+
+    user = await existingUser.save();
+  } else {
+    const userCount = await User.countDocuments();
+    user = await User.create({
+      fullName,
+      userName: normalizedUserName,
+      email: normalizedEmail,
+      password,
+      branch,
+      year,
+      hostel,
+      avatar: avatarUrl,
+      emailVerificationCode: code,
+      emailVerificationExpires: expires,
+      role:userCount === 0 ? "admin" : "user"
+    });
+  }
+
+  let emailSent = true;
+  try {
+    await sendVerificationCodeEmail(user.email, code, user.fullName);
+  } catch (err) {
+    emailSent = false;
+    console.error("Failed to send registration verification email", err);
+  }
 
   res.status(201).json(
     new ApiResponse(
       201,
       {
-        user: sanitizeUser(user),
-        accessToken
+        email: user.email,
+        avatar: user.avatar,
+        emailSent
       },
-      "User registered successfully"
+      emailSent
+        ? "Account created. Verification code sent to your email"
+        : "Account created. Use resend to get a verification code"
     )
   );
+});
+
+const verifyEmail = asyncHandler(async (req, res) => {
+  const normalizedEmail = req.body.email?.trim().toLowerCase();
+  const code = req.body.code?.trim();
+
+  if (!normalizedEmail || !code) {
+    throw new ApiError(400, "Please provide email and verification code");
+  }
+
+  const user = await User.findOne({ email: normalizedEmail }).select(
+    "+emailVerificationCode +emailVerificationExpires +password +refreshToken"
+  );
+
+  if (!user || !user.emailVerificationCode) {
+    throw new ApiError(400, "Invalid or expired verification code");
+  }
+
+  if (
+    user.emailVerificationCode !== code ||
+    !user.emailVerificationExpires ||
+    user.emailVerificationExpires < new Date()
+  ) {
+    throw new ApiError(400, "Invalid or expired verification code");
+  }
+
+  user.isEmailVerified = true;
+  user.emailVerificationCode = null;
+  user.emailVerificationExpires = null;
+  user.lastLogin = new Date();
+
+  const accessToken = user.generateAccessToken();
+  const refreshToken = user.generateRefreshToken();
+  user.refreshToken = refreshToken;
+
+  await user.save({ validateBeforeSave: false });
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        user: sanitizeUser(user),
+        accessToken,
+        refreshToken
+      },
+      "Email verified successfully"
+    )
+  );
+});
+
+const resendVerificationCode = asyncHandler(async (req, res) => {
+  const normalizedEmail = req.body.email?.trim().toLowerCase();
+
+  if (!normalizedEmail) {
+    throw new ApiError(400, "Please provide an email");
+  }
+
+  const user = await User.findOne({ email: normalizedEmail }).select(
+    "+emailVerificationCode +emailVerificationExpires"
+  );
+
+  if (!user) {
+    return res.status(200).json(new ApiResponse(200, null, "If that email exists, a verification code was sent"));
+  }
+
+  if (user.isEmailVerified) {
+    throw new ApiError(400, "Email is already verified");
+  }
+
+  const { code, expires } = generateVerificationPayload();
+  user.emailVerificationCode = code;
+  user.emailVerificationExpires = expires;
+
+  await user.save({ validateBeforeSave: false });
+
+  try {
+    await sendVerificationCodeEmail(user.email, code, user.fullName);
+  } catch (err) {
+    console.error("Failed to resend verification email", err);
+  }
+
+  res.status(200).json(new ApiResponse(200, { email: user.email }, "Verification code sent"));
 });
 
 const loginUser = asyncHandler(async (req, res) => {
@@ -79,6 +242,10 @@ const loginUser = asyncHandler(async (req, res) => {
 
   if (!isPasswordCorrect) {
     throw new ApiError(401, "Invalid credentials");
+  }
+
+  if (!user.isEmailVerified) {
+    throw new ApiError(403, "Please verify your email before signing in");
   }
 
   if (!user.isActive) {
@@ -220,21 +387,15 @@ const forgotPassword = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, null, 'If that email exists, a verification code was sent'));
   }
 
-  // generate 6-digit code
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
-  const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+  const { code, expires } = generateVerificationPayload();
 
   user.resetPasswordCode = code;
   user.resetPasswordExpires = expires;
 
   await user.save({ validateBeforeSave: false });
 
-  const subject = 'Your password reset code';
-  const text = `Your password reset code is ${code}. It expires in 15 minutes.`;
-  const html = `<p>Your password reset code is <strong>${code}</strong>.</p><p>This code expires in 15 minutes.</p>`;
-
   try {
-    await sendMail({ to: user.email, subject, text, html });
+    await sendPasswordResetCodeEmail(user.email, code);
   } catch (err) {
     // Log but don't reveal details to caller
     console.error('Failed to send reset email', err);
@@ -301,6 +462,8 @@ const resetPassword = asyncHandler(async (req, res) => {
 
 export {
   registerUser,
+  verifyEmail,
+  resendVerificationCode,
   loginUser,
   logoutUser,
   getCurrentUser,
