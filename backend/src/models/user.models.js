@@ -105,6 +105,20 @@ const userSchema = new mongoose.Schema({
   type: String,
   select: false
  },
+ emailVerificationCode: {
+   type: String,
+   select: false,
+   default: null
+ },
+ emailVerificationExpires: {
+   type: Date,
+   select: false,
+   default: null
+ },
+ isEmailVerified: {
+   type: Boolean,
+   default: false
+ },
  resetPasswordCode: {
    type: String,
    select: false,
