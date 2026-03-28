@@ -6,6 +6,7 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { DEFAULT_PAGE_SIZE, DELETE_WINDOW_MINUTES } from "../constants.js";
+import { emitChatListRefresh, emitRequestChanged } from "../utils/realtime.js";
 
 
 const createRequest = asyncHandler(async (req, res) => {
@@ -44,6 +45,7 @@ const createRequest = asyncHandler(async (req, res) => {
   });
 
   await request.populate("requestedBy", "fullName userName avatar");
+  emitRequestChanged("created", request.toObject());
 
   res.status(201).json(
     new ApiResponse(201, { request }, "Request created successfully")
@@ -134,7 +136,7 @@ const acceptRequest = asyncHandler(async (req, res) => {
 
   let chat = await Chat.findOne({ request: request._id });
 
-  if (!chat) {
+ if (!chat) {
   chat = await Chat.create({
     request: request._id,
     participants: [
@@ -143,6 +145,9 @@ const acceptRequest = asyncHandler(async (req, res) => {
     ]
   });
  }
+
+  emitRequestChanged("accepted", request.toObject());
+  emitChatListRefresh([request.requestedBy, req.user._id]);
 
 
   res.status(200).json(
@@ -194,6 +199,7 @@ const updateRequest = asyncHandler(async (req, res) => {
     { title, description, category, urgency, locationHint },
     { new: true, runValidators: true }
   ).populate("requestedBy", "fullName userName avatar");
+  emitRequestChanged("updated", updatedRequest.toObject());
 
   res.status(200).json(
     new ApiResponse(
@@ -221,6 +227,7 @@ const cancelRequest = asyncHandler(async (req, res) => {
 
   request.status = "cancelled";
   await request.save();
+  emitRequestChanged("cancelled", request.toObject());
 
   res.status(200).json(
     new ApiResponse(200, { request }, "Request cancelled successfully")
@@ -256,6 +263,8 @@ const fulfillRequest = asyncHandler(async (req, res) => {
     );
   }
 
+  emitRequestChanged("fulfilled", request.toObject());
+
   res.status(200).json(
     new ApiResponse(200, { request }, "Request marked as fulfilled")
   );
@@ -289,6 +298,7 @@ const deleteRequest = asyncHandler(async(req, res) => {
     }
 
     await Request.deleteOne({_id:request._id});
+    emitRequestChanged("deleted", { _id: request._id });
     
     return res
     .status(200)
