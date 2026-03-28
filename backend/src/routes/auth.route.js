@@ -5,7 +5,10 @@ import {
   logoutUser,
   getCurrentUser,
   updateUserProfile,
-  changeUserPassword
+  changeUserPassword,
+  forgotPassword,
+  verifyResetCode,
+  resetPassword
 } from "../controllers/auth.controller.js";
 import {verifyJWT} from '../middlewares/auth.middleware.js';
 import { upload, handleMulterError } from "../middlewares/multer.middleware.js";
@@ -32,5 +35,10 @@ router.put(
 );
 
 router.put("/change-password", verifyJWT, changeUserPassword);
+
+// Password reset flow
+router.post('/forgot-password', forgotPassword);
+router.post('/verify-reset-code', verifyResetCode);
+router.post('/reset-password', resetPassword);
 
 export default router;

@@ -3,6 +3,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
+import { sendMail } from "../utils/mailer.js";
 
 
 // helper senetize user
@@ -202,11 +203,106 @@ const changeUserPassword = asyncHandler(async (req, res) => {
 });
 
 
+// --- Forgot password: send verification code to user's email ---
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new ApiError(400, 'Please provide an email');
+  }
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    // Do not reveal whether email exists
+    return res.status(200).json(new ApiResponse(200, null, 'If that email exists, a verification code was sent'));
+  }
+
+  // generate 6-digit code
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+
+  user.resetPasswordCode = code;
+  user.resetPasswordExpires = expires;
+
+  await user.save({ validateBeforeSave: false });
+
+  const subject = 'Your password reset code';
+  const text = `Your password reset code is ${code}. It expires in 15 minutes.`;
+  const html = `<p>Your password reset code is <strong>${code}</strong>.</p><p>This code expires in 15 minutes.</p>`;
+
+  try {
+    await sendMail({ to: user.email, subject, text, html });
+  } catch (err) {
+    // Log but don't reveal details to caller
+    console.error('Failed to send reset email', err);
+  }
+
+  res.status(200).json(new ApiResponse(200, null, 'If that email exists, a verification code was sent'));
+});
+
+
+// --- Verify reset code ---
+const verifyResetCode = asyncHandler(async (req, res) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    throw new ApiError(400, 'Please provide email and code');
+  }
+
+  const user = await User.findOne({ email }).select('+resetPasswordCode +resetPasswordExpires');
+
+  if (!user || !user.resetPasswordCode) {
+    throw new ApiError(400, 'Invalid or expired code');
+  }
+
+  if (user.resetPasswordCode !== code || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+    throw new ApiError(400, 'Invalid or expired code');
+  }
+
+  res.status(200).json(new ApiResponse(200, null, 'Code verified'));
+});
+
+
+// --- Reset password using code ---
+const resetPassword = asyncHandler(async (req, res) => {
+  const { email, code, newPassword } = req.body;
+
+  if (!email || !code || !newPassword) {
+    throw new ApiError(400, 'Please provide email, code and new password');
+  }
+
+  const user = await User.findOne({ email }).select('+resetPasswordCode +resetPasswordExpires +password');
+
+  if (!user || user.resetPasswordCode !== code || !user.resetPasswordExpires || user.resetPasswordExpires < new Date()) {
+    throw new ApiError(400, 'Invalid or expired code');
+  }
+
+  user.password = newPassword;
+  user.resetPasswordCode = null;
+  user.resetPasswordExpires = null;
+
+  // generate new refresh token
+  const refreshToken = user.generateRefreshToken();
+  user.refreshToken = refreshToken;
+
+  await user.save();
+
+  const accessToken = user.generateAccessToken();
+
+  res.status(200).json(new ApiResponse(200, { user: sanitizeUser(user), accessToken, refreshToken }, 'Password reset successful'));
+});
+
+
 export {
   registerUser,
   loginUser,
   logoutUser,
   getCurrentUser,
   updateUserProfile,
-  changeUserPassword
+  changeUserPassword,
+  forgotPassword,
+  verifyResetCode,
+  resetPassword
 };
+
