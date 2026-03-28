@@ -1,284 +1,338 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  ArrowRight,
+  BellRing,
+  CheckCircle2,
+  HelpCircle,
+  MessageSquare,
+  Plus,
+  Sparkles,
+  TrendingUp,
+  UserRound,
+  Zap
+} from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
-  HelpCircle, MessageSquare, Clock, TrendingUp, 
-  Users, Heart, ArrowRight, Plus, CheckCircle,
-  AlertCircle, Loader2
-} from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { motion } from 'framer-motion';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [statsData, setStatsData] = useState({
-  activeRequests: 0,
-  chats: 0,
+    activeRequests: 0,
+    chats: 0,
   });
 
   useEffect(() => {
-  const fetchStats = async () => {
-    try {
-      const [requestsRes, chatsRes] = await Promise.all([
-        api.get('/req/stats'),
-        api.get('/chat'),
-      ]);
+    const fetchStats = async () => {
+      try {
+        const [requestsRes, chatsRes] = await Promise.all([
+          api.get('/req/stats'),
+          api.get('/chat'),
+        ]);
 
-      setStatsData({
-        activeRequests: requestsRes.data.data?.activeRequests || 0,
-        chats: chatsRes.data.data?.chats?.length || 0,
-      });
-    } catch (error) {
-      console.error('Failed to load dashboard stats', error);
-    }
-  };
+        setStatsData({
+          activeRequests: requestsRes.data.data?.activeRequests || 0,
+          chats: chatsRes.data.data?.chats?.length || 0,
+        });
+      } catch (error) {
+        console.error('Failed to load dashboard stats', error);
+      }
+    };
 
-  fetchStats();
-}, []);
+    fetchStats();
+  }, []);
 
+  const firstName = user?.fullName?.split(' ')[0] || 'Friend';
+  const profileCompletion = useMemo(() => {
+    const checks = [user?.fullName, user?.userName, user?.email, user?.branch, user?.year, user?.avatar];
+    const completed = checks.filter(Boolean).length;
+    return Math.round((completed / checks.length) * 100);
+  }, [user]);
 
+  const overviewCards = [
+    {
+      label: 'Active Requests',
+      value: statsData.activeRequests,
+      hint: 'Open help requests in the community',
+      icon: HelpCircle,
+      accent: 'from-teal-500/20 to-cyan-500/5',
+      iconBg: 'bg-teal-500/15 text-teal-300',
+      path: '/dashboard/requests',
+    },
+    {
+      label: 'Chats',
+      value: statsData.chats,
+      hint: 'Conversations waiting for you',
+      icon: MessageSquare,
+      accent: 'from-sky-500/20 to-blue-500/5',
+      iconBg: 'bg-sky-500/15 text-sky-300',
+      path: '/dashboard/chats',
+    },
+    {
+      label: 'Help Count',
+      value: user?.helpCount || 0,
+      hint: 'Times you have helped others',
+      icon: TrendingUp,
+      accent: 'from-emerald-500/20 to-green-500/5',
+      iconBg: 'bg-emerald-500/15 text-emerald-300',
+      path: '/dashboard/profile',
+    },
+  ];
 
-const stats = [
-  {
-    label: 'Active Requests',
-    value: statsData.activeRequests,
-    icon: HelpCircle,
-    color: 'text-primary',
-    path: '/dashboard/requests',
-  },
-  {
-    label: 'Chats',
-    value: statsData.chats,
-    icon: MessageSquare,
-    color: 'text-info',
-    path: '/dashboard/chats',
-  },
-  {
-    label: 'Help Count',
-    value: user?.helpCount || 0,
-    icon: TrendingUp,
-    color: 'text-success',
-  },
-];
+  const quickActions = [
+    {
+      title: 'Create a Request',
+      description: 'Ask for help with a clear title and urgency.',
+      icon: Plus,
+      path: '/dashboard/requests/create',
+    },
+    {
+      title: 'Browse Requests',
+      description: 'Find someone you can help right now.',
+      icon: Zap,
+      path: '/dashboard/requests',
+    },
+    {
+      title: 'Open Chats',
+      description: 'Jump back into active conversations.',
+      icon: MessageSquare,
+      path: '/dashboard/chats',
+    },
+  ];
 
+  const tips = [
+    'Use clear titles so people can decide faster.',
+    'Keep your branch, year, and profile photo updated.',
+    'Reply quickly in chats to build trust.',
+  ];
 
-
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name.split(' ').map((part) => part[0]).join('').toUpperCase().slice(0, 2);
   };
 
   return (
     <div className="space-y-8">
-      {/* Welcome Section */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+      <motion.section
+        initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.45 }}
+        className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(135deg,rgba(20,184,166,0.16),rgba(59,130,246,0.08)_45%,rgba(15,23,42,0.4))] p-6 shadow-[0_24px_60px_rgba(0,0,0,0.18)] lg:p-8"
       >
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-display font-bold text-foreground">
-              Welcome back, {user?.fullName?.split(' ')[0] || 'Friend'}! 👋
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Here's what's happening in your community today
+        <div className="absolute right-0 top-0 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
+        <div className="relative flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <Badge className="mb-4 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/90">
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+              Community workspace
+            </Badge>
+            <h2 className="text-3xl font-display font-bold text-white sm:text-4xl">
+              Welcome back, {firstName}
+            </h2>
+            <p className="mt-3 max-w-xl text-sm leading-7 text-white/72 sm:text-base">
+              Your dashboard is ready. Track requests, continue conversations, and keep your profile sharp.
             </p>
           </div>
-          <Button asChild className="btn-gradient-primary gap-2 shrink-0">
-            <Link to="/dashboard/requests/create">
-              <Plus className="w-4 h-4" />
-              Create Request
-            </Link>
-          </Button>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button
+              asChild
+              className="h-12 rounded-2xl bg-white text-slate-900 shadow-xl hover:bg-white/92"
+            >
+              <Link to="/dashboard/requests/create">
+                <Plus className="mr-2 h-4 w-4" />
+                New Request
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="secondary"
+              className="h-12 rounded-2xl border border-white/10 bg-white/10 text-white hover:bg-white/14"
+            >
+              <Link to="/dashboard/profile">View Profile</Link>
+            </Button>
+          </div>
         </div>
-      </motion.div>
+      </motion.section>
 
-      {/* Stats Grid */}
-      <motion.div 
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-2 lg:grid-cols-4 gap-4"
-      >
-        {stats.map((stat, index) => (
-          <motion.div key={stat.label} variants={item}>
+      <section className="grid gap-4 md:grid-cols-3">
+        {overviewCards.map((card, index) => (
+          <motion.div
+            key={card.label}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.05 * index }}
+          >
             <Card
-                className={`glass-card hover-lift ${stat.path ? 'cursor-pointer hover:border-primary' : ''}`}
-                onClick={() => {
-                  if (stat.path) {
-                    navigate(stat.path);
-                  }
-                }}
-              >
-
-              <CardContent className="p-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-xl bg-muted flex items-center justify-center ${stat.color}`}>
-                    <stat.icon className="w-5 h-5" />
+              className={`cursor-pointer overflow-hidden rounded-[1.75rem] border border-border/70 bg-gradient-to-br ${card.accent} shadow-lg transition hover:-translate-y-1 hover:border-primary/30`}
+              onClick={() => navigate(card.path)}
+            >
+              <CardContent className="p-6">
+                <div className="mb-5 flex items-start justify-between">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${card.iconBg}`}>
+                    <card.icon className="h-5 w-5" />
                   </div>
+                  <span className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Live</span>
                 </div>
-                <p className="text-2xl font-bold font-display">{stat.value}</p>
-                {stat.path && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Click to open
-                  </p>
-                )}
-                <p className="text-sm text-muted-foreground">{stat.label}</p>
+                <div className="text-3xl font-display font-bold text-foreground">{card.value}</div>
+                <div className="mt-2 text-base font-medium text-foreground">{card.label}</div>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">{card.hint}</p>
               </CardContent>
             </Card>
           </motion.div>
         ))}
-      </motion.div>
+      </section>
 
-      {/* Main Content Grid */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Recent Requests */}
-        <motion.div 
-          className="lg:col-span-2"
-          initial={{ opacity: 0, y: 20 }}
+      <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <Card className="glass-card h-full">
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
+          <Card className="rounded-[1.75rem] border border-border/70 bg-card/95 shadow-lg">
+            <CardHeader className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <CardTitle className="text-lg font-display">Recent Requests</CardTitle>
-                <CardDescription>Latest help requests from the community</CardDescription>
+                <CardTitle className="text-xl font-display">Quick Actions</CardTitle>
+                <CardDescription>Start something useful in one click.</CardDescription>
               </div>
-              <Button variant="ghost" size="sm" asChild className="gap-1">
+              <Button variant="ghost" size="sm" asChild className="rounded-full px-3">
                 <Link to="/dashboard/requests">
-                  View all
-                  <ArrowRight className="w-4 h-4" />
+                  Explore all
+                  <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {/* Empty State */}
-                <div className="py-12 text-center">
-                  <div className="w-16 h-16 rounded-full bg-muted mx-auto flex items-center justify-center mb-4">
-                    <HelpCircle className="w-8 h-8 text-muted-foreground" />
+            <CardContent className="grid gap-4 p-6 sm:grid-cols-3">
+              {quickActions.map((action) => (
+                <button
+                  key={action.title}
+                  onClick={() => navigate(action.path)}
+                  className="rounded-[1.5rem] border border-border/70 bg-background/60 p-5 text-left transition hover:border-primary/30 hover:bg-primary/5"
+                >
+                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                    <action.icon className="h-5 w-5" />
                   </div>
-                  <h3 className="font-semibold text-foreground mb-1">No requests yet</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Be the first to ask for help or explore existing requests
-                  </p>
-                  <Button asChild variant="outline" size="sm">
-                    <Link to="/dashboard/requests">Browse Requests</Link>
-                  </Button>
+                  <div className="font-medium text-foreground">{action.title}</div>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{action.description}</p>
+                </button>
+              ))}
+            </CardContent>
+          </Card>
+        </motion.section>
+
+        <motion.section
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.15 }}
+          className="space-y-6"
+        >
+          <Card className="rounded-[1.75rem] border border-border/70 bg-card/95 shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-xl font-display">Your Profile</CardTitle>
+              <CardDescription>Keep your account complete and trusted.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-5 flex items-center gap-4">
+                <Avatar className="h-14 w-14 border border-border">
+                  <AvatarImage src={user?.avatar} alt={user?.fullName} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                    {getInitials(user?.fullName)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-foreground">{user?.fullName}</p>
+                  <p className="truncate text-sm text-muted-foreground">@{user?.userName || 'user'}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
 
-        {/* Quick Actions & Tips */}
-        <motion.div 
-          className="space-y-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          {/* Quick Actions */}
-          <Card className="glass-card">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-display">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button asChild variant="outline" className="w-full justify-start gap-3 h-11">
-                <Link to="/dashboard/requests/create">
-                  <Plus className="w-4 h-4 text-primary" />
-                  Create Help Request
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="w-full justify-start gap-3 h-11">
-                <Link to="/dashboard/requests">
-                  <HelpCircle className="w-4 h-4 text-info" />
-                  Browse Requests
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="w-full justify-start gap-3 h-11">
-                <Link to="/dashboard/chats">
-                  <MessageSquare className="w-4 h-4 text-success" />
-                  View Chats
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
+              <div className="mb-3 flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Profile completion</span>
+                <span className="font-medium text-foreground">{profileCompletion}%</span>
+              </div>
+              <div className="mb-5 h-2 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-[linear-gradient(90deg,#14b8a6,#38bdf8)]"
+                  style={{ width: `${profileCompletion}%` }}
+                />
+              </div>
 
-          {/* Tips Card */}
-          <Card className="glass-card border-accent/30" style={{ background: 'linear-gradient(135deg, hsl(var(--accent) / 0.1) 0%, hsl(var(--accent) / 0.05) 100%)' }}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-display flex items-center gap-2">
-                <span className="text-2xl">💡</span>
-                Pro Tips
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3 text-sm">
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-success mt-0.5 shrink-0" />
-                  <span>Be specific about what you need for faster help</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-success mt-0.5 shrink-0" />
-                  <span>Set appropriate urgency levels</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="w-4 h-4 text-success mt-0.5 shrink-0" />
-                  <span>Help others to build your reputation</span>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          {/* User Stats */}
-          <Card className="glass-card">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg font-display">Your Profile</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Username</span>
-                  <span className="font-medium">@{user?.userName || '—'}</span>
-                </div>
+              <div className="space-y-3 text-sm">
                 {user?.branch && (
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between rounded-2xl bg-background/60 px-4 py-3">
                     <span className="text-muted-foreground">Branch</span>
-                    <span className="font-medium">{user.branch}</span>
+                    <span className="font-medium text-foreground">{user.branch}</span>
                   </div>
                 )}
                 {user?.year && (
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between rounded-2xl bg-background/60 px-4 py-3">
                     <span className="text-muted-foreground">Year</span>
-                    <span className="font-medium">Year {user.year}</span>
+                    <span className="font-medium text-foreground">Year {user.year}</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Help Count</span>
-                  <Badge variant="secondary" className="bg-success/10 text-success">
-                    {user?.helpCount || 0} helped
-                  </Badge>
+                <div className="flex items-center justify-between rounded-2xl bg-background/60 px-4 py-3">
+                  <span className="text-muted-foreground">Helped</span>
+                  <Badge className="rounded-full bg-emerald-500/12 text-emerald-300">{user?.helpCount || 0} times</Badge>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+
+          <Card className="rounded-[1.75rem] border border-border/70 bg-[linear-gradient(135deg,rgba(250,204,21,0.12),rgba(251,146,60,0.06))] shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl font-display">
+                <BellRing className="h-5 w-5 text-amber-300" />
+                Better Habits
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {tips.map((tip) => (
+                <div key={tip} className="flex items-start gap-3 rounded-2xl bg-black/10 px-4 py-3">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                  <p className="text-sm leading-6 text-foreground/90">{tip}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </motion.section>
       </div>
+
+      <motion.section
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
+      >
+        <Card className="rounded-[1.75rem] border border-border/70 bg-card/95 shadow-lg">
+          <CardHeader className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <CardTitle className="text-xl font-display">Community Feed</CardTitle>
+              <CardDescription>Fresh activity will appear here as requests and chats grow.</CardDescription>
+            </div>
+            <Button variant="outline" asChild className="rounded-full">
+              <Link to="/dashboard/requests">
+                Browse Requests
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div className="flex flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-border/80 bg-background/50 px-6 py-16 text-center">
+              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/10 text-primary">
+                <UserRound className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-display font-semibold text-foreground">Your workspace is ready</h3>
+              <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
+                Start by creating a request, helping someone from the feed, or opening your chats.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.section>
     </div>
   );
 };
