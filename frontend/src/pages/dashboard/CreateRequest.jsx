@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { toast } from 'sonner';
 import { 
-  ArrowLeft, Loader2, ImagePlus, X, Clock, 
+  Loader2, ImagePlus, X, Clock, 
   MapPin, MessageSquare, Phone 
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -162,16 +162,6 @@ const CreateRequest = () => {
 
   return (
     <div className="max-w-2xl mx-auto">
-      {/* Back Button */}
-      <Button 
-        variant="ghost" 
-        onClick={() => navigate(-1)}
-        className="mb-6 gap-2"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back
-      </Button>
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
