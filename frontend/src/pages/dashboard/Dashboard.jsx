@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import api from '../../api/axios';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,31 +21,50 @@ import { Badge } from '@/components/ui/badge';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { socket } = useSocket();
   const navigate = useNavigate();
   const [statsData, setStatsData] = useState({
     activeRequests: 0,
     chats: 0,
   });
 
+  const fetchStats = async () => {
+    try {
+      const [requestsRes, chatsRes] = await Promise.all([
+        api.get('/req/stats'),
+        api.get('/chat'),
+      ]);
+
+      setStatsData({
+        activeRequests: requestsRes.data.data?.activeRequests || 0,
+        chats: chatsRes.data.data?.chats?.length || 0,
+      });
+    } catch (error) {
+      console.error('Failed to load dashboard stats', error);
+    }
+  };
+
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const [requestsRes, chatsRes] = await Promise.all([
-          api.get('/req/stats'),
-          api.get('/chat'),
-        ]);
-
-        setStatsData({
-          activeRequests: requestsRes.data.data?.activeRequests || 0,
-          chats: chatsRes.data.data?.chats?.length || 0,
-        });
-      } catch (error) {
-        console.error('Failed to load dashboard stats', error);
-      }
-    };
-
     fetchStats();
   }, []);
+
+  useEffect(() => {
+    if (!socket) return undefined;
+
+    const handleRefresh = () => {
+      fetchStats();
+    };
+
+    socket.on('request:changed', handleRefresh);
+    socket.on('chat:list:refresh', handleRefresh);
+    socket.on('connect', handleRefresh);
+
+    return () => {
+      socket.off('request:changed', handleRefresh);
+      socket.off('chat:list:refresh', handleRefresh);
+      socket.off('connect', handleRefresh);
+    };
+  }, [socket]);
 
   const firstName = user?.fullName?.split(' ')[0] || 'Friend';
   const overviewCards = [
