@@ -6,6 +6,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import {  uploadOnCloudinary } from '../utils/cloudinary.js';
+import { createAndEmitNotification } from '../utils/realtime.js';
 
 const getUserProfile = asyncHandler(async (req, res, next) =>{
     const {userName} = req.params;
@@ -159,7 +160,7 @@ const resetUserWarnings = asyncHandler(async (req, res) => {
 
   await user.save();
 
-  await Notification.create({
+  await createAndEmitNotification({
     user: userId,
     type: "account_unblocked",
     title: "Account Restored",
