@@ -6,6 +6,12 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { uploadOnCloudinary }from '../utils/cloudinary.js';
+import {
+  createAndEmitNotification,
+  emitChatListRefresh,
+  emitChatMessageCreated,
+  emitChatMessageDeleted,
+} from '../utils/realtime.js';
 
 
 const isParticipant = (chat, userId) => 
@@ -96,34 +102,25 @@ const sendMessage = asyncHandler(async (req, res) => {
   chat.updatedAt = Date.now();
   await chat.save();
 
-  const receiver = chat.participants.find(
-    p => p.toString() !== req.user.id
-  );
-
  try {
-    // determine receiver id (handles ObjectId or populated doc)
     const receiverDoc = chat.participants.find(p => (p._id ? p._id.toString() : p.toString()) !== req.user.id);
     const receiverId = receiverDoc ? (receiverDoc._id ? receiverDoc._id : receiverDoc) : null;
 
-    // console.log('sendMessage: participants=', chat.participants);
-    // console.log('sendMessage: sender=', req.user.id, req.user.fullName);
-    // console.log('sendMessage: receiverDoc=', receiverDoc);
-    // console.log('sendMessage: receiverId=', receiverId);
-
-    const notifPayload = {
-      user: receiverId,
-      type: 'message',
-      request: chat.request,
-      title: `Message from ${req.user.fullName}`,
-      message: `New message from ${req.user.fullName}`
-    };
-    // console.log('sendMessage: creating notification', notifPayload);
-
-    await Notification.create(notifPayload);
-    console.log('sendMessage: notification created');
+    if (receiverId) {
+      await createAndEmitNotification({
+        user: receiverId,
+        type: 'message',
+        request: chat.request,
+        title: `Message from ${req.user.fullName}`,
+        message: `New message from ${req.user.fullName}`
+      });
+    }
  } catch (error) {
     console.log("Sendmessage error", error.message, error);
  }
+
+  emitChatMessageCreated(chatId, message);
+  emitChatListRefresh(chat.participants);
 
   return res
     .status(201)
@@ -216,6 +213,12 @@ const deleteMessage = asyncHandler(async (req, res) => {
     message.image = null;
 
     await message.save();
+    emitChatMessageDeleted(chatId, message._id, message.deletedAt);
+
+    const chat = await Chat.findById(chatId).select("participants");
+    if (chat?.participants?.length) {
+      emitChatListRefresh(chat.participants);
+    }
 
     return res
     .status(200)
