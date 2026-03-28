@@ -105,10 +105,10 @@ const sendMessage = asyncHandler(async (req, res) => {
     const receiverDoc = chat.participants.find(p => (p._id ? p._id.toString() : p.toString()) !== req.user.id);
     const receiverId = receiverDoc ? (receiverDoc._id ? receiverDoc._id : receiverDoc) : null;
 
-    console.log('sendMessage: participants=', chat.participants);
-    console.log('sendMessage: sender=', req.user.id, req.user.fullName);
-    console.log('sendMessage: receiverDoc=', receiverDoc);
-    console.log('sendMessage: receiverId=', receiverId);
+    // console.log('sendMessage: participants=', chat.participants);
+    // console.log('sendMessage: sender=', req.user.id, req.user.fullName);
+    // console.log('sendMessage: receiverDoc=', receiverDoc);
+    // console.log('sendMessage: receiverId=', receiverId);
 
     const notifPayload = {
       user: receiverId,
@@ -117,7 +117,7 @@ const sendMessage = asyncHandler(async (req, res) => {
       title: `Message from ${req.user.fullName}`,
       message: `New message from ${req.user.fullName}`
     };
-    console.log('sendMessage: creating notification', notifPayload);
+    // console.log('sendMessage: creating notification', notifPayload);
 
     await Notification.create(notifPayload);
     console.log('sendMessage: notification created');
