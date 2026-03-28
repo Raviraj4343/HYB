@@ -2,6 +2,11 @@ import {Notification} from '../models/notification.models.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
+import {
+  emitNotificationCount,
+  emitNotificationDeleted,
+  emitNotificationUpdated,
+} from '../utils/realtime.js';
 
 const getMyNotifications = asyncHandler(async (req, res) => {
     const {page = 1, limit = 20} = req.query;
@@ -20,6 +25,10 @@ const getMyNotifications = asyncHandler(async (req, res) => {
     };
 
     const notifications = await Notification.find(query)
+    .populate("request", "title status")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limitNum);
     const total = await Notification.countDocuments(query);
     const unreadCount = await Notification.countDocuments({
     ...query,
@@ -51,7 +60,9 @@ const markAsRead = asyncHandler(async (req, res, next) => {
     }
 
     notification.isRead = true;
+    notification.readAt = new Date();
     await notification.save();
+    await emitNotificationUpdated(notification._id);
 
     return res
     .status(200)
@@ -63,8 +74,9 @@ const markAsRead = asyncHandler(async (req, res, next) => {
 const markAllAsRead = asyncHandler(async (req, res) => {
     await Notification.updateMany(
         {user:req.user.id, isRead:false},
-        {isRead:true}
+        {isRead:true, readAt: new Date()}
     );
+    await emitNotificationCount(req.user.id);
 
     return res
     .status(200)
@@ -83,6 +95,7 @@ const deleteNotification = asyncHandler(async (req, res, next) => {
   }
 
   await notification.deleteOne();
+  await emitNotificationDeleted(req.user.id, req.params.id);
 
   return res
   .status(200)
