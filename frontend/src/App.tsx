@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // Context
 import { AuthProvider } from "./context/AuthContext";
+import { SocketProvider } from "./context/SocketContext";
 import { ThemeProvider } from "./context/ThemeContext";
 
 // Route Guards
@@ -47,47 +48,49 @@ const App = () => (
         <Sonner position="bottom-center" richColors />
         <BrowserRouter>
           <AuthProvider>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Index />} />
+            <SocketProvider>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Index />} />
 
-              {/* Auth Routes */}
-              <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-              <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-              <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
+                {/* Auth Routes */}
+                <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+                <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
+                <Route path="/forgot-password" element={<PublicRoute><ForgotPassword /></PublicRoute>} />
 
-              {/* Protected Dashboard Routes */}
-              <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                <Route index element={<Dashboard />} />
-                <Route path="requests" element={<RequestsList />} />
-                <Route path="requests/create" element={<CreateRequest />} />
-                <Route path="requests/:id" element={<RequestDetail />} />
-                <Route path="my-requests" element={<MyRequests />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="notifications" element={<Notifications />} />
-                <Route path="chats" element={<Chats />} />
-                <Route path="chats/:id" element={<ChatRoom />} />
-                <Route path="users" element={<UserSearch />} />
-                <Route path="users/:userName" element={<UserProfile />} />
-                <Route
-                    path="report"
-                    element={
-                      <ProtectedRoute>
-                        <CreateReport />
-                      </ProtectedRoute>
-                    }
-                  />
-                <Route path="profile" element={<Profile />} />
-                
-                {/* Admin Only Routes */}
-                <Route path="admin/reports" element={
-                  <AdminRoute><Reports /></AdminRoute>
-                } />
-              </Route>
+                {/* Protected Dashboard Routes */}
+                <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="requests" element={<RequestsList />} />
+                  <Route path="requests/create" element={<CreateRequest />} />
+                  <Route path="requests/:id" element={<RequestDetail />} />
+                  <Route path="my-requests" element={<MyRequests />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="notifications" element={<Notifications />} />
+                  <Route path="chats" element={<Chats />} />
+                  <Route path="chats/:id" element={<ChatRoom />} />
+                  <Route path="users" element={<UserSearch />} />
+                  <Route path="users/:userName" element={<UserProfile />} />
+                  <Route
+                      path="report"
+                      element={
+                        <ProtectedRoute>
+                          <CreateReport />
+                        </ProtectedRoute>
+                      }
+                    />
+                  <Route path="profile" element={<Profile />} />
+                  
+                  {/* Admin Only Routes */}
+                  <Route path="admin/reports" element={
+                    <AdminRoute><Reports /></AdminRoute>
+                  } />
+                </Route>
 
-              {/* 404 */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+                {/* 404 */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </SocketProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
