@@ -164,10 +164,17 @@ const Register = () => {
     setIsLoading(false);
   };
 
-  const inputClassName = 'h-11 rounded-xl border-border/70 bg-background/70';
-  const iconInputClassName = `${inputClassName} pl-14`;
-  const passwordInputClassName = `${inputClassName} pl-14 pr-10`;
+  const inputClassName =
+    'h-11 rounded-xl border-border/70 !bg-[#151b24] !text-foreground placeholder:!text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0';
+  const iconInputClassName = `${inputClassName} pl-[3.25rem]`;
+  const passwordInputClassName = `${inputClassName} pl-[3.25rem] pr-10`;
   const trailingIconInputClassName = `${inputClassName} pr-10`;
+  const inputStyle = {
+    backgroundColor: '#151b24',
+    color: 'hsl(var(--foreground))',
+    WebkitTextFillColor: 'hsl(var(--foreground))',
+    caretColor: 'hsl(var(--foreground))',
+  };
 
   return (
     <div className="min-h-screen flex">
@@ -226,7 +233,7 @@ const Register = () => {
         >
           <div className="lg:hidden flex items-center gap-3 mb-6 justify-center">
             <img src="/logo.png" alt="HYB logo" className="w-9 h-9 object-contain" />
-            <span className="text-2xl font-display font-bold gradient-text">HYB</span>
+            <span className="text-2xl font-display font-bold gradient-text"></span>
           </div>
 
           <Card className="rounded-2xl border border-border/60 bg-card/95 shadow-2xl backdrop-blur">
@@ -301,11 +308,12 @@ const Register = () => {
                     <div className="space-y-1.5">
                       <Label htmlFor="fullName">Full Name</Label>
                       <div className="relative">
-                        <User className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <User className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="fullName"
                           name="fullName"
                           className={iconInputClassName}
+                          style={inputStyle}
                           placeholder="Enter name"
                           value={formData.fullName}
                           onChange={handleChange}
@@ -321,6 +329,7 @@ const Register = () => {
                         id="userName"
                         name="userName"
                         className={inputClassName}
+                        style={inputStyle}
                         placeholder="username"
                         value={formData.userName}
                         onChange={handleChange}
@@ -333,12 +342,13 @@ const Register = () => {
                   <div className="space-y-1.5">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">
-                      <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Mail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="email"
                         name="email"
                         type="email"
                         className={iconInputClassName}
+                        style={inputStyle}
                         placeholder="abc@gmail.com"
                         value={formData.email}
                         onChange={handleChange}
@@ -352,12 +362,13 @@ const Register = () => {
                     <div className="space-y-1.5">
                       <Label htmlFor="password">Password</Label>
                       <div className="relative">
-                        <Lock className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Lock className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="password"
                           name="password"
                           type={showPassword ? 'text' : 'password'}
                           className={passwordInputClassName}
+                          style={inputStyle}
                           placeholder="Create password"
                           value={formData.password}
                           onChange={handleChange}
@@ -382,6 +393,7 @@ const Register = () => {
                           name="confirmPassword"
                           type={showConfirmPassword ? 'text' : 'password'}
                           className={trailingIconInputClassName}
+                          style={inputStyle}
                           placeholder="Repeat password"
                           value={formData.confirmPassword}
                           onChange={handleChange}
@@ -407,6 +419,7 @@ const Register = () => {
                           id="branch"
                           name="branch"
                           className="h-9 text-sm"
+                          style={inputStyle}
                           placeholder="Branch"
                           value={formData.branch}
                           onChange={handleChange}
@@ -434,6 +447,7 @@ const Register = () => {
                           id="hostel"
                           name="hostel"
                           className="h-9 text-sm"
+                          style={inputStyle}
                           placeholder="Hostel"
                           value={formData.hostel}
                           onChange={handleChange}
@@ -478,7 +492,7 @@ const Register = () => {
                   <div className="space-y-1.5">
                     <Label htmlFor="verificationCode">Verification Code</Label>
                     <div className="relative">
-                      <ShieldCheck className="absolute left-5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <ShieldCheck className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="verificationCode"
                         value={verificationCode}
@@ -489,6 +503,7 @@ const Register = () => {
                           }
                         }}
                         className={iconInputClassName}
+                        style={inputStyle}
                         placeholder="Enter the 6-digit code"
                         disabled={isLoading}
                         autoComplete="one-time-code"
