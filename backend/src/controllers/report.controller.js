@@ -6,6 +6,7 @@ import ApiResponse from '../utils/ApiResponse.js';
 import { Notification } from "../models/notification.models.js";
 import {validateReport} from "../utils/reportValidatorAI.js"
 import { BLOCK_THRESHOLD} from "../constants.js";
+import { createAndEmitNotification, emitAdminNotificationCreated, emitNotificationCount } from "../utils/realtime.js";
 
 const notifyAdmins = async (report, reporter, reportedUser) => {
   const admins = await User.find({ role: "admin" }).select("_id");
@@ -24,11 +25,20 @@ const notifyAdmins = async (report, reporter, reportedUser) => {
     isRead: false,
   }));
 
-  await Notification.insertMany(notifications);
+  const createdNotifications = await Notification.insertMany(notifications);
+
+  for (const notification of createdNotifications) {
+    const hydratedNotification = await Notification.findById(notification._id)
+      .populate("request", "title status")
+      .lean();
+
+    emitAdminNotificationCreated(hydratedNotification);
+    await emitNotificationCount(notification.user);
+  }
 };
 
 const notifyReportedUser = async (userId, warningCount, isBlocked) => {
-  await Notification.create({
+  await createAndEmitNotification({
     user: userId,
     type: isBlocked ? "account_blocked" : "warning",
     title: isBlocked ? "Account Blocked" : "Account Warning",
@@ -255,7 +265,7 @@ const unblockUser = asyncHandler(async (req, res) => {
   await user.save();
 
   // Notify user about unblock
-  await Notification.create({
+  await createAndEmitNotification({
     user: userId,
     type: 'account_unblocked',
     title: 'Account Restored',
