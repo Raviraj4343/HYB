@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -9,7 +9,6 @@ import {
   Plus,
   Sparkles,
   TrendingUp,
-  UserRound,
   Zap
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -18,7 +17,6 @@ import api from '../../api/axios';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -49,12 +47,6 @@ const Dashboard = () => {
   }, []);
 
   const firstName = user?.fullName?.split(' ')[0] || 'Friend';
-  const profileCompletion = useMemo(() => {
-    const checks = [user?.fullName, user?.userName, user?.email, user?.branch, user?.year, user?.avatar];
-    const completed = checks.filter(Boolean).length;
-    return Math.round((completed / checks.length) * 100);
-  }, [user]);
-
   const overviewCards = [
     {
       label: 'Active Requests',
@@ -81,7 +73,7 @@ const Dashboard = () => {
       icon: TrendingUp,
       accent: 'from-emerald-500/20 to-green-500/5',
       iconBg: 'bg-emerald-500/15 text-emerald-300',
-      path: '/dashboard/profile',
+      path: '/dashboard/my-requests',
     },
   ];
 
@@ -111,11 +103,6 @@ const Dashboard = () => {
     'Keep your branch, year, and profile photo updated.',
     'Reply quickly in chats to build trust.',
   ];
-
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    return name.split(' ').map((part) => part[0]).join('').toUpperCase().slice(0, 2);
-  };
 
   return (
     <div className="space-y-8">
@@ -232,57 +219,6 @@ const Dashboard = () => {
           transition={{ duration: 0.4, delay: 0.15 }}
           className="space-y-6"
         >
-          <Card className="rounded-[1.75rem] border border-border/70 bg-card/95 shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-xl font-display">Your Profile</CardTitle>
-              <CardDescription>Keep your account complete and trusted.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-5 flex items-center gap-4">
-                <Avatar className="h-14 w-14 border border-border">
-                  <AvatarImage src={user?.avatar} alt={user?.fullName} />
-                  <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                    {getInitials(user?.fullName)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-foreground">{user?.fullName}</p>
-                  <p className="truncate text-sm text-muted-foreground">@{user?.userName || 'user'}</p>
-                </div>
-              </div>
-
-              <div className="mb-3 flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Profile completion</span>
-                <span className="font-medium text-foreground">{profileCompletion}%</span>
-              </div>
-              <div className="mb-5 h-2 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-[linear-gradient(90deg,#14b8a6,#38bdf8)]"
-                  style={{ width: `${profileCompletion}%` }}
-                />
-              </div>
-
-              <div className="space-y-3 text-sm">
-                {user?.branch && (
-                  <div className="flex items-center justify-between rounded-2xl bg-background/60 px-4 py-3">
-                    <span className="text-muted-foreground">Branch</span>
-                    <span className="font-medium text-foreground">{user.branch}</span>
-                  </div>
-                )}
-                {user?.year && (
-                  <div className="flex items-center justify-between rounded-2xl bg-background/60 px-4 py-3">
-                    <span className="text-muted-foreground">Year</span>
-                    <span className="font-medium text-foreground">Year {user.year}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between rounded-2xl bg-background/60 px-4 py-3">
-                  <span className="text-muted-foreground">Helped</span>
-                  <Badge className="rounded-full bg-emerald-500/12 text-emerald-300">{user?.helpCount || 0} times</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           <Card className="rounded-[1.75rem] border border-border/70 bg-[linear-gradient(135deg,rgba(250,204,21,0.12),rgba(251,146,60,0.06))] shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl font-display">
@@ -301,38 +237,6 @@ const Dashboard = () => {
           </Card>
         </motion.section>
       </div>
-
-      <motion.section
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
-      >
-        <Card className="rounded-[1.75rem] border border-border/70 bg-card/95 shadow-lg">
-          <CardHeader className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="text-xl font-display">Community Feed</CardTitle>
-              <CardDescription>Fresh activity will appear here as requests and chats grow.</CardDescription>
-            </div>
-            <Button variant="outline" asChild className="rounded-full">
-              <Link to="/dashboard/requests">
-                Browse Requests
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="p-8">
-            <div className="flex flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-border/80 bg-background/50 px-6 py-16 text-center">
-              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/10 text-primary">
-                <UserRound className="h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-display font-semibold text-foreground">Your workspace is ready</h3>
-              <p className="mt-3 max-w-md text-sm leading-7 text-muted-foreground">
-                Start by creating a request, helping someone from the feed, or opening your chats.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.section>
     </div>
   );
 };

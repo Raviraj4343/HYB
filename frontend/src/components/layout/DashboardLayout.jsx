@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   Bell,
   Flag,
   HandHeart,
@@ -61,6 +62,8 @@ const DashboardLayout = () => {
     );
     return match?.label || 'Dashboard';
   }, [location.pathname, unreadCount]);
+
+  const canGoBack = location.pathname !== '/dashboard';
 
   const isActive = (path) => {
     if (path === '/dashboard') return location.pathname === path;
@@ -243,7 +246,21 @@ const DashboardLayout = () => {
 
                 <div className="min-w-0">
                   <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Workspace</p>
-                  <h1 className="truncate text-2xl font-display font-bold text-foreground">{pageTitle}</h1>
+                  <div className="flex items-center gap-3">
+                    {canGoBack && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 rounded-full border border-border/70 bg-card/70 px-3 text-muted-foreground hover:text-foreground"
+                        onClick={() => navigate(-1)}
+                      >
+                        <ArrowLeft className="mr-1.5 h-4 w-4" />
+                        Back
+                      </Button>
+                    )}
+                    <h1 className="truncate text-2xl font-display font-bold text-foreground">{pageTitle}</h1>
+                  </div>
                 </div>
               </div>
 
