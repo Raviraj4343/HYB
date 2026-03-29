@@ -44,6 +44,16 @@ const sendPasswordResetCodeEmail = async (email, code) => {
   await sendMail({ to: email, subject, text, html });
 };
 
+const avatarUploadOptions = {
+  folder: "hyb/avatars",
+  width: 512,
+  height: 512,
+  crop: "fill",
+  gravity: "face",
+  quality: "auto:good",
+  fetch_format: "auto",
+};
+
 
 const registerUser = asyncHandler(async (req, res) => {
   if (!req.body) {
@@ -72,13 +82,13 @@ const registerUser = asyncHandler(async (req, res) => {
   let avatarUrl = null;
 
   if (req.file) {
-    const uploadedAvatar = await uploadOnCloudinary(req.file.path);
+    const uploadedAvatar = await uploadOnCloudinary(req.file.path, avatarUploadOptions);
 
-    if (!uploadedAvatar?.url) {
+    if (!uploadedAvatar?.secure_url) {
       throw new ApiError(500, "Avatar upload failed");
     }
 
-    avatarUrl = uploadedAvatar.url;
+    avatarUrl = uploadedAvatar.secure_url;
   }
 
   const { code, expires } = generateVerificationPayload();
@@ -312,9 +322,9 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   }
 
   if(req.file){
-    const uploadedAvatar = await uploadOnCloudinary(req.file.path);
+    const uploadedAvatar = await uploadOnCloudinary(req.file.path, avatarUploadOptions);
 
-    if(!uploadedAvatar?.url){
+    if(!uploadedAvatar?.secure_url){
       throw new ApiError(500, "Avatar upload failed");
     }
 
@@ -322,7 +332,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       await deleteFromCloudinary(user.avatar);
     }
 
-    updates.avatar = uploadedAvatar.url;
+    updates.avatar = uploadedAvatar.secure_url;
   }
 
 
