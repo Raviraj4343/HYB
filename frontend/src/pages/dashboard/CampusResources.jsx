@@ -436,116 +436,10 @@ const CampusResources = () => {
         </div>
       </section>
 
-      <section className="space-y-6">
-        {CATEGORY_OPTIONS.map((section) => {
-          const Icon = section.icon;
-          const items = groupedResources[section.value] || [];
-          const isSingleImageSection = SINGLE_IMAGE_CATEGORIES.has(section.value);
-          const hasExistingSingleItem = isSingleImageSection && items.length > 0;
-
-          return (
-            <Card id={`section-${section.value}`} key={section.value} className="overflow-hidden rounded-[1.8rem] border border-border/70 bg-card/80 shadow-[0_18px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:bg-[linear-gradient(180deg,rgba(8,15,28,0.94),rgba(8,12,22,0.92))]">
-              <CardContent className="p-0">
-                <div className={cn('border-b border-border/70 px-6 py-5 dark:border-white/10', `bg-gradient-to-r ${section.accent}`)}>
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-black/10 text-foreground shadow-sm dark:text-white">
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h2 className="text-2xl font-display font-semibold text-foreground dark:text-white">{section.title}</h2>
-                          <Badge className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
-                            {section.badge}
-                          </Badge>
-                        </div>
-                        <p className="mt-2 max-w-2xl text-sm leading-6 text-foreground/72 dark:text-white/68">
-                          {section.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    {isSuperAdmin && (
-                      <Button
-                        variant="outline"
-                        className="h-11 rounded-2xl border-primary/15 bg-background/80 px-4 shadow-sm dark:bg-white/[0.03]"
-                        onClick={() => {
-                          if (hasExistingSingleItem) {
-                            openEditDialog(items[0]);
-                            return;
-                          }
-                          openCreateDialog(section.value);
-                        }}
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        {hasExistingSingleItem ? `Edit ${section.title}` : `Add to ${section.title}`}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                <div className="p-6">
-                  {isSingleImageSection && (
-                    <div className="mb-5 rounded-[1.25rem] border border-primary/15 bg-primary/6 px-4 py-3 text-sm text-muted-foreground">
-                      This section is managed as a single visual notice. Upload one latest image and update that same entry whenever timing or holiday information changes.
-                    </div>
-                  )}
-                  {!isSingleImageSection && items.length > 0 && (
-                    <div className="mb-5 flex flex-wrap items-center gap-3 rounded-[1.35rem] border border-border/70 bg-background/70 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03]">
-                      <div className="text-sm font-medium text-foreground dark:text-white">
-                        {items.length} {items.length === 1 ? 'entry' : 'entries'} in this section
-                      </div>
-                      <div className="h-1 w-1 rounded-full bg-muted-foreground/50" />
-                      <div className="text-sm text-muted-foreground">
-                        Designed for quick browsing and clean campus information.
-                      </div>
-                    </div>
-                  )}
-                  {isLoading ? (
-                    <div className="rounded-[1.4rem] border border-dashed border-border/70 px-5 py-10 text-center text-muted-foreground">
-                      Loading resources...
-                    </div>
-                  ) : items.length === 0 ? (
-                    <div className="rounded-[1.4rem] border border-dashed border-border/70 px-5 py-10 text-center text-muted-foreground">
-                      No resources added in this section yet.
-                    </div>
-                  ) : (
-                    <div className="mb-4">
-                      {isSingleImageSection && items.length > 0 ? (
-                        <div className="rounded-[1.35rem] border border-border/70 bg-background/80 overflow-hidden">
-                          <img src={items[0].image} alt={items[0].title || section.title} className="w-full object-cover" />
-                        </div>
-                      ) : (
-                        <div className="rounded-[1.35rem] border border-border/70 bg-background/75 p-4 custom-scrollbar">
-                          <div className={cn(items.length > 6 ? 'max-h-[44rem] overflow-y-auto pr-2' : '')}>
-                            <div className="grid gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                              {items.map((resource) => (
-                                <ResourceCard
-                                  key={resource._id}
-                                  resource={resource}
-                                  section={section}
-                                  isSuperAdmin={isSuperAdmin}
-                                  openEditDialog={openEditDialog}
-                                  handleDelete={handleDelete}
-                                  formatDate={formatDate}
-                                  renderCategoryMeta={renderCategoryMeta}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </section>
+      {/* Sections removed: presenting only the category grid as requested */}
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => (!open ? closeDialog() : setIsDialogOpen(true))}>
-            <DialogContent id="campus-resource-dialog" className="max-h-[92vh] overflow-hidden rounded-[1.8rem] border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))] p-0 shadow-[0_30px_90px_rgba(15,23,42,0.18)] dark:bg-[linear-gradient(180deg,rgba(8,15,28,0.98),rgba(6,10,18,0.98))] sm:max-w-4xl">
+            <DialogContent id="campus-resource-dialog" className="ds-dialog max-h-[92vh] overflow-hidden rounded-[1.8rem] p-0 sm:max-w-4xl" role="dialog" aria-modal="true">
           <form onSubmit={handleSubmit}>
             <DialogHeader className="sticky top-0 z-10 border-b border-border/70 bg-background/92 px-6 py-5 backdrop-blur-xl dark:bg-[rgba(8,15,28,0.94)]">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -567,7 +461,7 @@ const CampusResources = () => {
               </div>
             </DialogHeader>
 
-            <div id="campus-resource-dialog-body" className="max-h-[calc(92vh-170px)] overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.06),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent)] px-6 py-6 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_22%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent)]">
+            <div id="campus-resource-dialog-body" className="dialog-body custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_22%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent)]">
               <div className="rounded-[1.7rem] border border-border/70 bg-background/55 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md dark:bg-white/[0.02]">
                 <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
                 <div className="custom-scrollbar box-scroll space-y-6 pr-2">
