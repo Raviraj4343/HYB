@@ -22,6 +22,11 @@ const messageSchema = new mongoose.Schema({
         type : String,
         default: null
     },
+    replyTo: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Message",
+        default: null
+    },
     isRead: {
         type: Boolean,
         default: false
