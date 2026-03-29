@@ -280,6 +280,22 @@
     @apply bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50 transition-colors;
   }
 
+  /* Force GPU compositing and improve text rendering on animated layers */
+  .force-3d {
+    transform: translateZ(0);
+    -webkit-font-smoothing: antialiased;
+    backface-visibility: hidden;
+    will-change: transform, opacity;
+  }
+
+  /* Mobile overlay blur transition support */
+  .mobile-overlay {
+    /* provide a fallback for browsers that don't animate via JS */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: backdrop-filter 220ms ease, -webkit-backdrop-filter 220ms ease, opacity 220ms ease, background-color 220ms ease;
+  }
+
   /* Empty state */
   .empty-state {
     @apply flex flex-col items-center justify-center py-16 px-8 text-center;

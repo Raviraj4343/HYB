@@ -229,10 +229,11 @@ const DashboardLayout = () => {
           {isMobileSidebarOpen && (
             <>
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 z-40 bg-black/55 backdrop-blur-sm lg:hidden"
+                initial={{ opacity: 0, backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
+                animate={{ opacity: 1, backdropFilter: 'blur(16px)', backgroundColor: 'rgba(2,6,23,0.72)' }}
+                exit={{ opacity: 0, backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+                className="fixed inset-0 z-40 lg:hidden mobile-overlay"
                 onClick={() => setIsMobileSidebarOpen(false)}
               />
               <motion.aside
@@ -240,7 +241,7 @@ const DashboardLayout = () => {
                 animate={{ x: 0 }}
                 exit={{ x: 320 }}
                 transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-                className="fixed inset-y-0 right-0 z-50 flex w-[320px] max-w-[92vw] flex-col border-l border-sidebar-border bg-[linear-gradient(180deg,rgba(17,24,39,0.98),rgba(17,24,39,0.95))] shadow-2xl backdrop-blur-2xl lg:hidden"
+                className="fixed inset-y-0 right-0 z-50 flex w-[320px] max-w-[92vw] flex-col border-l border-sidebar-border bg-[linear-gradient(180deg,rgba(15,23,42,1),rgba(15,23,42,0.985))] shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-3xl lg:hidden force-3d"
               >
                 <div className="flex items-center justify-between border-b border-sidebar-border/70 px-5 py-4">
                   <div>
@@ -254,13 +255,18 @@ const DashboardLayout = () => {
                     <X className="h-5 w-5" />
                   </button>
                 </div>
-                {sidebarContent(true)}
+                <div className="force-3d">{sidebarContent(true)}</div>
               </motion.aside>
             </>
           )}
         </AnimatePresence>
 
-        <div className="flex min-h-screen flex-1 flex-col">
+        <div
+          className={cn(
+            "flex min-h-screen flex-1 flex-col transition-all duration-200",
+            isMobileSidebarOpen && "pointer-events-none scale-[0.992] blur-[6px] brightness-[0.48] lg:pointer-events-auto lg:scale-100 lg:blur-0 lg:brightness-100"
+          )}
+        >
           <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 shadow-[0_10px_30px_rgba(0,0,0,0.08)] backdrop-blur-2xl">
             <div className="flex h-28 items-center justify-between px-5 sm:px-6 lg:h-32 lg:px-10">
               <div className="flex min-w-0 items-center gap-4">
