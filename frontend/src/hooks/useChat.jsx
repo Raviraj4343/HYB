@@ -24,7 +24,7 @@ export const useChat = (chatId, enabled = true) => {
     }
   }, [chatId, enabled]);
 
-  const sendMessage = useCallback(async (content, image = null) => {
+  const sendMessage = useCallback(async (content, image = null, replyTo = null) => {
     if (!chatId) return { success: false };
 
     try {
@@ -32,6 +32,9 @@ export const useChat = (chatId, enabled = true) => {
       formData.append('content', content);
       if (image) {
         formData.append('image', image);
+      }
+      if (replyTo) {
+        formData.append('replyTo', replyTo);
       }
 
       const response = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/chat/${chatId}/messages`, formData, {

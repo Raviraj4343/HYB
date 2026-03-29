@@ -44,6 +44,7 @@ const DashboardLayout = () => {
 
   const GLOBAL_CHAT_LAST_SEEN_KEY = 'globalChatLastSeenAt';
   const isCommunityChatPage = location.pathname.startsWith('/dashboard/community-chat');
+  const isDirectChatPage = /^\/dashboard\/chats\/[^/]+$/.test(location.pathname);
 
   const navItems = [
     { path: '/dashboard', icon: Home, label: 'Overview' },
@@ -458,7 +459,7 @@ const DashboardLayout = () => {
     </>
   );
 
-  if (isCommunityChatPage) {
+  if (isCommunityChatPage || isDirectChatPage) {
     return (
       <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(45,212,191,0.08),_transparent_28%),radial-gradient(circle_at_right,_rgba(59,130,246,0.08),_transparent_24%)] bg-background">
         <div className="relative min-h-screen px-3 py-3 sm:px-4 sm:py-4">
@@ -467,7 +468,7 @@ const DashboardLayout = () => {
             size="icon"
             variant="ghost"
             className="absolute right-4 top-4 z-20 h-12 w-12 rounded-2xl border border-border/70 bg-card/85 text-muted-foreground shadow-[0_10px_24px_rgba(0,0,0,0.14)] backdrop-blur-xl hover:border-primary/30 hover:bg-card hover:text-foreground"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(isDirectChatPage ? '/dashboard/chats' : '/dashboard')}
           >
             <X className="h-5 w-5" />
           </Button>
