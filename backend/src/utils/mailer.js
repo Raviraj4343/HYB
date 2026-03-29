@@ -1,5 +1,46 @@
 import nodemailer from 'nodemailer';
 
+const DEFAULT_MAIL_TIMEOUT_MS = Number(process.env.MAIL_TIMEOUT_MS) || 8000;
+const RESEND_API_URL = 'https://api.resend.com/emails';
+const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
+
+const getMailProvider = () => {
+  if (EMAIL_PROVIDER) return EMAIL_PROVIDER;
+  if (process.env.RESEND_API_KEY) return 'resend';
+  return 'smtp';
+};
+
+export const getActiveMailProvider = () => getMailProvider();
+
+export const getMailConfigurationStatus = () => {
+  const provider = getMailProvider();
+
+  if (provider === 'resend') {
+    const missing = [];
+    if (!process.env.RESEND_API_KEY) missing.push('RESEND_API_KEY');
+    if (!process.env.EMAIL_FROM && !process.env.RESEND_FROM_EMAIL) {
+      missing.push('EMAIL_FROM or RESEND_FROM_EMAIL');
+    }
+
+    return {
+      provider,
+      configured: missing.length === 0,
+      missing,
+    };
+  }
+
+  const missing = [];
+  if (!process.env.EMAIL_USER) missing.push('EMAIL_USER');
+  if (!process.env.EMAIL_PASS) missing.push('EMAIL_PASS');
+  if (!process.env.EMAIL_FROM) missing.push('EMAIL_FROM');
+
+  return {
+    provider,
+    configured: missing.length === 0,
+    missing,
+  };
+};
+
 const getMailConfig = () => {
   const host = process.env.EMAIL_HOST;
   const port = Number(process.env.EMAIL_PORT) || 587;
@@ -14,11 +55,14 @@ const getMailConfig = () => {
     host,
     port,
     secure: process.env.EMAIL_SECURE === 'true' || port === 465,
-    service: !host ? 'gmail' : undefined,
+    service: !host || host === 'smtp.gmail.com' ? 'gmail' : undefined,
     auth: {
       user,
       pass,
     },
+    connectionTimeout: DEFAULT_MAIL_TIMEOUT_MS,
+    greetingTimeout: DEFAULT_MAIL_TIMEOUT_MS,
+    socketTimeout: DEFAULT_MAIL_TIMEOUT_MS,
     tls: {
       minVersion: 'TLSv1.2',
     },
@@ -35,9 +79,78 @@ const getTransporter = () => {
   return transporter;
 };
 
-export const sendMail = async ({ to, subject, text, html }) => {
-  const from = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+const withTimeout = async (promise, timeoutMs, label) => {
+  let timer;
 
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const sendWithResend = async ({ to, subject, text, html }) => {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM || process.env.RESEND_FROM_EMAIL;
+
+  if (!apiKey) {
+    throw new Error('Resend email provider is not configured. Missing RESEND_API_KEY.');
+  }
+
+  if (!from) {
+    throw new Error('Resend email provider is not configured. Missing EMAIL_FROM or RESEND_FROM_EMAIL.');
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), DEFAULT_MAIL_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(RESEND_API_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from,
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        text,
+        html,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Resend API error ${response.status}: ${errorBody}`);
+    }
+
+    return response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+export const sendMail = async ({ to, subject, text, html }) => {
+  const provider = getMailProvider();
+
+  if (provider === 'resend') {
+    return withTimeout(
+      sendWithResend({ to, subject, text, html }),
+      DEFAULT_MAIL_TIMEOUT_MS,
+      'Resend email delivery'
+    );
+  }
+
+  const from = process.env.EMAIL_FROM || process.env.EMAIL_USER;
   const mailOptions = {
     from,
     to,
@@ -46,7 +159,11 @@ export const sendMail = async ({ to, subject, text, html }) => {
     html,
   };
 
-  return getTransporter().sendMail(mailOptions);
+  return withTimeout(
+    getTransporter().sendMail(mailOptions),
+    DEFAULT_MAIL_TIMEOUT_MS,
+    'SMTP email delivery'
+  );
 };
 
 export const buildAuthCodeEmail = ({

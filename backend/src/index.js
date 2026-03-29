@@ -7,12 +7,22 @@ import http from "http";
 import connectToDatabase from "./db/index.js";
 import { DB_NAME } from "./constants.js";
 import { initializeSocket } from "./socket/index.js";
+import { getActiveMailProvider, getMailConfigurationStatus } from "./utils/mailer.js";
 
 
 connectToDatabase()
 .then(() => {
     const server = http.createServer(app);
     initializeSocket(server);
+
+    const mailStatus = getMailConfigurationStatus();
+    if (mailStatus.configured) {
+        console.log(`Email provider ready: ${getActiveMailProvider()}`);
+    } else {
+        console.warn(
+            `Email provider "${mailStatus.provider}" is not fully configured. Missing: ${mailStatus.missing.join(", ")}`
+        );
+    }
 
     server.listen(process.env.PORT || 8000, () => {
         console.log(`${DB_NAME} server is running on port ${process.env.PORT}`);
