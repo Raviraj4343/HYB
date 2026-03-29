@@ -121,7 +121,12 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed';
       toast.error(message);
-      return { success: false, error: message };
+      return {
+        success: false,
+        error: message,
+        code: error.data?.code || error.response?.data?.code || null,
+        email: error.data?.data?.email || error.response?.data?.data?.email || null,
+      };
     }
   }, []);
 

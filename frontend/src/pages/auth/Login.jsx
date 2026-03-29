@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, verifyRegistration, resendVerificationCode } = useAuth();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -19,10 +19,17 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [unverifiedEmail, setUnverifiedEmail] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [isVerifyingEmail, setIsVerifyingEmail] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'email' && unverifiedEmail) {
+      setUnverifiedEmail('');
+      setVerificationCode('');
+    }
     // Clear error when user types
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
@@ -57,7 +64,34 @@ const Login = () => {
     
     if (result.success) {
       navigate('/dashboard');
+      return;
     }
+
+    if (result.code === 'EMAIL_NOT_VERIFIED') {
+      setUnverifiedEmail(result.email || formData.email.trim().toLowerCase());
+    }
+  };
+
+  const handleVerifyFromLogin = async () => {
+    if (!unverifiedEmail || !verificationCode.trim()) {
+      setErrors((prev) => ({ ...prev, verificationCode: 'Verification code is required' }));
+      return;
+    }
+
+    setIsVerifyingEmail(true);
+    const result = await verifyRegistration(unverifiedEmail, verificationCode.trim());
+    setIsVerifyingEmail(false);
+
+    if (result.success) {
+      navigate('/dashboard');
+    }
+  };
+
+  const handleResendFromLogin = async () => {
+    if (!unverifiedEmail) return;
+    setIsVerifyingEmail(true);
+    await resendVerificationCode(unverifiedEmail);
+    setIsVerifyingEmail(false);
   };
 
   return (
@@ -244,6 +278,60 @@ const Login = () => {
                     'Sign in'
                   )}
                 </Button>
+
+                {unverifiedEmail && (
+                  <div className="w-full rounded-2xl border border-primary/20 bg-primary/5 p-4 text-left">
+                    <p className="text-sm font-medium text-foreground">Email verification required</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Finish verifying <span className="font-medium text-foreground">{unverifiedEmail}</span> to sign in.
+                    </p>
+                    <div className="mt-3 space-y-3">
+                      <Input
+                        value={verificationCode}
+                        onChange={(e) => {
+                          setVerificationCode(e.target.value);
+                          if (errors.verificationCode) {
+                            setErrors((prev) => ({ ...prev, verificationCode: '' }));
+                          }
+                        }}
+                        placeholder="Enter verification code"
+                        className="h-11"
+                        autoComplete="one-time-code"
+                        disabled={isVerifyingEmail}
+                      />
+                      {errors.verificationCode && (
+                        <p className="text-xs text-destructive">{errors.verificationCode}</p>
+                      )}
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          className="flex-1 h-11 btn-gradient-primary"
+                          onClick={handleVerifyFromLogin}
+                          disabled={isVerifyingEmail}
+                        >
+                          {isVerifyingEmail ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Verifying...
+                            </>
+                          ) : (
+                            'Verify email'
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          className="h-11"
+                          onClick={handleResendFromLogin}
+                          disabled={isVerifyingEmail}
+                        >
+                          Resend
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="w-full flex items-center justify-between">
                   <p className="text-sm">
                     <Link
