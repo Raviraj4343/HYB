@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { ShieldBan, Loader2, MessageSquare, Reply, Send, Trash2, X } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Hash, Loader2, MessagesSquare, Reply, Send, ShieldBan, Trash2, Users, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGlobalChat } from '../../hooks/useChat';
 import api from '../../api/axios';
@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -21,9 +22,25 @@ const GlobalChat = () => {
   const GLOBAL_CHAT_LAST_SEEN_KEY = 'globalChatLastSeenAt';
 
   const canBlockUsers = user?.role === 'super_admin' || user?.role === 'admin';
+  const composerStyle = {
+    background: 'linear-gradient(180deg, rgba(15,23,42,0.96), rgba(17,24,39,0.92))',
+    color: '#e5eefb',
+    WebkitTextFillColor: '#e5eefb',
+    caretColor: '#f8fafc',
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const activeParticipants = useMemo(() => {
+    const seen = new Map();
+    messages.forEach((message) => {
+      if (message.sender?._id && !seen.has(message.sender._id)) {
+        seen.set(message.sender._id, message.sender);
+      }
+    });
+    return [...seen.values()].slice(0, 4);
   }, [messages]);
 
   useEffect(() => {
@@ -84,20 +101,79 @@ const GlobalChat = () => {
   };
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-8rem)] max-w-5xl flex-col">
-      <div className="mb-5 flex items-end justify-between gap-4">
-        <div>
-          <h1 className="flex items-center gap-3 text-3xl font-display font-bold">
-            <MessageSquare className="h-8 w-8" />
-            Community Chat
-          </h1>
-          <p className="mt-1 text-muted-foreground">Everyone on HYB can talk here in one shared conversation.</p>
+    <div className="relative mx-auto flex h-[calc(100vh-8rem)] max-w-6xl flex-col overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.08),transparent_24%),linear-gradient(180deg,rgba(7,12,20,0.98),rgba(11,18,32,0.98))] p-3 sm:p-4">
+      <div className="pointer-events-none absolute left-0 top-0 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-56 w-56 rounded-full bg-sky-500/10 blur-3xl" />
+
+      <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-[linear-gradient(135deg,rgba(16,185,129,0.12),rgba(59,130,246,0.08)_42%,rgba(15,23,42,0.88))] px-6 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.24)] backdrop-blur-xl">
+          <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-primary/12 blur-3xl" />
+          <div className="pointer-events-none absolute bottom-0 left-12 h-20 w-32 rounded-full bg-sky-500/10 blur-2xl" />
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/15">
+              <MessagesSquare className="h-7 w-7" />
+            </div>
+            <div className="relative min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-3xl font-display font-semibold tracking-tight">Community Chat</h1>
+                <Badge className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
+                  Public Room
+                </Badge>
+              </div>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                A shared campus conversation space for quick updates, replies, and open discussion across HYB.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-[linear-gradient(180deg,rgba(10,15,28,0.94),rgba(15,23,42,0.84))] px-5 py-5 shadow-[0_16px_36px_rgba(0,0,0,0.2)] backdrop-blur-xl">
+          <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-primary/10 blur-2xl" />
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Users className="h-4 w-4 text-primary" />
+            Active Voices
+          </div>
+          <div className="mt-4 flex items-center gap-3">
+            <div className="flex -space-x-3">
+              {activeParticipants.length > 0 ? (
+                activeParticipants.map((participant) => (
+                  <Avatar key={participant._id} className="h-11 w-11 border-2 border-background shadow-sm">
+                    <AvatarImage src={participant.avatar} alt={participant.fullName} />
+                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                      {getInitials(participant.fullName)}
+                    </AvatarFallback>
+                  </Avatar>
+                ))
+              ) : (
+                <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-background bg-muted text-muted-foreground">
+                  <Users className="h-4 w-4" />
+                </div>
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="text-lg font-display font-semibold">{activeParticipants.length || 0}</div>
+              <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">recent participants</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <Card className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.8rem] border border-border/70 bg-card/90">
+      <Card className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.8rem] border border-white/10 bg-[linear-gradient(180deg,rgba(7,12,20,0.94),rgba(12,18,32,0.95))] shadow-[0_24px_54px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.1),transparent_18%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent_30%)]" />
         <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-          <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
+          <div className="border-b border-white/10 bg-white/[0.03] px-5 py-4 backdrop-blur-md">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Hash className="h-4 w-4 text-primary" />
+                general
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {messages.length} messages
+              </div>
+            </div>
+          </div>
+
+          <div className="relative flex-1 space-y-5 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_28%),linear-gradient(180deg,rgba(7,12,20,0.3),rgba(7,12,20,0.06))] px-5 py-5">
             {isLoading && messages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -115,7 +191,7 @@ const GlobalChat = () => {
 
                 return (
                   <div key={message._id} className="group flex gap-3">
-                    <Avatar className="mt-1 h-11 w-11 shrink-0 border border-border/70">
+                    <Avatar className="mt-1 h-11 w-11 shrink-0 border border-border/70 shadow-sm">
                       <AvatarImage src={message.sender?.avatar} alt={message.sender?.fullName} />
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                         {getInitials(message.sender?.fullName)}
@@ -131,7 +207,12 @@ const GlobalChat = () => {
                         </span>
                       </div>
 
-                      <div className="mt-2 rounded-2xl border border-border/70 bg-background/60 px-4 py-3">
+                      <div className={cn(
+                        "mt-2 rounded-[1.35rem] border px-4 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.16)] backdrop-blur-md",
+                        isOwn
+                          ? "border-primary/20 bg-[linear-gradient(135deg,rgba(20,184,166,0.16),rgba(59,130,246,0.12))]"
+                          : "border-white/10 bg-[linear-gradient(180deg,rgba(17,24,39,0.94),rgba(10,15,28,0.92))]"
+                      )}>
                         {message.replyTo && (
                           <div className="mb-3 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-sm">
                             <div className="font-medium text-primary">
@@ -196,7 +277,7 @@ const GlobalChat = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="border-t border-border/70 p-4">
+          <div className="border-t border-white/10 bg-[linear-gradient(180deg,rgba(9,15,27,0.88),rgba(7,12,20,0.98))] p-4 backdrop-blur-xl">
             {replyTo && (
               <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
                 <div className="min-w-0">
@@ -218,16 +299,20 @@ const GlobalChat = () => {
             )}
 
             <form onSubmit={handleSend} className="flex items-center gap-3">
-              <Input
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                placeholder="Type a message for everyone..."
-                className="h-12 flex-1 rounded-2xl"
-                disabled={isSending}
-              />
+              <div className="relative flex-1">
+                <div className="pointer-events-none absolute inset-0 rounded-2xl bg-[linear-gradient(135deg,rgba(20,184,166,0.08),rgba(59,130,246,0.06))]" />
+                <Input
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  placeholder="Message the whole community..."
+                  className="relative h-[3.25rem] flex-1 rounded-2xl border-white/10 bg-transparent px-5 text-[15px] font-medium !text-slate-100 placeholder:!text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_0_0_1px_rgba(15,23,42,0.25)] focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
+                  style={composerStyle}
+                  disabled={isSending}
+                />
+              </div>
               <Button
                 type="submit"
-                className={cn("h-12 rounded-2xl px-5 btn-gradient-primary", isSending && "opacity-80")}
+                className={cn("h-[3.25rem] min-w-[3.25rem] rounded-2xl px-5 btn-gradient-primary shadow-[0_12px_28px_rgba(20,184,166,0.24)]", isSending && "opacity-80")}
                 disabled={isSending || !messageText.trim()}
               >
                 {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}

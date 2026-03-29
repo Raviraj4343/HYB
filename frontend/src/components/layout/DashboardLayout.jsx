@@ -7,6 +7,7 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  MessagesSquare,
   Moon,
   Plus,
   Search,
@@ -380,10 +381,13 @@ const DashboardLayout = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative h-12 w-12 rounded-[1.1rem] border border-border/70 bg-card/80 shadow-sm"
+                  className={cn(
+                    "relative h-12 w-12 rounded-[1.1rem] border border-border/70 bg-card/80 shadow-sm",
+                    location.pathname.startsWith('/dashboard/community-chat') && "border-primary/30 bg-primary/10 text-primary"
+                  )}
                   onClick={() => navigate('/dashboard/community-chat')}
                 >
-                  <MessageSquare className="h-5 w-5" />
+                  <MessagesSquare className="h-5 w-5" />
                   {communityUnreadCount > 0 && (
                     <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
                       {communityUnreadCount > 9 ? '9+' : communityUnreadCount}
