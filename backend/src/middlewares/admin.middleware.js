@@ -9,12 +9,23 @@ const isAdmin = (req, res, next) => {
     return next(new ApiError(401, "Unauthorized"));
   }
 
-  // Adjust role logic if needed
-  if (req.user.role !== "admin") {
+  if (!["admin", "super_admin"].includes(req.user.role)) {
     return next(new ApiError(403, "Admin access only"));
   }
 
   next();
 };
 
-export { isAdmin };
+const isSuperAdmin = (req, res, next) => {
+  if (!req.user) {
+    return next(new ApiError(401, "Unauthorized"));
+  }
+
+  if (!["super_admin", "admin"].includes(req.user.role)) {
+    return next(new ApiError(403, "Super admin access only"));
+  }
+
+  next();
+};
+
+export { isAdmin, isSuperAdmin };
