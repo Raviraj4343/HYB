@@ -55,6 +55,17 @@ const campusResourceSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    attachmentType: {
+      type: String,
+      enum: ["image", "pdf", null],
+      default: null,
+    },
+    attachmentName: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: [200, "Attachment name cannot exceed 200 characters"],
+    },
     sortOrder: {
       type: Number,
       default: 0,
