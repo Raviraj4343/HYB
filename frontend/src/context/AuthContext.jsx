@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }) => {
       toast.success('Email verified successfully');
       return { success: true, user: verifiedUser };
     } catch (error) {
-      const message = error.response?.data?.message || error.message || 'Verification failed';
+      const message = error.data?.message || error.response?.data?.message || error.message || 'Verification failed';
       toast.error(message);
       return { success: false, error: message };
     }
@@ -103,9 +103,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.post('/auth/resend-verification-code', { email });
       toast.success(response.data.message || 'Verification code sent');
-      return { success: true };
+      return { success: true, message: response.data.message || 'Verification code sent' };
     } catch (error) {
-      const message = error.response?.data?.message || error.message || 'Failed to resend code';
+      const message = error.data?.message || error.response?.data?.message || error.message || 'Failed to resend code';
       toast.error(message);
       return { success: false, error: message };
     }
@@ -124,7 +124,7 @@ export const AuthProvider = ({ children }) => {
       toast.success(`Welcome back, ${loggedInUser.fullName}!`);
       return { success: true, user: loggedInUser };
     } catch (error) {
-      const message = error.response?.data?.message || 'Login failed';
+      const message = error.data?.message || error.response?.data?.message || error.message || 'Login failed';
       toast.error(message);
       return {
         success: false,
@@ -166,7 +166,7 @@ export const AuthProvider = ({ children }) => {
       toast.success('Avatar updated successfully');
       return { success: true, user: updatedUser };
     } catch (error) {
-      const message = error.response?.data?.message || 'Avatar upload failed';
+      const message = error.data?.message || error.response?.data?.message || error.message || 'Avatar upload failed';
       toast.error(message);
       return { success: false, error: message };
     }
@@ -190,7 +190,7 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true, user: updatedUser };
     } catch (error) {
-      const message = error.response?.data?.message || 'Profile update failed';
+      const message = error.data?.message || error.response?.data?.message || error.message || 'Profile update failed';
       toast.error(message);
       return { success: false, error: message };
     }

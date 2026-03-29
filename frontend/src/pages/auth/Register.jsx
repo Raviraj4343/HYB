@@ -44,6 +44,7 @@ const Register = () => {
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [errors, setErrors] = useState({});
+  const [verificationNotice, setVerificationNotice] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -137,6 +138,17 @@ const Register = () => {
     if (result.success) {
       setPendingEmail(result.email || payload.email);
       setStage('verify');
+      setVerificationNotice(
+        result.emailSent === false
+          ? {
+              tone: 'warning',
+              message: 'We could not send your verification code yet. Use Resend code after fixing the backend email service.',
+            }
+          : {
+              tone: 'success',
+              message: 'Verification code sent. Check your inbox and enter the 6-digit code below.',
+            }
+      );
     }
   };
 
@@ -160,8 +172,19 @@ const Register = () => {
   const handleResend = async () => {
     if (!pendingEmail) return;
     setIsLoading(true);
-    await resendVerificationCode(pendingEmail);
+    const result = await resendVerificationCode(pendingEmail);
     setIsLoading(false);
+    setVerificationNotice(
+      result.success
+        ? {
+            tone: 'success',
+            message: result.message || 'Verification code sent. Check your inbox.',
+          }
+        : {
+            tone: 'warning',
+            message: result.error || 'We could not resend the verification code right now.',
+          }
+    );
   };
 
   const inputClassName =
@@ -495,6 +518,18 @@ const Register = () => {
             ) : (
               <form onSubmit={handleVerify}>
                 <CardContent className="space-y-4">
+                  {verificationNotice?.message && (
+                    <div
+                      className={
+                        verificationNotice.tone === 'warning'
+                          ? 'rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm text-amber-100'
+                          : 'rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 text-sm text-emerald-100'
+                      }
+                    >
+                      {verificationNotice.message}
+                    </div>
+                  )}
+
                   <div className="rounded-2xl border border-primary/15 bg-primary/5 p-4">
                     <p className="text-sm text-muted-foreground">Verification code sent to</p>
                     <p className="text-base font-medium mt-1">{pendingEmail}</p>

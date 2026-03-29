@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import ApiError from "./utils/ApiError.js";
 
 const app = express();
 
@@ -60,5 +61,20 @@ app.use("/api/v1/chat", chatRouter);
 app.use("/api/v1/notification", notificationRouter);
 app.use("/api/v1/report", reportRouter);
 app.use("/api/v1/user", userRouter);
+
+app.use((err, req, res, next) => {
+  const statusCode = err instanceof ApiError ? err.statusCode : err.statusCode || 500;
+  const message = err?.message || "Internal server error";
+
+  if (statusCode >= 500) {
+    console.error("Unhandled application error:", err);
+  }
+
+  res.status(statusCode).json({
+    success: false,
+    message,
+    statusCode,
+  });
+});
 
 export default app;
