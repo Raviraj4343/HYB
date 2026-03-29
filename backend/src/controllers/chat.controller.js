@@ -1,5 +1,6 @@
 import {Chat} from '../models/chat.models.js';
 import {Message }from '../models/message.models.js';
+import { GlobalMessage } from '../models/globalMessage.models.js';
 import {User} from '../models/user.models.js';
 import {Notification} from '../models/notification.models.js';
 import asyncHandler from '../utils/asyncHandler.js';
@@ -11,6 +12,8 @@ import {
   emitChatListRefresh,
   emitChatMessageCreated,
   emitChatMessageDeleted,
+  emitGlobalChatMessageCreated,
+  emitGlobalChatMessageDeleted,
 } from '../utils/realtime.js';
 
 
@@ -193,7 +196,7 @@ const getMessages = asyncHandler(async (req, res) => {
 });
 
 const deleteMessage = asyncHandler(async (req, res) => {
-    const { messageId} = req.params;
+    const { id: chatId, messageId} = req.params;
     const message =await Message.findById(messageId);
     if(!message){
         throw new ApiError(404, "Message not found");
@@ -225,10 +228,156 @@ const deleteMessage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { messageId }, "message deleted successfully"));
 });
 
+const getGlobalMessages = asyncHandler(async (req, res) => {
+  const page = Math.max(parseInt(req.query.page) || 1, 1);
+  const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+  const skip = (page - 1) * limit;
+
+  const [messages, total] = await Promise.all([
+    GlobalMessage.find({})
+      .populate('sender', 'fullName userName avatar role')
+      .populate({
+        path: 'replyTo',
+        populate: {
+          path: 'sender',
+          select: 'fullName userName avatar role',
+        },
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    GlobalMessage.countDocuments({}),
+  ]);
+
+  const sanitizedMessages = messages.map((msg) => {
+    if (msg.isDeleted) {
+      return {
+        _id: msg._id,
+        sender: msg.sender,
+        replyTo: msg.replyTo,
+        isDeleted: true,
+        deletedAt: msg.deletedAt,
+        createdAt: msg.createdAt,
+      };
+    }
+
+    return msg;
+  });
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        messages: sanitizedMessages.reverse(),
+        pagination: {
+          total,
+          page,
+          pages: Math.ceil(total / limit),
+        },
+      },
+      'Global messages retrieved successfully'
+    )
+  );
+});
+
+const getGlobalUnreadCount = asyncHandler(async (req, res) => {
+  const since = req.query.since ? new Date(req.query.since) : null;
+
+  if (!since || Number.isNaN(since.getTime())) {
+    return res.status(200).json(
+      new ApiResponse(200, { unreadCount: 0 }, 'Global unread count retrieved successfully')
+    );
+  }
+
+  const unreadCount = await GlobalMessage.countDocuments({
+    sender: { $ne: req.user._id },
+    isDeleted: false,
+    createdAt: { $gt: since },
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, { unreadCount }, 'Global unread count retrieved successfully')
+  );
+});
+
+const sendGlobalMessage = asyncHandler(async (req, res) => {
+  const { content, replyTo } = req.body;
+  const trimmedContent = content?.trim();
+
+  if (!trimmedContent) {
+    throw new ApiError(400, 'Message content is required');
+  }
+
+  let replyMessage = null;
+  if (replyTo) {
+    replyMessage = await GlobalMessage.findById(replyTo)
+      .populate('sender', 'fullName userName avatar role');
+
+    if (!replyMessage) {
+      throw new ApiError(404, 'Reply target not found');
+    }
+  }
+
+  const message = await GlobalMessage.create({
+    sender: req.user._id,
+    content: trimmedContent,
+    replyTo: replyMessage?._id || null,
+  });
+
+  await message.populate('sender', 'fullName userName avatar role');
+  if (replyMessage) {
+    await message.populate({
+      path: 'replyTo',
+      populate: {
+        path: 'sender',
+        select: 'fullName userName avatar role',
+      },
+    });
+  }
+
+  emitGlobalChatMessageCreated(message);
+
+  return res.status(201).json(
+    new ApiResponse(201, { message }, 'Global message sent successfully')
+  );
+});
+
+const deleteGlobalMessage = asyncHandler(async (req, res) => {
+  const { messageId } = req.params;
+  const message = await GlobalMessage.findById(messageId);
+
+  if (!message) {
+    throw new ApiError(404, 'Message not found');
+  }
+
+  if (message.sender.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, 'You can only delete your own message');
+  }
+
+  if (message.isDeleted) {
+    throw new ApiError(400, 'Message already deleted');
+  }
+
+  message.isDeleted = true;
+  message.deletedAt = new Date();
+  message.content = null;
+
+  await message.save();
+  emitGlobalChatMessageDeleted(message._id, message.deletedAt);
+
+  return res.status(200).json(
+    new ApiResponse(200, { messageId: message._id }, 'Global message deleted successfully')
+  );
+});
+
 export {
     getMyChats,
     getChatById,
     sendMessage,
     getMessages,
-    deleteMessage
+    deleteMessage,
+    getGlobalMessages,
+    getGlobalUnreadCount,
+    sendGlobalMessage,
+    deleteGlobalMessage
 }
