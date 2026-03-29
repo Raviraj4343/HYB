@@ -38,6 +38,7 @@ import UserSearch from "./pages/dashboard/UserSearch";
 import UserProfile from "./pages/dashboard/UserProfile";
 import Reports from "./pages/dashboard/Reports";
 import CreateReport from "./pages/dashboard/CreateReport";
+import CampusResources from "./pages/dashboard/CampusResources";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +74,7 @@ const App = () => (
                   <Route path="chats/:id" element={<ChatRoom />} />
                   <Route path="users" element={<UserSearch />} />
                   <Route path="users/:userName" element={<UserProfile />} />
+                  <Route path="campus-resources" element={<CampusResources />} />
                   <Route
                       path="report"
                       element={
