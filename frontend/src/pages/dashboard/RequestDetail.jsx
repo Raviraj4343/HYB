@@ -43,6 +43,9 @@ const RequestDetail = () => {
 
   const isOwner = user?._id === request?.requestedBy?._id;
   const isHelper = user?._id === request?.acceptedHelper?._id;
+  const hasAlreadyResponded = responses.some(
+    (response) => response.responder?._id === user?._id || response.responder === user?._id
+  );
 
   useEffect(() => {
     fetchRequestDetails();
@@ -269,14 +272,23 @@ const RequestDetail = () => {
               )}
 
               {/* Helper Actions */}
-              {!isOwner && request.status === 'open' && (
-                <div className="pt-4 border-t">
-                  <Button className="btn-gradient-primary w-full" onClick={handleAcceptRequest}>
-                    <HandHeart className="w-4 h-4 mr-2" />
-                    I Can Help!
-                  </Button>
-                </div>
-              )}
+                {!isOwner && request.status === 'open' && (
+                  <div className="pt-4 border-t">
+                    <Button
+                      className="btn-gradient-primary w-full"
+                      onClick={handleAcceptRequest}
+                      disabled={hasAlreadyResponded}
+                    >
+                      <HandHeart className="w-4 h-4 mr-2" />
+                      {hasAlreadyResponded ? 'Response Already Sent' : 'I Can Help!'}
+                    </Button>
+                    {hasAlreadyResponded && (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        You have already responded to this request.
+                      </p>
+                    )}
+                  </div>
+                )}
             </CardContent>
           </Card>
 
@@ -324,15 +336,16 @@ const RequestDetail = () => {
                 {!isOwner && request.status === 'open' && (
                   <div className="pt-4 border-t">
                     <Textarea
-                      placeholder="Write your response..."
+                      placeholder={hasAlreadyResponded ? 'You have already responded to this request.' : 'Write your response...'}
                       value={responseText}
                       onChange={(e) => setResponseText(e.target.value)}
                       rows={3}
                       className="mb-3"
+                      disabled={hasAlreadyResponded}
                     />
                     <Button 
                       onClick={handleSubmitResponse}
-                      disabled={isSubmittingResponse || !responseText.trim()}
+                      disabled={hasAlreadyResponded || isSubmittingResponse || !responseText.trim()}
                       className="gap-2"
                     >
                       {isSubmittingResponse ? (
@@ -340,7 +353,7 @@ const RequestDetail = () => {
                       ) : (
                         <Send className="w-4 h-4" />
                       )}
-                      Send Response
+                      {hasAlreadyResponded ? 'Response Already Sent' : 'Send Response'}
                     </Button>
                   </div>
                 )}
