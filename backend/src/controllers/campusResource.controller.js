@@ -11,7 +11,17 @@ const resourceUploadOptions = {
   fetch_format: "auto",
 };
 
+const SINGLE_IMAGE_CATEGORIES = ["bus_timing", "holiday_notice"];
+const CATEGORY_DEFAULT_TITLES = {
+  faculty_contacts: "Faculty Contact",
+  hostel_updates: "Hostel Update",
+  bus_timing: "Bus Timing Notice",
+  holiday_notice: "Holiday Notice",
+  campus_news: "Campus News",
+};
+
 const normalizeOptionalString = (value) => (typeof value === "string" ? value.trim() : "");
+const isPdfUpload = (file) => file?.mimetype === "application/pdf";
 
 const buildGroupedResources = (resources) =>
   CAMPUS_RESOURCE_CATEGORIES.reduce((acc, category) => {
@@ -64,22 +74,38 @@ const createCampusResource = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid campus resource category");
   }
 
+  if (SINGLE_IMAGE_CATEGORIES.includes(category)) {
+    const existingResource = await CampusResource.findOne({ category });
+    if (existingResource) {
+      throw new ApiError(400, "This section supports only one uploaded notice. Please edit the existing entry instead.");
+    }
+  }
+
   let imageUrl = null;
+  let attachmentType = null;
+  let attachmentName = "";
   if (req.file?.path) {
     const uploaded = await uploadOnCloudinary(req.file.path, resourceUploadOptions);
     imageUrl = uploaded?.secure_url || null;
+    attachmentType = isPdfUpload(req.file) ? "pdf" : "image";
+    attachmentName = req.file.originalname || "";
   }
+
+  const normalizedTitle = normalizeOptionalString(title) || CATEGORY_DEFAULT_TITLES[category];
+  const normalizedDescription = normalizeOptionalString(description) || `${CATEGORY_DEFAULT_TITLES[category]} uploaded for students.`;
 
   const resource = await CampusResource.create({
     category,
-    title,
-    description,
+    title: normalizedTitle,
+    description: normalizedDescription,
     contactName: normalizeOptionalString(contactName),
     phoneNumber: normalizeOptionalString(phoneNumber),
     location: normalizeOptionalString(location),
     externalLink: normalizeOptionalString(externalLink),
     effectiveDate: effectiveDate ? new Date(effectiveDate) : null,
     image: imageUrl,
+    attachmentType,
+    attachmentName,
     sortOrder: Number(sortOrder) || 0,
     createdBy: req.user._id,
     updatedBy: req.user._id,
@@ -117,6 +143,18 @@ const updateCampusResource = asyncHandler(async (req, res) => {
     if (!CAMPUS_RESOURCE_CATEGORIES.includes(category)) {
       throw new ApiError(400, "Invalid campus resource category");
     }
+
+    if (SINGLE_IMAGE_CATEGORIES.includes(category) && category !== resource.category) {
+      const existingResource = await CampusResource.findOne({
+        category,
+        _id: { $ne: resource._id },
+      });
+
+      if (existingResource) {
+        throw new ApiError(400, "This section supports only one uploaded notice. Please edit the existing entry instead.");
+      }
+    }
+
     resource.category = category;
   }
 
@@ -136,6 +174,8 @@ const updateCampusResource = asyncHandler(async (req, res) => {
   if (removeImage === "true" && resource.image) {
     await deleteFromCloudinary(resource.image);
     resource.image = null;
+    resource.attachmentType = null;
+    resource.attachmentName = "";
   }
 
   if (req.file?.path) {
@@ -145,7 +185,14 @@ const updateCampusResource = asyncHandler(async (req, res) => {
         await deleteFromCloudinary(resource.image);
       }
       resource.image = uploaded.secure_url;
+      resource.attachmentType = isPdfUpload(req.file) ? "pdf" : "image";
+      resource.attachmentName = req.file.originalname || "";
     }
+  }
+
+  if (SINGLE_IMAGE_CATEGORIES.includes(resource.category)) {
+    resource.title = normalizeOptionalString(resource.title) || CATEGORY_DEFAULT_TITLES[resource.category];
+    resource.description = normalizeOptionalString(resource.description) || `${CATEGORY_DEFAULT_TITLES[resource.category]} uploaded for students.`;
   }
 
   resource.updatedBy = req.user._id;
