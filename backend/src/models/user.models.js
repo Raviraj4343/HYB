@@ -82,9 +82,20 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+
+  blockedUntil: {
+    type: Date,
+    default: null
+  },
   
   blockReason: {
     type: String,
+    default: null
+  },
+
+  blockedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
     default: null
   },
   
@@ -165,6 +176,7 @@ userSchema.methods.incrementWarning = async function(reportId = null) {
   if (this.warningCount >= BLOCK_THRESHOLD && !this.isBlocked) {
     this.isBlocked = true;
     this.blockedAt = new Date();
+    this.blockedUntil = null;
     this.blockReason = 'Automatically blocked due to excessive reports';
   }
   
@@ -179,7 +191,9 @@ userSchema.methods.incrementWarning = async function(reportId = null) {
 userSchema.methods.unblockUser = async function() {
   this.isBlocked = false;
   this.blockedAt = null;
+  this.blockedUntil = null;
   this.blockReason = null;
+  this.blockedBy = null;
   // Optionally reset warning count or keep history
   // this.warningCount = 0;
   
