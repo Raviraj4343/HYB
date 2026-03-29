@@ -300,6 +300,8 @@ const DashboardLayout = () => {
                 '/dashboard/my-requests',
                 '/dashboard/chats',
                 '/dashboard/notifications',
+                '/dashboard/users',
+                '/dashboard/campus-resources',
               ]);
 
               return !hiddenMobilePaths.has(item.path);

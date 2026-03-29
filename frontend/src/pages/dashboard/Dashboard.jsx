@@ -6,7 +6,9 @@ import {
   Plus,
   Sparkles,
   Zap,
-  Camera
+  Camera,
+  Users,
+  BookOpenText,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
@@ -137,6 +139,25 @@ const Dashboard = () => {
     quickActions[0] ? { ...quickActions[0], kind: 'action' } : null,
     overviewCards[1] ? { ...overviewCards[1], kind: 'live' } : null,
     quickActions[1] ? { ...quickActions[1], kind: 'action' } : null,
+    // Add People and Campus Resources as dashboard tiles (same compact format)
+    {
+      title: 'People',
+      description: 'Find and message students and staff',
+      icon: Users,
+      accent: 'from-indigo-500/20 to-violet-500/5',
+      iconBg: 'bg-indigo-500/15 text-indigo-300',
+      path: '/dashboard/users',
+      kind: 'action',
+    },
+    {
+      title: 'Campus Resources',
+      description: 'Quick access to campus resources',
+      icon: BookOpenText,
+      accent: 'from-emerald-500/20 to-teal-500/5',
+      iconBg: 'bg-emerald-500/15 text-emerald-300',
+      path: '/dashboard/campus-resources',
+      kind: 'action',
+    },
   ].filter(Boolean);
 
   const tileMotion = {
