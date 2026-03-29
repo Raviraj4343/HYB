@@ -20,7 +20,7 @@ const AdminRoute = ({ children }) => {
   }
 
   // Logged in but not admin/moderator → go to dashboard
-  if (user.role !== 'admin' && user.role !== 'moderator') {
+  if (user.role !== 'admin' && user.role !== 'moderator' && user.role !== 'super_admin') {
     return <Navigate to="/dashboard" replace />;
   }
 

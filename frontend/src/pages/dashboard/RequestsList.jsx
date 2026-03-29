@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../../api/axios';
 import { useSocket } from '../../context/SocketContext';
+import { useAuth } from '../../context/AuthContext';
 import { 
   HelpCircle, Search, Filter, Clock, MapPin, 
   MessageSquare, Phone, ChevronRight, Loader2, 
-  AlertCircle, RefreshCw
+  AlertCircle, RefreshCw, Trash2
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,12 +45,15 @@ const URGENCY_LEVELS = [
 ];
 
 const RequestsList = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { socket } = useSocket();
+  const canModerateRequests = user?.role === 'super_admin' || user?.role === 'admin';
   
   const category = searchParams.get('category') || 'all';
   const urgency = searchParams.get('urgency') || 'all';
@@ -134,6 +138,27 @@ const RequestsList = () => {
     req.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     req.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleAdminDelete = async (event, requestId, requestTitle) => {
+    event.stopPropagation();
+    event.preventDefault();
+
+    const reason = window.prompt(`Reason for deleting "${requestTitle}"?`, 'Violates platform guidelines');
+    if (!reason) return;
+
+    const confirmed = window.confirm(`Delete "${requestTitle}" permanently?`);
+    if (!confirmed) return;
+
+    try {
+      await api.delete(`/req/admin/${requestId}`, {
+        data: { reason },
+      });
+      setRequests((prev) => prev.filter((item) => item._id !== requestId));
+    } catch (err) {
+      const message = err.response?.data?.message || err.message || 'Failed to delete request';
+      setError(message);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -237,9 +262,22 @@ const RequestsList = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
               >
-                <Link to={`/dashboard/requests/${request._id}`}>
-                  <Card className="glass-card hover-lift cursor-pointer group">
-                    <CardContent className="p-5">
+                <Card
+                  className="glass-card hover-lift group relative cursor-pointer"
+                  onClick={() => navigate(`/dashboard/requests/${request._id}`)}
+                >
+                  {canModerateRequests && (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="absolute right-4 top-4 z-10 h-9 w-9 rounded-full border border-destructive/20 bg-background/85 text-destructive hover:bg-destructive/10"
+                      onClick={(event) => handleAdminDelete(event, request._id, request.title)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <CardContent className="p-5">
                       <div className="flex items-start gap-4">
                         {/* Category Icon */}
                         <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center text-2xl shrink-0">
@@ -311,9 +349,8 @@ const RequestsList = () => {
                           </div>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                  </CardContent>
+                </Card>
               </motion.div>
             ))}
           </AnimatePresence>
