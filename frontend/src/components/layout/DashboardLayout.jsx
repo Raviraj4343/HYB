@@ -20,8 +20,10 @@ import {
 import { useMemo, useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../hooks/useNotifications';
+import api from '../../api/axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -31,11 +33,15 @@ import { cn } from '@/lib/utils';
 
 const DashboardLayout = () => {
   const { user, logout } = useAuth();
+  const { socket } = useSocket();
   const { theme, toggleTheme } = useTheme();
   const { unreadCount } = useNotifications(true);
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [communityUnreadCount, setCommunityUnreadCount] = useState(0);
+
+  const GLOBAL_CHAT_LAST_SEEN_KEY = 'globalChatLastSeenAt';
 
   const navItems = [
     { path: '/dashboard', icon: Home, label: 'Overview' },
@@ -47,6 +53,10 @@ const DashboardLayout = () => {
   ];
 
   const pageTitle = useMemo(() => {
+    if (location.pathname.startsWith('/dashboard/community-chat')) {
+      return 'Community Chat';
+    }
+
     const match = navItems.find((item) =>
       item.path === '/dashboard'
         ? location.pathname === item.path
@@ -71,6 +81,60 @@ const DashboardLayout = () => {
     await logout();
     navigate('/login');
   };
+
+  useEffect(() => {
+    const fetchCommunityUnreadCount = async () => {
+      if (!user?._id) {
+        setCommunityUnreadCount(0);
+        return;
+      }
+
+      if (location.pathname.startsWith('/dashboard/community-chat')) {
+        setCommunityUnreadCount(0);
+        return;
+      }
+
+      const lastSeenAt = localStorage.getItem(GLOBAL_CHAT_LAST_SEEN_KEY) || '1970-01-01T00:00:00.000Z';
+
+      try {
+        const response = await api.get('/chat/global/unread-count', {
+          params: { since: lastSeenAt },
+        });
+        setCommunityUnreadCount(response.data.data?.unreadCount || 0);
+      } catch {
+        setCommunityUnreadCount(0);
+      }
+    };
+
+    fetchCommunityUnreadCount();
+
+    if (!socket || !user?._id) return undefined;
+
+    const handleGlobalChatChange = () => {
+      fetchCommunityUnreadCount();
+    };
+
+    socket.on('global-chat:message:new', handleGlobalChatChange);
+    socket.on('global-chat:message:deleted', handleGlobalChatChange);
+    socket.on('connect', handleGlobalChatChange);
+
+    return () => {
+      socket.off('global-chat:message:new', handleGlobalChatChange);
+      socket.off('global-chat:message:deleted', handleGlobalChatChange);
+      socket.off('connect', handleGlobalChatChange);
+    };
+  }, [user?._id, location.pathname, socket]);
+
+  useEffect(() => {
+    const handleSeen = () => {
+      setCommunityUnreadCount(0);
+    };
+
+    window.addEventListener('global-chat:seen', handleSeen);
+    return () => {
+      window.removeEventListener('global-chat:seen', handleSeen);
+    };
+  }, []);
 
   const renderNavLink = (item, mobile = false) => (
     <Link
@@ -132,7 +196,9 @@ const DashboardLayout = () => {
         <div className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">
           Main Menu
         </div>
-        {navItems.map((item) => renderNavLink(item, mobile))}
+        {navItems
+          .filter((item) => !(mobile && item.path === '/dashboard/community-chat'))
+          .map((item) => renderNavLink(item, mobile))}
 
         {(user?.role === 'admin' || user?.role === 'moderator' || user?.role === 'super_admin') && (
           <Link
@@ -205,6 +271,19 @@ const DashboardLayout = () => {
             Settings
           </Button>
 
+          {mobile && (
+            <Button
+              variant="ghost"
+              className="mb-1 h-10 w-full justify-start rounded-2xl text-muted-foreground hover:bg-white/5 hover:text-foreground"
+              onClick={() => {
+                toggleTheme();
+              }}
+            >
+              {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+              {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+            </Button>
+          )}
+
           <Button
             variant="ghost"
             className="h-10 w-full justify-start rounded-2xl text-muted-foreground hover:bg-destructive/8 hover:text-destructive"
@@ -244,7 +323,7 @@ const DashboardLayout = () => {
                 animate={{ x: 0 }}
                 exit={{ x: 320 }}
                 transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-                className="fixed inset-y-0 right-0 z-50 flex w-[320px] max-w-[92vw] flex-col border-l border-sidebar-border bg-[linear-gradient(180deg,rgba(15,23,42,1),rgba(15,23,42,0.985))] shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-3xl lg:hidden force-3d"
+                className="fixed inset-y-0 right-0 z-50 flex w-[320px] max-w-[92vw] flex-col overflow-hidden border-l border-sidebar-border bg-[linear-gradient(180deg,rgba(15,23,42,1),rgba(15,23,42,0.985))] shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-3xl lg:hidden force-3d"
               >
                 <div className="flex items-center justify-between border-b border-sidebar-border/70 px-5 py-4">
                   <div>
@@ -258,7 +337,9 @@ const DashboardLayout = () => {
                     <X className="h-5 w-5" />
                   </button>
                 </div>
-                <div className="force-3d">{sidebarContent(true)}</div>
+                <div className="flex-1 overflow-y-auto overscroll-contain force-3d custom-scrollbar">
+                  {sidebarContent(true)}
+                </div>
               </motion.aside>
             </>
           )}
@@ -299,10 +380,15 @@ const DashboardLayout = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-12 w-12 rounded-[1.1rem] border border-border/70 bg-card/80 shadow-sm"
-                  onClick={toggleTheme}
+                  className="relative h-12 w-12 rounded-[1.1rem] border border-border/70 bg-card/80 shadow-sm"
+                  onClick={() => navigate('/dashboard/community-chat')}
                 >
-                  {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+                  <MessageSquare className="h-5 w-5" />
+                  {communityUnreadCount > 0 && (
+                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                      {communityUnreadCount > 9 ? '9+' : communityUnreadCount}
+                    </span>
+                  )}
                 </Button>
 
                 <Button
