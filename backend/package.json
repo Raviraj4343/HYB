@@ -5,6 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "start": "node src/cluster.js",
     "dev": "nodemon src/index.js",
     "make-superadmin": "node src/scripts/makeSuperAdmin.js"
   },
