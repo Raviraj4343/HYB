@@ -85,7 +85,7 @@ const searchUsers = asyncHandler(async (req, res, next) =>{
             {userName: {$regex: q, $options: 'i'}},
             {fullName:{$regex:q, $options:'i'}}
         ]
-    }).select("fullName userName avatar branch year helpCount")
+    }).select("fullName userName avatar branch year helpCount isBlocked blockedUntil blockReason")
       .limit(Number(limit));
 
     return res
