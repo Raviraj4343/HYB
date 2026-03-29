@@ -1,4 +1,5 @@
 import express from "express";
+import path from 'path';
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import compression from "compression";
@@ -87,6 +88,17 @@ app.use((err, req, res, next) => {
     success: false,
     message,
     statusCode,
+  });
+});
+
+// SPA fallback: serve index.html for non-API GET routes to support client-side routing
+app.get('*', (req, res, next) => {
+  if (req.method !== 'GET') return next();
+  if (req.path.startsWith('/api/')) return next();
+
+  const indexPath = path.resolve(process.cwd(), 'public', 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) next(err);
   });
 });
 

@@ -123,6 +123,22 @@ const ChatRoom = () => {
     };
   }, []);
 
+  // Ensure messages container has bottom padding equal to input height so messages aren't hidden
+  useEffect(() => {
+    const setContainerPadding = () => {
+      const inputEl = inputRef.current;
+      const container = messagesContainerRef.current;
+      if (!container) return;
+      const inputH = inputEl?.offsetHeight || 80;
+      // add small buffer
+      container.style.paddingBottom = `${inputH + 24}px`;
+    };
+
+    setContainerPadding();
+    window.addEventListener('resize', setContainerPadding);
+    return () => window.removeEventListener('resize', setContainerPadding);
+  }, [replyTo, imageFile]);
+
   const getOtherParticipant = () => {
     return chatInfo?.participants?.find((p) => p._id !== user?._id);
   };

@@ -105,6 +105,21 @@ const GlobalChat = () => {
     };
   }, []);
 
+  // Keep messages container padded so input doesn't overlap messages
+  useEffect(() => {
+    const setPadding = () => {
+      const inputEl = inputRef.current;
+      const container = messagesContainerRef.current;
+      if (!container) return;
+      const h = inputEl?.offsetHeight || 80;
+      container.style.paddingBottom = `${h + 24}px`;
+    };
+
+    setPadding();
+    window.addEventListener('resize', setPadding);
+    return () => window.removeEventListener('resize', setPadding);
+  }, [replyTo, messageText]);
+
   const activeParticipants = useMemo(() => {
     const seen = new Map();
     messages.forEach((message) => {
