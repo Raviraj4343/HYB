@@ -25,7 +25,10 @@ const createRequest = asyncHandler(async (req, res) => {
 
   if (req.file?.path) {
     const uploadResult = await uploadOnCloudinary(req.file.path);
-    imageUrl = uploadResult?.secure_url || null;
+    if (!uploadResult?.secure_url) {
+      throw new ApiError(500, "Image upload failed");
+    }
+    imageUrl = uploadResult.secure_url;
   }
 
   const expiresAt = new Date();
