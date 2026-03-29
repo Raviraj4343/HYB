@@ -191,12 +191,6 @@ const RequestDetail = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Back Button */}
-      <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
-        <ArrowLeft className="w-4 h-4" />
-        Back
-      </Button>
-
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

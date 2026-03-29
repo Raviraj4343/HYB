@@ -68,6 +68,7 @@ const DashboardLayout = () => {
   }, [location.pathname, unreadCount]);
 
   const canGoBack = location.pathname !== '/dashboard' && !isCommunityChatPage;
+  const isDarkTheme = theme === 'dark';
 
   const isActive = (path) => {
     if (path === '/dashboard') return location.pathname === path;
@@ -160,7 +161,9 @@ const DashboardLayout = () => {
         isActive(item.path)
           ? 'bg-[linear-gradient(135deg,hsl(var(--primary))_0%,rgba(59,130,246,0.92)_100%)] text-primary-foreground shadow-[0_16px_34px_rgba(20,184,166,0.28)]'
           : mobile
-            ? 'border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.018))] text-sidebar-foreground shadow-[0_14px_32px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 hover:border-primary/35 hover:bg-[linear-gradient(180deg,rgba(20,184,166,0.12),rgba(59,130,246,0.10))] hover:text-white hover:shadow-[0_18px_44px_rgba(8,145,178,0.20)]'
+            ? isDarkTheme
+              ? 'border border-white/14 bg-[linear-gradient(180deg,rgba(14,24,38,0.88),rgba(10,18,30,0.82))] text-white shadow-[0_14px_32px_rgba(0,0,0,0.22)] hover:-translate-y-0.5 hover:border-primary/35 hover:bg-[linear-gradient(180deg,rgba(20,184,166,0.16),rgba(59,130,246,0.14))] hover:text-white hover:shadow-[0_18px_44px_rgba(8,145,178,0.22)]'
+              : 'border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(244,247,251,0.88))] text-slate-900 shadow-[0_14px_32px_rgba(15,23,42,0.10)] hover:-translate-y-0.5 hover:border-primary/35 hover:bg-[linear-gradient(180deg,rgba(240,253,250,0.96),rgba(239,246,255,0.96))] hover:text-slate-950 hover:shadow-[0_18px_44px_rgba(8,145,178,0.12)]'
             : 'text-sidebar-foreground hover:bg-sidebar-accent/95 hover:text-sidebar-accent-foreground hover:shadow-sm'
       )}
     >
@@ -170,21 +173,31 @@ const DashboardLayout = () => {
           isActive(item.path)
             ? 'bg-black/10 ring-1 ring-white/10'
             : mobile
-              ? 'border border-white/10 bg-[#0f172a] text-slate-300 group-hover:border-primary/30 group-hover:bg-[#10243a] group-hover:text-white'
+              ? isDarkTheme
+                ? 'border border-white/14 bg-[#0d1628] text-slate-100 group-hover:border-primary/30 group-hover:bg-[#10243a] group-hover:text-white'
+                : 'border border-slate-200 bg-white text-slate-700 group-hover:border-primary/30 group-hover:bg-slate-50 group-hover:text-slate-950'
               : 'bg-sidebar-accent text-muted-foreground group-hover:bg-white/70 group-hover:text-foreground'
         )}
       >
         <item.icon className="h-5 w-5" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium tracking-tight">{item.label}</p>
+        <p className="truncate text-[1.03rem] font-semibold tracking-tight">{item.label}</p>
         {mobile && (
-          <p className="mt-0.5 text-xs text-slate-500 transition group-hover:text-slate-300">
+          <p className={cn(
+            'mt-1 text-[0.8rem] transition',
+            isDarkTheme ? 'text-slate-300 group-hover:text-slate-100' : 'text-slate-500 group-hover:text-slate-700'
+          )}>
             Jump into {item.label.toLowerCase()}
           </p>
         )}
       </div>
-      {mobile && <ChevronRight className="h-4 w-4 text-slate-500 transition group-hover:text-slate-200" />}
+      {mobile && (
+        <ChevronRight className={cn(
+          'h-4 w-4 transition',
+          isDarkTheme ? 'text-slate-400 group-hover:text-slate-100' : 'text-slate-400 group-hover:text-slate-700'
+        )} />
+      )}
       {item.badge > 0 && (
         <Badge className={cn(
           'rounded-full px-2 py-0.5 text-[11px]',
@@ -200,39 +213,37 @@ const DashboardLayout = () => {
 
   const sidebarContent = (mobile = false) => (
     <>
-      <div className="px-5 pt-5">
+      <div className="px-4 pt-4">
         {mobile ? (
-          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-5 shadow-[0_20px_44px_rgba(0,0,0,0.24)]">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.45),transparent)]" />
-            <div className="flex items-start gap-4">
-              <Avatar className="h-16 w-16 border border-white/10 shadow-[0_12px_28px_rgba(0,0,0,0.28)]">
+          <div className={cn(
+            'relative overflow-hidden rounded-[1.45rem] p-3.5 shadow-[0_18px_40px_rgba(0,0,0,0.18)] backdrop-blur-2xl',
+            isDarkTheme
+              ? 'border border-white/14 bg-[linear-gradient(180deg,rgba(18,28,45,0.9),rgba(12,19,31,0.84))]'
+              : 'border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(245,247,250,0.88))] shadow-[0_18px_40px_rgba(15,23,42,0.10)]'
+          )}>
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.42),transparent)]" />
+            <div className="flex items-center gap-3">
+              <Avatar className={cn(
+                'h-11 w-11 shadow-[0_10px_24px_rgba(0,0,0,0.16)]',
+                isDarkTheme ? 'border border-white/12' : 'border border-slate-200'
+              )}>
                 <AvatarImage src={user?.avatar} alt={user?.fullName} />
                 <AvatarFallback className="bg-[linear-gradient(135deg,rgba(20,184,166,0.26),rgba(59,130,246,0.34))] text-white font-semibold">
                   {getInitials(user?.fullName)}
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400">Active account</div>
-                <p className="mt-2 truncate text-[1.35rem] font-semibold tracking-tight text-white">{user?.fullName || 'User'}</p>
-                <p className="mt-1 truncate text-xs uppercase tracking-[0.28em] text-slate-500">{user?.role || 'Member'}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-slate-300">
-                    @{user?.userName || 'account'}
-                  </div>
-                  <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
-                    HYB Network
-                  </div>
-                </div>
+                <p className={cn(
+                  'truncate text-[1rem] font-semibold tracking-tight',
+                  isDarkTheme ? 'text-white' : 'text-slate-900'
+                )}>{user?.fullName || 'User'}</p>
+                <p className={cn(
+                  'mt-0.5 truncate text-[0.78rem]',
+                  isDarkTheme ? 'text-slate-300' : 'text-slate-500'
+                )}>@{user?.userName || 'account'}</p>
               </div>
-            </div>
-            <div className="mt-5 grid grid-cols-2 gap-3">
-              <div className="rounded-[1.2rem] border border-white/10 bg-black/15 px-3 py-3">
-                <div className="text-[10px] uppercase tracking-[0.28em] text-slate-500">Workspace</div>
-                <div className="mt-1 text-sm font-medium text-slate-100">Student Hub</div>
-              </div>
-              <div className="rounded-[1.2rem] border border-primary/20 bg-primary/10 px-3 py-3">
-                <div className="text-[10px] uppercase tracking-[0.28em] text-primary/70">Status</div>
-                <div className="mt-1 text-sm font-medium text-primary-foreground">Online</div>
+              <div className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+                {user?.role === 'super_admin' ? 'Super Admin' : user?.role || 'Member'}
               </div>
             </div>
           </div>
@@ -253,26 +264,45 @@ const DashboardLayout = () => {
         )}
       </div>
 
-      <nav className="flex-1 space-y-3 overflow-y-auto px-4 py-6 custom-scrollbar">
-        <div className="mb-2 px-2">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-muted-foreground/70">
-            {mobile ? 'Menu' : 'Main Menu'}
+      <nav className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
+        <div className={cn(
+          'mb-4 rounded-[1.2rem] px-4 py-3 backdrop-blur-xl',
+          isDarkTheme
+            ? 'border border-white/12 bg-[linear-gradient(180deg,rgba(18,28,45,0.78),rgba(12,18,28,0.68))] shadow-[0_12px_28px_rgba(0,0,0,0.18)]'
+            : 'border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,247,250,0.84))] shadow-[0_12px_28px_rgba(15,23,42,0.08)]'
+        )}>
+          <div className={cn(
+            'text-[11px] font-semibold uppercase tracking-[0.32em]',
+            isDarkTheme ? 'text-slate-300/90' : 'text-slate-500'
+          )}>
+            {mobile ? 'Navigation' : 'Main Menu'}
           </div>
           {mobile && (
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <div>
-                <div className="text-lg font-semibold tracking-tight text-slate-100">Quick navigation</div>
-                <div className="text-sm text-slate-400">Everything important in one place</div>
-              </div>
-              <div className="hidden rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-slate-300 sm:block">
-                {pageTitle}
-              </div>
+            <div className={cn(
+              'mt-1.5 text-[0.85rem] font-medium',
+              isDarkTheme ? 'text-slate-200' : 'text-slate-700'
+            )}>
+              Quick routes across HYB
             </div>
           )}
         </div>
-        {navItems
-          .filter((item) => !(mobile && item.path === '/dashboard/community-chat'))
-          .map((item) => renderNavLink(item, mobile))}
+        <div className="space-y-2.5">
+          {navItems
+            .filter((item) => {
+              if (!mobile) return true;
+
+              const hiddenMobilePaths = new Set([
+                '/dashboard/community-chat',
+                '/dashboard/requests',
+                '/dashboard/my-requests',
+                '/dashboard/chats',
+                '/dashboard/notifications',
+              ]);
+
+              return !hiddenMobilePaths.has(item.path);
+            })
+            .map((item) => renderNavLink(item, mobile))}
+        </div>
 
         {(user?.role === 'admin' || user?.role === 'moderator' || user?.role === 'super_admin') && (
           <Link
@@ -283,41 +313,44 @@ const DashboardLayout = () => {
               location.pathname.startsWith('/dashboard/admin')
                 ? 'bg-destructive text-destructive-foreground shadow-lg'
                 : mobile
-                  ? 'border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.018))] text-sidebar-foreground shadow-[0_14px_32px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 hover:border-primary/35 hover:bg-[linear-gradient(180deg,rgba(20,184,166,0.12),rgba(59,130,246,0.10))] hover:text-sidebar-accent-foreground'
+                  ? isDarkTheme
+                    ? 'border border-white/14 bg-[linear-gradient(180deg,rgba(14,24,38,0.88),rgba(10,18,30,0.82))] text-white shadow-[0_14px_32px_rgba(0,0,0,0.22)] hover:-translate-y-0.5 hover:border-primary/35 hover:bg-[linear-gradient(180deg,rgba(20,184,166,0.16),rgba(59,130,246,0.14))] hover:text-white'
+                    : 'border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(244,247,251,0.88))] text-slate-900 shadow-[0_14px_32px_rgba(15,23,42,0.10)] hover:-translate-y-0.5 hover:border-primary/35 hover:bg-[linear-gradient(180deg,rgba(240,253,250,0.96),rgba(239,246,255,0.96))] hover:text-slate-950'
                   : 'text-sidebar-foreground hover:bg-sidebar-accent/95 hover:text-sidebar-accent-foreground'
             )}
           >
             <div className={cn(
               'flex h-11 w-11 items-center justify-center rounded-2xl',
-              mobile ? 'border border-white/10 bg-[#0f172a]' : 'bg-black/10'
+              mobile
+                ? isDarkTheme
+                  ? 'border border-white/10 bg-[#0f172a]'
+                  : 'border border-slate-200 bg-white'
+                : 'bg-black/10'
             )}>
               <Flag className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-medium tracking-tight">Reports</p>
-              {mobile && <p className="mt-0.5 text-xs text-slate-500">Moderation and flagged content</p>}
+              <p className="text-[1.03rem] font-semibold tracking-tight">Reports</p>
+              {mobile && <p className={cn('mt-1 text-[0.8rem]', isDarkTheme ? 'text-slate-300' : 'text-slate-500')}>Moderation and flagged content</p>}
             </div>
-            {mobile && <ChevronRight className="h-4 w-4 text-slate-500 transition group-hover:text-slate-200" />}
+            {mobile && <ChevronRight className={cn('h-4 w-4 transition', isDarkTheme ? 'text-slate-400 group-hover:text-slate-100' : 'text-slate-400 group-hover:text-slate-700')} />}
           </Link>
         )}
       </nav>
 
       <div className="border-t border-sidebar-border/80 p-4">
         <div className={cn(
-          'rounded-[1.7rem] border p-4 shadow-[0_10px_24px_rgba(0,0,0,0.08)]',
+          'rounded-[1.2rem] p-3.5 backdrop-blur-xl',
           mobile
-            ? 'border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.96))]'
+            ? isDarkTheme
+              ? 'border border-white/12 bg-[linear-gradient(180deg,rgba(17,27,43,0.92),rgba(10,16,28,0.88))] shadow-[0_10px_24px_rgba(0,0,0,0.12)]'
+              : 'border border-slate-200/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(245,247,250,0.88))] shadow-[0_10px_24px_rgba(15,23,42,0.08)]'
             : 'border-sidebar-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]'
         )}>
           {mobile && (
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">Account</div>
-                <div className="mt-1 text-base font-semibold tracking-tight text-slate-100">Preferences & actions</div>
-              </div>
-              <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] text-slate-300">
-                Secure
-              </div>
+            <div className="mb-3">
+              <div className={cn('text-[11px] font-semibold uppercase tracking-[0.28em]', isDarkTheme ? 'text-slate-300' : 'text-slate-500')}>Account</div>
+              <div className={cn('mt-1 text-[0.92rem] font-semibold tracking-tight', isDarkTheme ? 'text-white' : 'text-slate-900')}>Settings & session</div>
             </div>
           )}
           {/* Hide avatar block on mobile; show Profile/Settings/Logout directly */}
@@ -350,7 +383,11 @@ const DashboardLayout = () => {
             variant="ghost"
             className={cn(
               'mb-1 h-11 w-full justify-start rounded-2xl text-muted-foreground hover:text-foreground',
-              mobile ? 'border border-transparent bg-white/[0.015] hover:border-white/10 hover:bg-white/[0.08]' : 'hover:bg-white/5'
+              mobile
+                ? isDarkTheme
+                  ? 'border border-transparent bg-white/[0.015] text-slate-100 hover:border-white/10 hover:bg-white/[0.08] hover:text-white'
+                  : 'border border-transparent bg-slate-100/80 text-slate-700 hover:border-slate-200 hover:bg-white hover:text-slate-950'
+                : 'hover:bg-white/5'
             )}
             onClick={() => {
               navigate('/dashboard/profile');
@@ -365,7 +402,11 @@ const DashboardLayout = () => {
             variant="ghost"
             className={cn(
               'mb-1 h-11 w-full justify-start rounded-2xl text-muted-foreground hover:text-foreground',
-              mobile ? 'border border-transparent bg-white/[0.015] hover:border-white/10 hover:bg-white/[0.08]' : 'hover:bg-white/5'
+              mobile
+                ? isDarkTheme
+                  ? 'border border-transparent bg-white/[0.015] text-slate-100 hover:border-white/10 hover:bg-white/[0.08] hover:text-white'
+                  : 'border border-transparent bg-slate-100/80 text-slate-700 hover:border-slate-200 hover:bg-white hover:text-slate-950'
+                : 'hover:bg-white/5'
             )}
             onClick={() => {
               navigate('/dashboard/settings');
@@ -379,7 +420,12 @@ const DashboardLayout = () => {
           {mobile && (
             <Button
               variant="ghost"
-              className="mb-1 h-11 w-full justify-start rounded-2xl border border-transparent bg-white/[0.015] text-muted-foreground hover:border-white/10 hover:bg-white/[0.08] hover:text-foreground"
+              className={cn(
+                'mb-1 h-11 w-full justify-start rounded-2xl border border-transparent',
+                isDarkTheme
+                  ? 'bg-white/[0.015] text-slate-100 hover:border-white/10 hover:bg-white/[0.08] hover:text-white'
+                  : 'bg-slate-100/80 text-slate-700 hover:border-slate-200 hover:bg-white hover:text-slate-950'
+              )}
               onClick={() => {
                 toggleTheme();
               }}
@@ -393,7 +439,11 @@ const DashboardLayout = () => {
             variant="ghost"
             className={cn(
               'h-11 w-full justify-start rounded-2xl text-muted-foreground hover:text-destructive',
-              mobile ? 'border border-transparent bg-white/[0.015] hover:border-destructive/15 hover:bg-destructive/12' : 'hover:bg-destructive/8'
+              mobile
+                ? isDarkTheme
+                  ? 'border border-transparent bg-white/[0.015] text-slate-100 hover:border-destructive/15 hover:bg-destructive/12 hover:text-destructive-foreground'
+                  : 'border border-transparent bg-slate-100/80 text-slate-700 hover:border-destructive/20 hover:bg-red-50 hover:text-destructive'
+                : 'hover:bg-destructive/8'
             )}
             onClick={() => {
               if (mobile) setIsMobileSidebarOpen(false);
@@ -440,36 +490,59 @@ const DashboardLayout = () => {
             <>
               <motion.div
                 initial={{ opacity: 0, backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
-                animate={{ opacity: 1, backdropFilter: 'blur(28px)', backgroundColor: 'rgba(2,6,23,0.94)' }}
+                animate={{
+                  opacity: 1,
+                  backdropFilter: 'blur(22px)',
+                  backgroundColor: isDarkTheme ? 'rgba(2,6,23,0.72)' : 'rgba(15,23,42,0.30)'
+                }}
                 exit={{ opacity: 0, backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
                 transition={{ duration: 0.22, ease: 'easeOut' }}
                 className="fixed inset-0 z-40 lg:hidden mobile-overlay"
                 onClick={() => setIsMobileSidebarOpen(false)}
               />
               <motion.aside
-                initial={{ x: 320 }}
+                initial={{ x: 340, opacity: 0.96 }}
                 animate={{ x: 0 }}
-                exit={{ x: 320 }}
-                transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-                className="fixed inset-y-0 right-0 z-50 flex w-[390px] max-w-[95vw] flex-col overflow-hidden border-l border-white/10 bg-[#08101d] shadow-[0_24px_80px_rgba(0,0,0,0.72)] lg:hidden force-3d"
+                exit={{ x: 340, opacity: 0.96 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                className={cn(
+                  'fixed inset-y-0 right-0 z-50 flex w-[320px] max-w-[88vw] flex-col overflow-hidden rounded-l-[2rem] backdrop-blur-[28px] lg:hidden force-3d',
+                  isDarkTheme
+                    ? 'border-l border-white/14 bg-[linear-gradient(180deg,rgba(8,16,29,0.88),rgba(6,11,20,0.84))] shadow-[0_28px_90px_rgba(0,0,0,0.62)]'
+                    : 'border-l border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.95))] shadow-[0_28px_90px_rgba(15,23,42,0.22)]'
+                )}
               >
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.10),transparent_18%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_24%),linear-gradient(180deg,rgba(8,16,29,0.995),rgba(6,11,20,0.995))]" />
-                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent_22%,transparent_78%,rgba(255,255,255,0.015))]" />
-                <div className="relative border-b border-sidebar-border/70 px-6 py-5">
-                  <div className="pointer-events-none absolute inset-x-6 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent)]" />
+                <div className={cn(
+                  'pointer-events-none absolute inset-0',
+                  isDarkTheme
+                    ? 'bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.12),transparent_20%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.14),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.1),rgba(255,255,255,0.03)_18%,rgba(255,255,255,0.025)_100%)]'
+                    : 'bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.05),transparent_18%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.06),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.55),rgba(255,255,255,0.24)_18%,rgba(255,255,255,0.12)_100%)]'
+                )} />
+                <div className={cn('relative px-4 py-4', isDarkTheme ? 'border-b border-white/10' : 'border-b border-slate-200/80')}>
+                  <div className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.16),transparent)]" />
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-[1.3rem] border border-white/10 bg-[linear-gradient(135deg,rgba(20,184,166,0.18),rgba(59,130,246,0.22))] shadow-[0_12px_24px_rgba(0,0,0,0.22)]">
-                        <img src="/logo.png" alt="HYB Logo" className="h-8 w-8 object-contain" />
+                      <div className={cn(
+                        'flex h-10 w-10 items-center justify-center rounded-[1rem] shadow-[0_12px_24px_rgba(0,0,0,0.16)]',
+                        isDarkTheme
+                          ? 'border border-white/12 bg-[linear-gradient(135deg,rgba(20,184,166,0.18),rgba(59,130,246,0.22))]'
+                          : 'border border-slate-200/80 bg-[linear-gradient(135deg,rgba(20,184,166,0.12),rgba(59,130,246,0.14))]'
+                      )}>
+                        <img src="/logo.png" alt="HYB Logo" className="h-7 w-7 object-contain" />
                       </div>
                       <div>
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-muted-foreground/70">Menu</div>
-                        <div className="mt-1 text-xl font-semibold tracking-tight text-sidebar-foreground">Quick navigation</div>
+                        <div className={cn('text-[11px] font-semibold uppercase tracking-[0.32em]', isDarkTheme ? 'text-muted-foreground/70' : 'text-slate-500')}>Menu</div>
+                        <div className={cn('mt-1 text-lg font-semibold tracking-tight', isDarkTheme ? 'text-sidebar-foreground' : 'text-slate-900')}>Quick navigation</div>
                       </div>
                     </div>
                     <button
                       onClick={() => setIsMobileSidebarOpen(false)}
-                      className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+                      className={cn(
+                        'flex h-10 w-10 items-center justify-center rounded-[1rem] transition',
+                        isDarkTheme
+                          ? 'border border-white/12 bg-white/[0.06] text-slate-200 hover:bg-white/[0.12] hover:text-white'
+                          : 'border border-slate-200/80 bg-white/70 text-slate-700 hover:bg-white hover:text-slate-950'
+                      )}
                       aria-label="Close menu"
                     >
                       <X className="h-5 w-5" />
@@ -487,7 +560,7 @@ const DashboardLayout = () => {
         <div
           className={cn(
             "flex min-h-screen flex-1 flex-col transition-all duration-200",
-            isMobileSidebarOpen && "pointer-events-none scale-[0.99] blur-[8px] brightness-[0.34] saturate-[0.75] lg:pointer-events-auto lg:scale-100 lg:blur-0 lg:brightness-100 lg:saturate-100"
+            isMobileSidebarOpen && "pointer-events-none scale-[0.985] blur-[10px] brightness-[0.24] saturate-[0.55] lg:pointer-events-auto lg:scale-100 lg:blur-0 lg:brightness-100 lg:saturate-100"
           )}
         >
           <header className="sticky top-0 z-30 border-b border-[#1f2a44] bg-[#070d19]/92 shadow-[0_18px_48px_rgba(1,6,20,0.42)] backdrop-blur-2xl">

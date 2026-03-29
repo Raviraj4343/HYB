@@ -415,9 +415,9 @@
   /* Mobile overlay blur transition support */
   .mobile-overlay {
     /* provide a fallback for browsers that don't animate via JS */
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    background-color: rgba(2, 6, 23, 0.94);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    background-color: rgba(2, 6, 23, 0.72);
     transition: backdrop-filter 220ms ease, -webkit-backdrop-filter 220ms ease, opacity 220ms ease, background-color 220ms ease;
   }
 

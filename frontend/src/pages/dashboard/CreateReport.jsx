@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Flag, Loader2 } from 'lucide-react';
+import { Flag, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const REPORT_REASONS = [
@@ -59,11 +59,6 @@ const CreateReport = () => {
 
   return (
     <div className="max-w-xl mx-auto space-y-6">
-      <Button variant="ghost" onClick={() => navigate(-1)}>
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
-
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
