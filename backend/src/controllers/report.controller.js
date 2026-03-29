@@ -7,6 +7,26 @@ import { Notification } from "../models/notification.models.js";
 import {validateReport} from "../utils/reportValidatorAI.js"
 import { BLOCK_THRESHOLD} from "../constants.js";
 import { createAndEmitNotification, emitAdminNotificationCreated, emitNotificationCount } from "../utils/realtime.js";
+import { buildAccountRestrictionEmail, sendMail } from "../utils/mailer.js";
+
+const sendBlockedAccountEmail = async (user, days, reason, blockedUntil) => {
+  const durationLabel = `${days} day${days > 1 ? "s" : ""}`;
+  const untilLabel = blockedUntil.toLocaleString("en-IN", { timeZone: "Asia/Calcutta" });
+  const { text, html } = buildAccountRestrictionEmail({
+    title: "Your HYB account has been blocked",
+    subtitle: "A super admin restricted your account temporarily. Review the details below.",
+    reason,
+    durationLabel,
+    untilLabel,
+  });
+
+  await sendMail({
+    to: user.email,
+    subject: "HYB account temporarily blocked",
+    text,
+    html,
+  });
+};
 
 const notifyAdmins = async (report, reporter, reportedUser) => {
   const admins = await User.find({ role: "admin" }).select("_id");
@@ -162,7 +182,7 @@ const getAllReports = asyncHandler(async (req, res) => {
     const skip = (pageNum-1)*limitNum;
 
     const reports=await Report.find(query)
-    .populate("reportedUser", "fullName userName email warningCount isBlocked")
+    .populate("reportedUser", "fullName userName email warningCount isBlocked blockReason blockedUntil")
     .populate("reporter", "fullName userName")
     .populate("reviewedBy", "fullName userName")
     .sort({createdAt: -1})
@@ -255,7 +275,9 @@ const unblockUser = asyncHandler(async (req, res) => {
   // Unblock the user
   user.isBlocked = false;
   user.blockedAt = null;
+  user.blockedUntil = null;
   user.blockReason = null;
+  user.blockedBy = null;
 
   // Optionally reset warning count
   if (resetWarnings) {
@@ -283,11 +305,76 @@ const unblockUser = asyncHandler(async (req, res) => {
   );
 });
 
+const blockUserBySuperAdmin = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const { days, reason } = req.body;
+
+  const blockDays = Number(days);
+  const trimmedReason = reason?.trim();
+
+  if (!blockDays || blockDays < 1 || blockDays > 365) {
+    throw new ApiError(400, "Block days must be between 1 and 365");
+  }
+
+  if (!trimmedReason) {
+    throw new ApiError(400, "Block reason is required");
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const blockedUntil = new Date(Date.now() + blockDays * 24 * 60 * 60 * 1000);
+
+  user.isBlocked = true;
+  user.blockedAt = new Date();
+  user.blockedUntil = blockedUntil;
+  user.blockReason = trimmedReason;
+  user.blockedBy = req.user._id;
+
+  await user.save({ validateBeforeSave: false });
+
+  await createAndEmitNotification({
+    user: user._id,
+    type: "account_blocked",
+    title: "Account Blocked",
+    message: `Your account was blocked for ${blockDays} day${blockDays > 1 ? "s" : ""}. Reason: ${trimmedReason}`,
+    data: {
+      days: blockDays,
+      blockReason: trimmedReason,
+      blockedUntil,
+    },
+    isRead: false,
+  });
+
+  try {
+    await sendBlockedAccountEmail(user, blockDays, trimmedReason, blockedUntil);
+  } catch (error) {
+    console.error("Failed to send blocked account email", error);
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        userId: user._id,
+        userName: user.userName,
+        isBlocked: user.isBlocked,
+        blockedUntil: user.blockedUntil,
+        blockReason: user.blockReason,
+      },
+      "User blocked successfully"
+    )
+  );
+});
+
 export {
     createReport,
     getAllReports,
     updateReport,
     getReportById,
     getReportsByUser,
-    unblockUser
+    unblockUser,
+    blockUserBySuperAdmin
 };
