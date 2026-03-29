@@ -17,7 +17,7 @@ import {
   X,
   HelpCircle
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -134,7 +134,7 @@ const DashboardLayout = () => {
         </div>
         {navItems.map((item) => renderNavLink(item, mobile))}
 
-        {(user?.role === 'admin' || user?.role === 'moderator') && (
+        {(user?.role === 'admin' || user?.role === 'moderator' || user?.role === 'super_admin') && (
           <Link
             to="/dashboard/admin/reports"
             onClick={() => mobile && setIsMobileSidebarOpen(false)}
