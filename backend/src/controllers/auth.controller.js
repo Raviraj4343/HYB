@@ -273,7 +273,14 @@ const loginUser = asyncHandler(async (req, res) => {
   await clearExpiredBlockIfNeeded(user);
 
   if (!user.isEmailVerified) {
-    throw new ApiError(403, "Please verify your email before signing in");
+    return res.status(403).json({
+      success: false,
+      code: "EMAIL_NOT_VERIFIED",
+      message: "Please verify your email before signing in",
+      data: {
+        email: user.email,
+      },
+    });
   }
 
   if (user.isBlocked) {
