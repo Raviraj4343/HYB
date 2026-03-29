@@ -172,3 +172,108 @@ export const useChatList = (enabled = true) => {
     refetch: fetchChats,
   };
 };
+
+export const useGlobalChat = (enabled = true) => {
+  const [messages, setMessages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const { socket } = useSocket();
+
+  const fetchMessages = useCallback(async () => {
+    if (!enabled) return;
+
+    try {
+      setIsLoading(true);
+      const response = await api.get('/chat/global/messages');
+      setMessages(response.data.data.messages || []);
+      setError(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [enabled]);
+
+  const sendMessage = useCallback(async (content, replyTo = null) => {
+    try {
+      const response = await api.post('/chat/global/messages', {
+        content,
+        replyTo,
+      });
+
+      return { success: true, message: response.data.data.message };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  const deleteMessage = useCallback(async (messageId) => {
+    try {
+      await api.delete(`/chat/global/messages/${messageId}`);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, []);
+
+  useEffect(() => {
+    if (enabled) {
+      fetchMessages();
+    }
+  }, [enabled, fetchMessages]);
+
+  useEffect(() => {
+    if (!socket || !enabled) return undefined;
+
+    const handleNewMessage = ({ message }) => {
+      setMessages((prev) => (
+        prev.some((item) => item._id === message._id) ? prev : [...prev, message]
+      ));
+    };
+
+    const handleDeletedMessage = ({ messageId, deletedAt }) => {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message._id === messageId
+            ? {
+                ...message,
+                content: null,
+                isDeleted: true,
+                deletedAt,
+              }
+            : message
+        )
+      );
+    };
+
+    socket.on('global-chat:message:new', handleNewMessage);
+    socket.on('global-chat:message:deleted', handleDeletedMessage);
+
+    return () => {
+      socket.off('global-chat:message:new', handleNewMessage);
+      socket.off('global-chat:message:deleted', handleDeletedMessage);
+    };
+  }, [socket, enabled]);
+
+  useEffect(() => {
+    if (!socket || !enabled) return undefined;
+
+    const handleReconnect = () => {
+      fetchMessages();
+    };
+
+    socket.on('connect', handleReconnect);
+    return () => {
+      socket.off('connect', handleReconnect);
+    };
+  }, [socket, enabled, fetchMessages]);
+
+  return {
+    messages,
+    isLoading,
+    error,
+    refetch: fetchMessages,
+    sendMessage,
+    deleteMessage,
+  };
+};

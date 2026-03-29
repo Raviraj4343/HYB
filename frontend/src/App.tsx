@@ -33,6 +33,7 @@ import Settings from "./pages/dashboard/Settings";
 import Notifications from "./pages/dashboard/Notifications";
 import Chats from "./pages/dashboard/Chats";
 import ChatRoom from "./pages/dashboard/ChatRoom";
+import GlobalChat from "./pages/dashboard/GlobalChat";
 import UserSearch from "./pages/dashboard/UserSearch";
 import UserProfile from "./pages/dashboard/UserProfile";
 import Reports from "./pages/dashboard/Reports";
@@ -67,6 +68,7 @@ const App = () => (
                   <Route path="my-requests" element={<MyRequests />} />
                   <Route path="settings" element={<Settings />} />
                   <Route path="notifications" element={<Notifications />} />
+                  <Route path="community-chat" element={<GlobalChat />} />
                   <Route path="chats" element={<Chats />} />
                   <Route path="chats/:id" element={<ChatRoom />} />
                   <Route path="users" element={<UserSearch />} />
