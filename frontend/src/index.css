@@ -404,6 +404,13 @@
     @apply bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50 transition-colors;
   }
 
+  /* Boxed scrollable region used for panels and form columns */
+  .box-scroll {
+    max-height: 56vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   /* Force GPU compositing and improve text rendering on animated layers */
   .force-3d {
     transform: translateZ(0);

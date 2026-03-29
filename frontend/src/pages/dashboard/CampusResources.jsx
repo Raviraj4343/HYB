@@ -15,6 +15,7 @@ import {
   Upload,
   UserSquare2
 } from 'lucide-react';
+import ResourceCard from '@/components/campus/ResourceCard';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import { toast } from 'sonner';
@@ -205,6 +206,11 @@ const CampusResources = () => {
     setImageFile(null);
     setRemoveImage(false);
     setIsDialogOpen(true);
+    // reset scroll of dialog body on next paint
+    setTimeout(() => {
+      const body = document.getElementById('campus-resource-dialog-body');
+      if (body) body.scrollTop = 0;
+    }, 120);
   };
 
   const openEditDialog = (resource) => {
@@ -352,6 +358,47 @@ const CampusResources = () => {
 
   return (
     <div className="space-y-8">
+      {/* Category grid overview - clickable */}
+      <section>
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {CATEGORY_OPTIONS.map((cat) => {
+            const Icon = cat.icon;
+            return (
+              <button
+                key={cat.value}
+                type="button"
+                onClick={() => {
+                  if (isSuperAdmin) {
+                    openCreateDialog(cat.value);
+                    // ensure dialog body scrolls to top after opening
+                    setTimeout(() => {
+                      const body = document.getElementById('campus-resource-dialog-body');
+                      if (body) body.scrollTop = 0;
+                    }, 120);
+                  } else {
+                    const el = document.getElementById(`section-${cat.value}`);
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+                className="text-left rounded-xl border border-border/60 bg-background/80 p-4 hover:shadow-md transition transform hover:-translate-y-1"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <div className="truncate font-semibold text-foreground">{cat.title}</div>
+                      <div className="text-xs text-muted-foreground rounded-full border border-border/50 px-2 py-0.5">{cat.badge}</div>
+                    </div>
+                    <div className="mt-1 text-sm text-muted-foreground">{cat.description}</div>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
       <section className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.56),rgba(255,255,255,0.22))] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(135deg,rgba(20,184,166,0.10),rgba(59,130,246,0.06)_50%,rgba(15,23,42,0.24))] dark:shadow-[0_24px_60px_rgba(0,0,0,0.16)] lg:p-8">
         <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-primary/10 blur-3xl" />
         <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -397,7 +444,7 @@ const CampusResources = () => {
           const hasExistingSingleItem = isSingleImageSection && items.length > 0;
 
           return (
-            <Card key={section.value} className="overflow-hidden rounded-[1.8rem] border border-border/70 bg-card/80 shadow-[0_18px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:bg-[linear-gradient(180deg,rgba(8,15,28,0.94),rgba(8,12,22,0.92))]">
+            <Card id={`section-${section.value}`} key={section.value} className="overflow-hidden rounded-[1.8rem] border border-border/70 bg-card/80 shadow-[0_18px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:bg-[linear-gradient(180deg,rgba(8,15,28,0.94),rgba(8,12,22,0.92))]">
               <CardContent className="p-0">
                 <div className={cn('border-b border-border/70 px-6 py-5 dark:border-white/10', `bg-gradient-to-r ${section.accent}`)}>
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -463,128 +510,31 @@ const CampusResources = () => {
                       No resources added in this section yet.
                     </div>
                   ) : (
-                    <div className={cn(
-                      'custom-scrollbar',
-                      items.length > 2 ? 'max-h-[44rem] overflow-y-auto pr-1' : ''
-                    )}>
-                      <div className="grid gap-5 xl:grid-cols-2">
-                      {items.map((resource) => (
-                        <article
-                          key={resource._id}
-                          className="group overflow-hidden rounded-[1.7rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.78))] shadow-[0_18px_38px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-[0_26px_54px_rgba(20,184,166,0.14)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(14,22,36,0.98),rgba(8,14,25,0.95))]"
-                        >
-                          {resource.image && resource.attachmentType !== 'pdf' && (
-                            <div className="relative overflow-hidden">
-                              <img
-                                src={resource.image}
-                                alt={resource.professorName || resource.hostelName || resource.title}
-                                className="h-52 w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                              />
-                              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,23,0.14))]" />
-                            </div>
-                          )}
-
-                          <div className="space-y-4 p-5">
-                            <div className="flex items-start justify-between gap-4">
-                              <div>
-                                <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
-                                  {section.badge}
-                                </div>
-                                <h3 className="text-xl font-display font-semibold text-foreground dark:text-white">
-                                  {resource.professorName || resource.hostelName || resource.title}
-                                </h3>
-                                {resource.effectiveDate && (
-                                  <p className="mt-1 text-sm text-muted-foreground">
-                                    Effective {formatDate(resource.effectiveDate)}
-                                  </p>
-                                )}
-                              </div>
-
-                              {isSuperAdmin && (
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="h-10 rounded-xl border-primary/20 bg-primary/10 px-3 text-primary hover:bg-primary/15 hover:text-primary"
-                                    onClick={() => openEditDialog(resource)}
-                                  >
-                                    <Pencil className="mr-2 h-4 w-4" />
-                                    Edit
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="h-10 rounded-xl border-destructive/20 bg-destructive/10 px-3 text-destructive hover:bg-destructive/15 hover:text-destructive"
-                                    onClick={() => handleDelete(resource._id)}
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-
-                            {resource.attachmentType === 'pdf' && resource.image && (
-                              <div className="rounded-[1.25rem] border border-border/70 bg-background/75 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                                <div className="flex items-start gap-3">
-                                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
-                                    <FileText className="h-5 w-5" />
-                                  </div>
-                                  <div className="min-w-0 flex-1">
-                                    <div className="font-medium text-foreground dark:text-white">
-                                      {resource.attachmentName || 'Attached PDF notice'}
-                                    </div>
-                                    <div className="mt-1 text-sm text-muted-foreground">
-                                      Open the latest uploaded document for this notice.
-                                    </div>
-                                  </div>
-                                  <Button asChild variant="outline" className="rounded-xl">
-                                    <a href={resource.image} target="_blank" rel="noreferrer">
-                                      Open PDF
-                                    </a>
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-
-                            {resource.description && (
-                              <p className="text-sm leading-7 text-foreground/78 dark:text-white/72">
-                                {resource.description}
-                              </p>
-                            )}
-
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              {renderCategoryMeta(resource).map((item) => (
-                                <div key={`${resource._id}-${item.label}`} className="rounded-[1.2rem] border border-border/70 bg-background/80 px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
-                                  <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{item.label}</div>
-                                  <div className="mt-2 text-sm font-medium text-foreground dark:text-white">{item.value}</div>
-                                </div>
+                    <div className="mb-4">
+                      {isSingleImageSection && items.length > 0 ? (
+                        <div className="rounded-[1.35rem] border border-border/70 bg-background/80 overflow-hidden">
+                          <img src={items[0].image} alt={items[0].title || section.title} className="w-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="rounded-[1.35rem] border border-border/70 bg-background/75 p-4 custom-scrollbar">
+                          <div className={cn(items.length > 6 ? 'max-h-[44rem] overflow-y-auto pr-2' : '')}>
+                            <div className="grid gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                              {items.map((resource) => (
+                                <ResourceCard
+                                  key={resource._id}
+                                  resource={resource}
+                                  section={section}
+                                  isSuperAdmin={isSuperAdmin}
+                                  openEditDialog={openEditDialog}
+                                  handleDelete={handleDelete}
+                                  formatDate={formatDate}
+                                  renderCategoryMeta={renderCategoryMeta}
+                                />
                               ))}
-
-                              {resource.externalLink && (
-                                <a
-                                  href={resource.externalLink}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="rounded-[1.2rem] border border-border/70 bg-background/80 px-4 py-3 transition hover:border-primary/25 hover:text-primary dark:border-white/10 dark:bg-white/[0.04]"
-                                >
-                                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                                    <ExternalLink className="h-3.5 w-3.5" />
-                                    Link
-                                  </div>
-                                  <div className="mt-2 text-sm font-medium text-foreground dark:text-white">Open attachment</div>
-                                </a>
-                              )}
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3 text-xs text-muted-foreground dark:border-white/10">
-                              <span>Updated {formatDate(resource.updatedAt)}</span>
-                              {resource.updatedBy?.fullName && <span>by {resource.updatedBy.fullName}</span>}
                             </div>
                           </div>
-                        </article>
-                      ))}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -595,7 +545,7 @@ const CampusResources = () => {
       </section>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => (!open ? closeDialog() : setIsDialogOpen(true))}>
-        <DialogContent className="max-h-[92vh] overflow-hidden rounded-[1.8rem] border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))] p-0 shadow-[0_30px_90px_rgba(15,23,42,0.18)] dark:bg-[linear-gradient(180deg,rgba(8,15,28,0.98),rgba(6,10,18,0.98))] sm:max-w-4xl">
+            <DialogContent id="campus-resource-dialog" className="max-h-[92vh] overflow-hidden rounded-[1.8rem] border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))] p-0 shadow-[0_30px_90px_rgba(15,23,42,0.18)] dark:bg-[linear-gradient(180deg,rgba(8,15,28,0.98),rgba(6,10,18,0.98))] sm:max-w-4xl">
           <form onSubmit={handleSubmit}>
             <DialogHeader className="sticky top-0 z-10 border-b border-border/70 bg-background/92 px-6 py-5 backdrop-blur-xl dark:bg-[rgba(8,15,28,0.94)]">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -617,11 +567,11 @@ const CampusResources = () => {
               </div>
             </DialogHeader>
 
-            <div className="max-h-[calc(92vh-170px)] overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.06),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent)] px-6 py-6 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_22%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent)]">
+            <div id="campus-resource-dialog-body" className="max-h-[calc(92vh-170px)] overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.06),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent)] px-6 py-6 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_22%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent)]">
               <div className="rounded-[1.7rem] border border-border/70 bg-background/55 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md dark:bg-white/[0.02]">
                 <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
-                <div className="custom-scrollbar max-h-[58vh] space-y-6 overflow-y-auto pr-2">
-                  <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.52),rgba(8,15,28,0.42))]">
+                <div className="custom-scrollbar box-scroll space-y-6 pr-2">
+                        <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.52),rgba(8,15,28,0.42))] box-scroll">
                     <div className="mb-4">
                       <h3 className="text-lg font-display font-semibold text-foreground">Core details</h3>
                       <p className="mt-1 text-sm text-muted-foreground">
@@ -722,7 +672,7 @@ const CampusResources = () => {
                   </div>
 
                   {((fieldRules.showLocation && !fieldRules.showProfessorFields && !fieldRules.showHostelFields) || fieldRules.showExternalLink || fieldRules.showEffectiveDate) && (
-                  <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.52),rgba(8,15,28,0.42))]">
+                  <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.52),rgba(8,15,28,0.42))] box-scroll">
                     <div className="mb-4">
                       <h3 className="text-lg font-display font-semibold text-foreground">Useful metadata</h3>
                       <p className="mt-1 text-sm text-muted-foreground">Only minimal supporting fields appear here when this category actually needs them.</p>
@@ -764,8 +714,8 @@ const CampusResources = () => {
                   )}
                 </div>
 
-                <div className="custom-scrollbar max-h-[58vh] space-y-5 overflow-y-auto pr-1">
-                  <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.52),rgba(8,15,28,0.42))]">
+                <div className="custom-scrollbar box-scroll space-y-5 pr-1">
+                  <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.52),rgba(8,15,28,0.42))] box-scroll">
                     <div className="mb-4">
                       <h3 className="text-lg font-display font-semibold text-foreground">Attachment</h3>
                       <p className="mt-1 text-sm text-muted-foreground">
