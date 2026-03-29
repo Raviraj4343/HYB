@@ -7,7 +7,7 @@ import http from "http";
 import connectToDatabase from "./db/index.js";
 import { DB_NAME } from "./constants.js";
 import { initializeSocket } from "./socket/index.js";
-import { getActiveMailProvider, getMailConfigurationStatus } from "./utils/mailer.js";
+import { getActiveMailProvider, getConfiguredSenderAddress, getMailConfigurationStatus } from "./utils/mailer.js";
 
 
 connectToDatabase()
@@ -16,8 +16,11 @@ connectToDatabase()
     initializeSocket(server);
 
     const mailStatus = getMailConfigurationStatus();
+    const configuredSender = getConfiguredSenderAddress();
     if (mailStatus.configured) {
-        console.log(`Email provider ready: ${getActiveMailProvider()}`);
+        console.log(
+            `Email provider ready: ${getActiveMailProvider()}${configuredSender ? ` | sender: ${configuredSender}` : ""}`
+        );
     } else {
         console.warn(
             `Email provider "${mailStatus.provider}" is not fully configured. Missing: ${mailStatus.missing.join(", ")}`

@@ -11,6 +11,15 @@ const getMailProvider = () => {
   return 'smtp';
 };
 
+export const getConfiguredSenderAddress = () => {
+  const provider = getMailProvider();
+  if (provider === 'resend') {
+    return process.env.RESEND_FROM_EMAIL || process.env.EMAIL_FROM || '';
+  }
+
+  return process.env.EMAIL_FROM || process.env.EMAIL_USER || '';
+};
+
 export const getActiveMailProvider = () => getMailProvider();
 
 export const getMailConfigurationStatus = () => {
@@ -18,7 +27,7 @@ export const getMailConfigurationStatus = () => {
 
   if (provider === 'resend') {
     const missing = [];
-    const resendFrom = process.env.RESEND_FROM_EMAIL || process.env.EMAIL_FROM;
+    const resendFrom = getConfiguredSenderAddress();
     if (!process.env.RESEND_API_KEY) missing.push('RESEND_API_KEY');
     if (!resendFrom) {
       missing.push('RESEND_FROM_EMAIL or EMAIL_FROM');
@@ -119,7 +128,7 @@ const withTimeout = async (promise, timeoutMs, label) => {
 
 const sendWithResend = async ({ to, subject, text, html }) => {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL || process.env.EMAIL_FROM;
+  const from = getConfiguredSenderAddress();
 
   if (!apiKey) {
     throw new Error('Resend email provider is not configured. Missing RESEND_API_KEY.');
@@ -193,7 +202,7 @@ export const sendMail = async ({ to, subject, text, html }) => {
     );
   }
 
-  const from = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+  const from = getConfiguredSenderAddress();
   const mailOptions = {
     from,
     to,
