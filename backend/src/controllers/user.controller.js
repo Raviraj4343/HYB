@@ -5,7 +5,7 @@ import { Notification } from '../models/notification.models.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
-import {  uploadOnCloudinary } from '../utils/cloudinary.js';
+import { deleteFromCloudinary, uploadOnCloudinary } from '../utils/cloudinary.js';
 import { createAndEmitNotification } from '../utils/realtime.js';
 
 const avatarUploadOptions = {
@@ -55,6 +55,12 @@ const uploadAvatar = asyncHandler(async (req, res, next) => {
 
     if(!uploaded?.secure_url){
         return next(new ApiError(500, "Avatar upload failed"));
+    }
+
+    const existingUser = await User.findById(req.user.id).select("avatar");
+
+    if (existingUser?.avatar) {
+      await deleteFromCloudinary(existingUser.avatar);
     }
 
     const user = await User.findByIdAndUpdate(
