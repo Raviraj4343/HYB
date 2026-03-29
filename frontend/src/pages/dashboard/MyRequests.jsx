@@ -51,7 +51,7 @@ const MyRequests = () => {
   const fetchMyRequests = async () => {
     setIsLoadingRequests(true);
     try {
-      const response = await api.get('/req/get-my-req');
+      const response = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/get-my-req`);
       setMyRequests(response.data.data.requests || []);
     } catch (err) {
       console.error('Failed to load my requests:', err);
@@ -63,7 +63,7 @@ const MyRequests = () => {
   const fetchMyResponses = async () => {
     setIsLoadingResponses(true);
     try {
-      const response = await api.get('/res/get-my-res');
+      const response = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/res/get-my-res`);
       setMyResponses(response.data.data.responses || []);
     } catch (err) {
       console.error('Failed to load my responses:', err);

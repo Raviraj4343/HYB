@@ -29,8 +29,8 @@ const Dashboard = () => {
   const fetchStats = async () => {
     try {
       const [requestsRes, chatsRes] = await Promise.all([
-        api.get('/req/stats'),
-        api.get('/chat'),
+        api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/stats`),
+          api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/chat`),
       ]);
 
       setStatsData({

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Hash, Loader2, MessagesSquare, Reply, Send, ShieldBan, Trash2, Users, X } from 'lucide-react';
+import { Loader2, MessagesSquare, Reply, Send, ShieldBan, Trash2, Users, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGlobalChat } from '../../hooks/useChat';
 import api from '../../api/axios';
@@ -90,7 +90,7 @@ const GlobalChat = () => {
     if (!days || !reason) return;
 
     try {
-      await api.post(`/report/block/${targetUser._id}`, {
+      await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/report/block/${targetUser._id}`, {
         days: Number(days),
         reason,
       });
@@ -101,79 +101,54 @@ const GlobalChat = () => {
   };
 
   return (
-    <div className="relative mx-auto flex h-[calc(100vh-8rem)] max-w-6xl flex-col overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.08),transparent_24%),linear-gradient(180deg,rgba(7,12,20,0.98),rgba(11,18,32,0.98))] p-3 sm:p-4">
+    <div className="relative mx-auto flex h-[calc(100vh-2rem)] max-w-7xl flex-col overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.08),transparent_24%),linear-gradient(180deg,rgba(7,12,20,0.98),rgba(11,18,32,0.98))] p-2 sm:p-3">
       <div className="pointer-events-none absolute left-0 top-0 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-0 h-56 w-56 rounded-full bg-sky-500/10 blur-3xl" />
 
-      <div className="mb-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-[linear-gradient(135deg,rgba(16,185,129,0.12),rgba(59,130,246,0.08)_42%,rgba(15,23,42,0.88))] px-6 py-5 shadow-[0_18px_40px_rgba(0,0,0,0.24)] backdrop-blur-xl">
-          <div className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-primary/12 blur-3xl" />
-          <div className="pointer-events-none absolute bottom-0 left-12 h-20 w-32 rounded-full bg-sky-500/10 blur-2xl" />
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/12 text-primary ring-1 ring-primary/15">
-              <MessagesSquare className="h-7 w-7" />
-            </div>
-            <div className="relative min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-3xl font-display font-semibold tracking-tight">Community Chat</h1>
-                <Badge className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
-                  Public Room
-                </Badge>
-              </div>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                A shared campus conversation space for quick updates, replies, and open discussion across HYB.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-[linear-gradient(180deg,rgba(10,15,28,0.94),rgba(15,23,42,0.84))] px-5 py-5 shadow-[0_16px_36px_rgba(0,0,0,0.2)] backdrop-blur-xl">
-          <div className="pointer-events-none absolute right-0 top-0 h-24 w-24 rounded-full bg-primary/10 blur-2xl" />
-          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-            <Users className="h-4 w-4 text-primary" />
-            Active Voices
-          </div>
-          <div className="mt-4 flex items-center gap-3">
-            <div className="flex -space-x-3">
-              {activeParticipants.length > 0 ? (
-                activeParticipants.map((participant) => (
-                  <Avatar key={participant._id} className="h-11 w-11 border-2 border-background shadow-sm">
-                    <AvatarImage src={participant.avatar} alt={participant.fullName} />
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                      {getInitials(participant.fullName)}
-                    </AvatarFallback>
-                  </Avatar>
-                ))
-              ) : (
-                <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-background bg-muted text-muted-foreground">
-                  <Users className="h-4 w-4" />
-                </div>
-              )}
-            </div>
-            <div className="min-w-0">
-              <div className="text-lg font-display font-semibold">{activeParticipants.length || 0}</div>
-              <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">recent participants</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <Card className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.8rem] border border-white/10 bg-[linear-gradient(180deg,rgba(7,12,20,0.94),rgba(12,18,32,0.95))] shadow-[0_24px_54px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+      <Card className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.8rem] border border-white/10 bg-[linear-gradient(180deg,rgba(7,12,20,0.96),rgba(12,18,32,0.96))] shadow-[0_24px_54px_rgba(0,0,0,0.28)] backdrop-blur-xl">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.1),transparent_18%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent_30%)]" />
         <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-          <div className="border-b border-white/10 bg-white/[0.03] px-5 py-4 backdrop-blur-md">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-                <Hash className="h-4 w-4 text-primary" />
-                general
+          <div className="border-b border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(12,18,32,0.96))] px-4 py-4 backdrop-blur-md sm:px-5">
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-3 shrink-0">
+                {activeParticipants.length > 0 ? (
+                  activeParticipants.map((participant) => (
+                    <Avatar key={participant._id} className="h-11 w-11 border-2 border-[rgba(7,12,20,0.9)] shadow-sm">
+                      <AvatarImage src={participant.avatar} alt={participant.fullName} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                        {getInitials(participant.fullName)}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))
+                ) : (
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[rgba(7,12,20,0.9)] bg-muted text-muted-foreground">
+                    <Users className="h-4 w-4" />
+                  </div>
+                )}
               </div>
-              <div className="text-sm text-muted-foreground">
-                {messages.length} messages
+
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="truncate text-xl font-display font-semibold tracking-tight text-foreground sm:text-2xl">
+                    Community Chat
+                  </h1>
+                  <Badge className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
+                    Public Room
+                  </Badge>
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <MessagesSquare className="h-4 w-4 text-primary" />
+                    <span>{messages.length} messages</span>
+                  </div>
+                  <span>{activeParticipants.length || 0} active voices</span>
+                  <span className="hidden sm:inline">Open group conversation across HYB</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="relative flex-1 space-y-5 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_28%),linear-gradient(180deg,rgba(7,12,20,0.3),rgba(7,12,20,0.06))] px-5 py-5">
+          <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_28%),linear-gradient(180deg,rgba(7,12,20,0.3),rgba(7,12,20,0.06))] px-4 py-5 custom-scrollbar sm:px-5">
             {isLoading && messages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -190,8 +165,8 @@ const GlobalChat = () => {
                   : message.replyTo?.content || 'Reply';
 
                 return (
-                  <div key={message._id} className="group flex gap-3">
-                    <Avatar className="mt-1 h-11 w-11 shrink-0 border border-border/70 shadow-sm">
+                  <div key={message._id} className="group mb-5 flex gap-3 last:mb-0">
+                    <Avatar className="mt-1 h-10 w-10 shrink-0 border border-border/70 shadow-sm sm:h-11 sm:w-11">
                       <AvatarImage src={message.sender?.avatar} alt={message.sender?.fullName} />
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                         {getInitials(message.sender?.fullName)}
@@ -208,7 +183,7 @@ const GlobalChat = () => {
                       </div>
 
                       <div className={cn(
-                        "mt-2 rounded-[1.35rem] border px-4 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.16)] backdrop-blur-md",
+                        "mt-2 max-w-[min(720px,100%)] rounded-[1.35rem] border px-4 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.16)] backdrop-blur-md",
                         isOwn
                           ? "border-primary/20 bg-[linear-gradient(135deg,rgba(20,184,166,0.16),rgba(59,130,246,0.12))]"
                           : "border-white/10 bg-[linear-gradient(180deg,rgba(17,24,39,0.94),rgba(10,15,28,0.92))]"
@@ -277,7 +252,7 @@ const GlobalChat = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="border-t border-white/10 bg-[linear-gradient(180deg,rgba(9,15,27,0.88),rgba(7,12,20,0.98))] p-4 backdrop-blur-xl">
+          <div className="border-t border-white/10 bg-[linear-gradient(180deg,rgba(9,15,27,0.88),rgba(7,12,20,0.98))] p-3 backdrop-blur-xl sm:p-4">
             {replyTo && (
               <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
                 <div className="min-w-0">
@@ -298,7 +273,7 @@ const GlobalChat = () => {
               </div>
             )}
 
-            <form onSubmit={handleSend} className="flex items-center gap-3">
+            <form onSubmit={handleSend} className="flex items-end gap-3">
               <div className="relative flex-1">
                 <div className="pointer-events-none absolute inset-0 rounded-2xl bg-[linear-gradient(135deg,rgba(20,184,166,0.08),rgba(59,130,246,0.06))]" />
                 <Input

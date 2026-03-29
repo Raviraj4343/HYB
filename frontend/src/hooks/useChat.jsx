@@ -13,7 +13,7 @@ export const useChat = (chatId, enabled = true) => {
 
     try {
       setIsLoading(true);
-      const response = await api.get(`/chat/${chatId}/messages`);
+      const response = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/chat/${chatId}/messages`);
       setMessages(response.data.data.messages || []);
       setError(null);
     } catch (err) {
@@ -34,7 +34,7 @@ export const useChat = (chatId, enabled = true) => {
         formData.append('image', image);
       }
 
-      const response = await api.post(`/chat/${chatId}/messages`, formData, {
+      const response = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/chat/${chatId}/messages`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -49,7 +49,7 @@ export const useChat = (chatId, enabled = true) => {
     if (!chatId) return;
 
     try {
-      await api.delete(`/chat/${chatId}/messages/${messageId}`);
+      await api.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/chat/${chatId}/messages/${messageId}`);
     } catch (err) {
       console.error('Failed to delete message:', err);
     }
@@ -132,7 +132,7 @@ export const useChatList = (enabled = true) => {
 
     try {
       setIsLoading(true);
-      const response = await api.get('/chat');
+      const response = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/chat`);
       setChats(response.data.data.chats || []);
       setError(null);
     } catch (err) {
@@ -184,7 +184,7 @@ export const useGlobalChat = (enabled = true) => {
 
     try {
       setIsLoading(true);
-      const response = await api.get('/chat/global/messages');
+      const response = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/chat/global/messages`);
       setMessages(response.data.data.messages || []);
       setError(null);
     } catch (err) {
@@ -196,7 +196,7 @@ export const useGlobalChat = (enabled = true) => {
 
   const sendMessage = useCallback(async (content, replyTo = null) => {
     try {
-      const response = await api.post('/chat/global/messages', {
+      const response = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/chat/global/messages`, {
         content,
         replyTo,
       });
@@ -209,7 +209,7 @@ export const useGlobalChat = (enabled = true) => {
 
   const deleteMessage = useCallback(async (messageId) => {
     try {
-      await api.delete(`/chat/global/messages/${messageId}`);
+      await api.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/chat/global/messages/${messageId}`);
       return { success: true };
     } catch (err) {
       return { success: false, error: err.message };

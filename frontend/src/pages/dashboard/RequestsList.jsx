@@ -86,7 +86,7 @@ const RequestsList = () => {
       if (category !== 'all') params.category = category;
       if (urgency !== 'all') params.urgency = urgency;
       
-      const response = await api.get('/req/get-all-req', { params });
+      const response = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/get-all-req`, { params });
       setRequests(response.data.data.requests || []);
     } catch (err) {
       setError(err.message || 'Failed to load requests');
@@ -150,7 +150,7 @@ const RequestsList = () => {
     if (!confirmed) return;
 
     try {
-      await api.delete(`/req/admin/${requestId}`, {
+      await api.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/admin/${requestId}`, {
         data: { reason },
       });
       setRequests((prev) => prev.filter((item) => item._id !== requestId));

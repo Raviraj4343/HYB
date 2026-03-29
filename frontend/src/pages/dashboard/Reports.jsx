@@ -28,7 +28,7 @@ const Reports = () => {
     try {
       setIsLoading(true);
       const query = statusFilter !== 'all' ? `?status=${statusFilter}` : '';
-      const response = await api.get(`/report${query}`);
+      const response = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/report${query}`);
       setReports(response.data.data.reports || []);
     } catch (err) {
       toast.error('Failed to fetch reports');
@@ -39,7 +39,7 @@ const Reports = () => {
 
   const updateReport = async (reportId, status) => {
     try {
-      await api.patch(`/report/${reportId}/status`, { status });
+      await api.patch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/report/${reportId}/status`, { status });
       setReports((prev) =>
         prev.map((report) => (report._id === reportId ? { ...report, status } : report))
       );
@@ -68,7 +68,7 @@ const Reports = () => {
     }
 
     try {
-      const response = await api.post(`/report/block/${report.reportedUser?._id}`, {
+      const response = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/report/block/${report.reportedUser?._id}`, {
         days: Number(draft.days),
         reason: draft.reason.trim(),
       });
@@ -96,7 +96,7 @@ const Reports = () => {
 
   const handleUnblockUser = async (report) => {
     try {
-      await api.post(`/report/unblock/${report.reportedUser?._id}`, { resetWarnings: false });
+      await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/report/unblock/${report.reportedUser?._id}`, { resetWarnings: false });
       setReports((prev) =>
         prev.map((item) =>
           item._id === report._id

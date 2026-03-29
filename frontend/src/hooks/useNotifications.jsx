@@ -14,7 +14,7 @@ export const useNotifications = (enabled = true) => {
 
     try {
       setIsLoading(true);
-      const response = await api.get('/notification');
+      const response = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/notification`);
       const { notifications: data, unreadCount: count } = response.data.data;
       setNotifications(data || []);
       setUnreadCount(count || 0);
@@ -29,7 +29,7 @@ export const useNotifications = (enabled = true) => {
 
   const markAsRead = useCallback(async (notificationId) => {
     try {
-      await api.put(`/notification/${notificationId}/read`);
+      await api.put(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/notification/${notificationId}/read`);
       setNotifications((prev) => prev.map((notification) => (
         notification._id === notificationId ? { ...notification, isRead: true } : notification
       )));
@@ -41,7 +41,7 @@ export const useNotifications = (enabled = true) => {
 
   const markAllAsRead = useCallback(async () => {
     try {
-      await api.put('/notification/read-all');
+      await api.put(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/notification/read-all`);
       setNotifications((prev) => prev.map((notification) => ({ ...notification, isRead: true })));
       setUnreadCount(0);
     } catch (err) {
@@ -51,7 +51,7 @@ export const useNotifications = (enabled = true) => {
 
   const deleteNotification = useCallback(async (notificationId) => {
     try {
-      await api.delete(`/notification/${notificationId}`);
+      await api.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/notification/${notificationId}`);
       setNotifications((prev) => {
         const target = prev.find((notification) => notification._id === notificationId);
         if (target && !target.isRead) {

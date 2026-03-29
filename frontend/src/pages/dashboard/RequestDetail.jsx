@@ -53,8 +53,8 @@ const RequestDetail = () => {
     setError(null);
     try {
       const [reqResponse, resResponse] = await Promise.all([
-        api.get(`/req/get-req-ById/${id}`),
-        api.get(`/res/get-req-for-res/${id}`).catch(() => ({ data: { data: { responses: [] } } }))
+        api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/get-req-ById/${id}`),
+        api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/res/get-req-for-res/${id}`).catch(() => ({ data: { data: { responses: [] } } }))
       ]);
       
       setRequest(reqResponse.data.data.request);
@@ -78,7 +78,7 @@ const RequestDetail = () => {
       formData.append('requestId', id);
       formData.append('message', responseText);
       
-      await api.post('/res/create-response', formData, {
+      await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/res/create-response`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       
@@ -94,7 +94,7 @@ const RequestDetail = () => {
 
   const handleAcceptRequest = async () => {
     try {
-      await api.put(`/req/accept-req/${id}`);
+      await api.put(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/accept-req/${id}`);
       toast.success('You are now helping with this request! 🙌');
       fetchRequestDetails();
     } catch (err) {
@@ -104,7 +104,7 @@ const RequestDetail = () => {
 
   const handleAcceptResponse = async (responseId) => {
     try {
-      await api.patch(`/res/${responseId}/accept`);
+      await api.patch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/res/${responseId}/accept`);
       toast.success('Response accepted!');
       fetchRequestDetails();
     } catch (err) {
@@ -114,7 +114,7 @@ const RequestDetail = () => {
 
   const handleFulfillRequest = async () => {
     try {
-      await api.put(`/req/full-fill-req/${id}`);
+      await api.put(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/full-fill-req/${id}`);
       toast.success('Request marked as fulfilled! Thank you! 🎉');
       fetchRequestDetails();
     } catch (err) {
@@ -124,7 +124,7 @@ const RequestDetail = () => {
 
   const handleCancelRequest = async () => {
     try {
-      await api.put(`/req/cancle-req/${id}`);
+      await api.put(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/cancle-req/${id}`);
       toast.success('Request cancelled');
       fetchRequestDetails();
     } catch (err) {
@@ -135,7 +135,7 @@ const RequestDetail = () => {
   const handleDeleteRequest = async () => {
     setIsDeleting(true);
     try {
-      await api.delete(`/req/${id}`);
+      await api.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/${id}`);
       toast.success('Request deleted');
       navigate('/dashboard/requests');
     } catch (err) {

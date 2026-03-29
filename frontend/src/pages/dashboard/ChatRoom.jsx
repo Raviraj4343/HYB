@@ -27,7 +27,7 @@ const ChatRoom = () => {
   useEffect(() => {
     const fetchChatInfo = async () => {
       try {
-        const response = await api.get(`/chat/${chatId}`);
+        const response = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/chat/${chatId}`);
         setChatInfo(response.data.data.chat);
       } catch (err) {
         console.error('Failed to fetch chat info:', err);

@@ -20,7 +20,7 @@ const UserProfile = () => {
     const fetchProfile = async () => {
       try {
         setIsLoading(true);
-        const response = await api.get(`/user/profile/${userName}`);
+        const response = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/user/profile/${userName}`);
         setProfile(response.data.data.user);
         setError(null);
       } catch (err) {

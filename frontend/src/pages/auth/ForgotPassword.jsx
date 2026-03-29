@@ -64,7 +64,7 @@ const ForgotPassword = () => {
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) return toast.error('Please enter a valid email address');
     setIsLoading(true);
     try {
-      await api.post('/auth/forgot-password', { email: normalizedEmail });
+      await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/forgot-password`, { email: normalizedEmail });
       setEmail(normalizedEmail);
       setSubmittedEmail(normalizedEmail);
       setCode('');
@@ -90,7 +90,7 @@ const ForgotPassword = () => {
     }
     setIsLoading(true);
     try {
-      const res = await api.post('/auth/reset-password', {
+      const res = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/reset-password`, {
         email: normalizedSubmittedEmail,
         code: code.trim(),
         newPassword

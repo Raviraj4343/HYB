@@ -47,7 +47,7 @@ const CreateReport = () => {
 
     setIsSubmitting(true);
     try {
-      await api.post('/report', formData);
+      await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/report`, formData);
       toast.success('Report submitted successfully');
       navigate(-1);
     } catch (err) {

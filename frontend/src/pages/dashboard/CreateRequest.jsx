@@ -147,7 +147,7 @@ const CreateRequest = () => {
         submitData.append('image', imageFile);
       }
       
-      const response = await api.post('/req/create-req', submitData, {
+      const response = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/create-req`, submitData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       
