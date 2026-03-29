@@ -11,13 +11,8 @@ const resolveApiBaseUrl = () => {
     return normalizeApiPrefix(configuredUrl);
   }
 
-  if (typeof window !== 'undefined') {
-    const { origin, hostname } = window.location;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:8000/api/v1';
-    }
-
-    return normalizeApiPrefix(`${origin}/api/v1`);
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    console.error('VITE_API_URL is not configured for this deployment. Falling back to localhost API.');
   }
 
   return 'http://localhost:8000/api/v1';

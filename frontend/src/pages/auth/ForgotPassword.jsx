@@ -64,7 +64,7 @@ const ForgotPassword = () => {
     if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) return toast.error('Please enter a valid email address');
     setIsLoading(true);
     try {
-      await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/forgot-password`, { email: normalizedEmail });
+      await api.post('/auth/forgot-password', { email: normalizedEmail });
       setEmail(normalizedEmail);
       setSubmittedEmail(normalizedEmail);
       setCode('');
@@ -73,7 +73,7 @@ const ForgotPassword = () => {
       toast.success('If that email exists, a verification code was sent to the registered email');
       setStage(1);
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to send code');
+      toast.error(err.data?.message || err.response?.data?.message || err.message || 'Failed to send code');
     } finally { setIsLoading(false); }
   };
 
@@ -90,7 +90,7 @@ const ForgotPassword = () => {
     }
     setIsLoading(true);
     try {
-      const res = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/reset-password`, {
+      const res = await api.post('/auth/reset-password', {
         email: normalizedSubmittedEmail,
         code: code.trim(),
         newPassword
@@ -103,7 +103,7 @@ const ForgotPassword = () => {
       if (user) localStorage.setItem('user', JSON.stringify(user));
       navigate('/login');
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Reset failed');
+      toast.error(err.data?.message || err.response?.data?.message || err.message || 'Reset failed');
     } finally { setIsLoading(false); }
   };
 
