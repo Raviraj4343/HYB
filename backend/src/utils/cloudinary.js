@@ -10,19 +10,32 @@ cloudinary.config({
 });
 
 
-const uploadOnCloudinary = async (localFilePath, options = {}) => {
+const uploadOnCloudinary = async (fileInput, options = {}) => {
     try {
-        if(!localFilePath) return null;
-        const response = await cloudinary.uploader.upload(localFilePath,{
+        if(!fileInput) return null;
+
+        if (Buffer.isBuffer(fileInput)) {
+            const base64Payload = `data:image/png;base64,${fileInput.toString("base64")}`;
+            return await cloudinary.uploader.upload(base64Payload, {
+                resource_type: "auto",
+                ...options,
+            });
+        }
+
+        const response = await cloudinary.uploader.upload(fileInput,{
             resource_type: "auto",
             ...options,
-        })
-        fs.unlinkSync(localFilePath);
+        });
+
+        if (typeof fileInput === "string" && fs.existsSync(fileInput)) {
+            fs.unlinkSync(fileInput);
+        }
+
         return response;
     } catch (error) {
        console.log("Cloudinary upload error:", error.message);
-       if (fs.existsSync(localFilePath)) {
-       fs.unlinkSync(localFilePath);
+       if (typeof fileInput === "string" && fs.existsSync(fileInput)) {
+       fs.unlinkSync(fileInput);
        }
          return null;
     }
