@@ -116,12 +116,12 @@ const Dashboard = () => {
       path: '/dashboard/requests/create',
     },
     {
-      title: 'Browse Requests',
-      description: 'Find someone you can help right now.',
+      title: 'My Requests',
+      description: 'Review and manage the requests you have created.',
       icon: Zap,
       accent: 'from-sky-500/20 to-indigo-500/5',
       iconBg: 'bg-sky-500/15 text-sky-300',
-      path: '/dashboard/requests',
+      path: '/dashboard/my-requests',
     },
     {
       title: 'Open Chats',
