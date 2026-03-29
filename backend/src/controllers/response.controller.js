@@ -37,10 +37,10 @@ const createResponse = asyncHandler(async (req, res) => {
     let image = null;
     if(req.file){
         const uploaded = await uploadOnCloudinary(req.file.path);
-        if(!uploaded?.url){
+        if(!uploaded?.secure_url){
             throw new ApiError(500, "Image upload failed");
         }
-        image = uploaded.url;
+        image = uploaded.secure_url;
     }
 
     const response = await Response.create({
