@@ -105,7 +105,7 @@ const ChatRoom = () => {
   const otherUser = getOtherParticipant();
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-1.5rem)] max-w-7xl flex-col overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.98))] shadow-[0_24px_60px_rgba(15,23,42,0.10)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(6,11,21,0.995),rgba(3,7,18,0.995))] dark:shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
+    <div className="mx-auto flex h-[calc(100dvh-1.5rem)] max-w-7xl flex-col overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.98))] shadow-[0_24px_60px_rgba(15,23,42,0.10)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(6,11,21,0.995),rgba(3,7,18,0.995))] dark:shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
       <div className="border-b border-border/70 bg-background/90 px-4 py-3 backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(13,20,35,0.97),rgba(8,13,24,0.98))] sm:px-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
@@ -119,7 +119,11 @@ const ChatRoom = () => {
             </Button>
 
             {otherUser && (
-              <>
+              <button
+                type="button"
+                className="flex min-w-0 items-center gap-3 rounded-2xl px-1 py-1 text-left transition hover:bg-black/5 dark:hover:bg-white/[0.03]"
+                onClick={() => navigate(`/dashboard/users/${otherUser.userName}`)}
+              >
                 <Avatar className="h-11 w-11 border border-border/70 shadow-sm dark:border-white/10">
                   <AvatarImage src={otherUser.avatar} />
                   <AvatarFallback className="bg-primary/10 text-primary font-semibold">
@@ -136,7 +140,7 @@ const ChatRoom = () => {
                     {chatInfo?.request && <span>{chatInfo.request.title}</span>}
                   </div>
                 </div>
-              </>
+              </button>
             )}
           </div>
 
@@ -170,7 +174,7 @@ const ChatRoom = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_20%)] px-4 py-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.07),transparent_22%),linear-gradient(180deg,rgba(8,15,28,0.28),rgba(5,10,20,0.08))] sm:px-6">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_20%)] px-4 py-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.07),transparent_22%),linear-gradient(180deg,rgba(8,15,28,0.28),rgba(5,10,20,0.08))] sm:px-6">
         {isLoading && messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -264,7 +268,7 @@ const ChatRoom = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={handleSend} className="border-t border-border/70 bg-background/90 p-3 backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.92),rgba(7,12,20,0.98))]">
+      <form onSubmit={handleSend} className="sticky bottom-0 z-10 border-t border-border/70 bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.95),rgba(7,12,20,0.99))]">
         {replyTo && (
           <div className="mb-3 flex items-start justify-between gap-3 rounded-[1rem] border border-primary/15 bg-primary/5 px-4 py-3">
             <div className="min-w-0">

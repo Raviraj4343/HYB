@@ -108,6 +108,9 @@
     --shadow-lg: 0 16px 30px -18px rgba(15, 23, 42, 0.10), 0 4px 10px -8px rgba(15, 23, 42, 0.06);
     --shadow-xl: 0 26px 44px -22px rgba(15, 23, 42, 0.12), 0 8px 16px -12px rgba(15, 23, 42, 0.06);
     --shadow-glow: 0 0 16px rgba(20, 150, 140, 0.12);
+    --shadow-elev-sm: 0 6px 18px rgba(2,6,23,0.06);
+    --shadow-elev-md: 0 18px 40px rgba(2,6,23,0.12);
+    --shadow-elev-lg: 0 30px 80px rgba(2,6,23,0.18);
 
     /* Sidebar */
     --sidebar-background: 212 22% 93%;
@@ -249,7 +252,7 @@
 .ds-btn--primary {
   background-image: var(--gradient-primary);
   color: hsl(var(--primary-foreground));
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-elev-sm);
 }
 .ds-btn--primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); }
 
@@ -276,9 +279,9 @@
 .ds-card {
   background: hsl(var(--card));
   color: hsl(var(--card-foreground));
-  border-radius: var(--radius);
+  border-radius: calc(var(--radius) - 0.1rem);
   border: 1px solid hsl(var(--border));
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-elev-sm);
 }
 
 /* Layout helpers */
@@ -288,6 +291,13 @@
 
 /* Smooth transitions for interactive elements */
 .smooth-transition { transition: all 180ms cubic-bezier(.2,.8,.2,1); }
+
+/* Elevated surface utility */
+.surface-elev {
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  box-shadow: var(--shadow-elev-md);
+}
 
 /* Accessibility: respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
@@ -405,8 +415,8 @@
   }
 
   /* Boxed scrollable region used for panels and form columns */
-  .box-scroll {
-    max-height: 56vh;
+    .box-scroll {
+      max-height: 70vh;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }

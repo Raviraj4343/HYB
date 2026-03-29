@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   HelpCircle,
-  ArrowUpRight,
   MessageSquare,
   Plus,
   Sparkles,
@@ -231,38 +230,18 @@ const Dashboard = () => {
             style={{ width: '100%' }}
           >
             <Card
-              className={`relative h-full min-h-[260px] cursor-pointer overflow-hidden rounded-[1.6rem] border border-border/70 bg-gradient-to-br ${tile.accent} shadow-[0_18px_45px_rgba(0,0,0,0.18)] transition-all duration-300 group-hover:border-primary/35 group-hover:shadow-[0_22px_60px_rgba(20,184,166,0.12)]`}
+              className={`relative h-full min-h-[140px] cursor-pointer overflow-hidden rounded-[1.2rem] border border-border/70 bg-gradient-to-br ${tile.accent} shadow-[0_12px_30px_rgba(0,0,0,0.12)] transition-all duration-300 group-hover:border-primary/35 group-hover:shadow-[0_18px_40px_rgba(20,184,166,0.08)]`}
               onClick={() => navigate(tile.path)}
             >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.10),transparent_34%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-80" />
               <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-3xl opacity-70 transition-opacity duration-300 group-hover:opacity-100" />
-              <CardContent className="flex h-full flex-col p-6">
-                <div className="mb-6 flex items-start justify-between gap-4">
-                  <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${tile.iconBg} ring-1 ring-white/10 transition-all duration-300 group-hover:scale-105`}>
-                    <tile.icon className="h-5 w-5" />
+              <CardContent className="flex h-full flex-col p-4">
+                <div className="flex items-center gap-4">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${tile.iconBg} ring-1 ring-white/8 transition-all duration-300 group-hover:scale-105`}>
+                    <tile.icon className="h-4 w-4" />
                   </div>
-                  <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-                    {tile.kind === 'live' ? 'Live' : 'Action'}
-                  </span>
-                </div>
-                {tile.kind === 'live' ? (
-                  <>
-                    <div className="text-4xl font-display font-bold tracking-tight text-foreground">{tile.value}</div>
-                    <div className="mt-3 text-xl font-display font-semibold text-foreground">{tile.label}</div>
-                    <p className="mt-2 max-w-[28rem] text-sm leading-6 text-muted-foreground">{tile.hint}</p>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-xl font-display font-semibold text-foreground">{tile.title}</div>
-                    <p className="mt-2 max-w-[28rem] text-sm leading-6 text-muted-foreground">{tile.description}</p>
-                  </>
-                )}
-                <div className="mt-auto pt-6">
-                  <div className="flex items-center justify-between rounded-2xl border border-white/8 bg-black/10 px-4 py-3 text-sm text-foreground/88 transition-colors duration-300 group-hover:border-primary/20 group-hover:bg-black/15">
-                    <span>{tile.kind === 'live' ? 'Open now' : 'Launch'}</span>
-                    <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                  </div>
+                  <div className="text-lg font-display font-semibold text-foreground truncate">{tile.label || tile.title}</div>
                 </div>
               </CardContent>
             </Card>
