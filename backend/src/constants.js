@@ -85,7 +85,8 @@ export const REPORT_REASON = [
 export const USER_ROLE = {
     USER: "user",
     ADMIN: "admin",
-    MODERATOR: "moderator"
+    MODERATOR: "moderator",
+    SUPER_ADMIN: "super_admin"
 };
 
 export const CONTACT_OPTION = [

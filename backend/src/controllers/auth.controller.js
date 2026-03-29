@@ -5,6 +5,7 @@ import ApiResponse from "../utils/ApiResponse.js";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { sendMail } from "../utils/mailer.js";
 import { buildAuthCodeEmail } from "../utils/mailer.js";
+import { USER_ROLE } from "../constants.js";
 
 
 // helper senetize user
@@ -42,6 +43,21 @@ const sendPasswordResetCodeEmail = async (email, code) => {
   });
 
   await sendMail({ to: email, subject, text, html });
+};
+
+const clearExpiredBlockIfNeeded = async (user) => {
+  if (
+    user?.isBlocked &&
+    user?.blockedUntil &&
+    user.blockedUntil.getTime() <= Date.now()
+  ) {
+    user.isBlocked = false;
+    user.blockedAt = null;
+    user.blockedUntil = null;
+    user.blockReason = null;
+    user.blockedBy = null;
+    await user.save({ validateBeforeSave: false });
+  }
 };
 
 const avatarUploadOptions = {
@@ -125,7 +141,7 @@ const registerUser = asyncHandler(async (req, res) => {
       avatar: avatarUrl,
       emailVerificationCode: code,
       emailVerificationExpires: expires,
-      role:userCount === 0 ? "admin" : "user"
+      role:userCount === 0 ? USER_ROLE.SUPER_ADMIN : USER_ROLE.USER
     });
   }
 
@@ -254,8 +270,18 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Invalid credentials");
   }
 
+  await clearExpiredBlockIfNeeded(user);
+
   if (!user.isEmailVerified) {
     throw new ApiError(403, "Please verify your email before signing in");
+  }
+
+  if (user.isBlocked) {
+    const untilLabel = user.blockedUntil
+      ? new Date(user.blockedUntil).toLocaleString("en-IN", { timeZone: "Asia/Calcutta" })
+      : "until an administrator reviews your account";
+    const reasonLabel = user.blockReason || "Policy violation";
+    throw new ApiError(403, `Your account is blocked for "${reasonLabel}" until ${untilLabel}`);
   }
 
   if (!user.isActive) {
