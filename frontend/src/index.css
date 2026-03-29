@@ -69,6 +69,33 @@
 
     --radius: 0.75rem;
 
+    /* Spacing scale (8px base) */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+
+    /* Typography scale */
+    --font-family-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    --font-family-heading: 'Space Grotesk', var(--font-family-sans);
+    --text-xs: 0.75rem; /* 12 */
+    --text-sm: 0.875rem; /* 14 */
+    --text-base: 1rem; /* 16 */
+    --text-lg: 1.125rem; /* 18 */
+    --text-xl: 1.25rem; /* 20 */
+    --text-2xl: 1.5rem; /* 24 */
+    --text-3xl: 1.875rem; /* 30 */
+    --text-4xl: 2.25rem; /* 36 */
+    --text-5xl: 3rem; /* 48 */
+
+    --leading-tight: 1.1;
+    --leading-normal: 1.45;
+    --leading-relaxed: 1.7;
+
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(175 75% 35%) 0%, hsl(200 85% 45%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(35 95% 55%) 0%, hsl(20 90% 55%) 100%);
@@ -160,7 +187,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-family-sans);
     background-image:
       radial-gradient(circle at top left, rgba(20, 184, 166, 0.035), transparent 24%),
       radial-gradient(circle at top right, rgba(59, 130, 246, 0.035), transparent 22%),
@@ -169,7 +196,81 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    font-family: var(--font-family-heading);
+  }
+}
+
+/* Global typographic helpers (non-invasive utilities used across the app) */
+.type-h1 { font-size: var(--text-4xl); line-height: var(--leading-tight); font-weight: 700; }
+.type-h2 { font-size: var(--text-3xl); line-height: var(--leading-tight); font-weight: 700; }
+.type-h3 { font-size: var(--text-2xl); line-height: var(--leading-normal); font-weight: 600; }
+.type-lead { font-size: var(--text-lg); line-height: var(--leading-normal); color: hsl(var(--muted-foreground)); }
+.type-body { font-size: var(--text-base); line-height: var(--leading-normal); }
+.type-caption { font-size: var(--text-sm); line-height: var(--leading-normal); color: hsl(var(--muted-foreground)); }
+
+/* Base button styles - non-invasive, prefixed to avoid clobbering existing classes */
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: calc(var(--radius) - 0.25rem);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+}
+.ds-btn:active { transform: translateY(1px); }
+.ds-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.ds-btn--primary {
+  background-image: var(--gradient-primary);
+  color: hsl(var(--primary-foreground));
+  box-shadow: var(--shadow-sm);
+}
+.ds-btn--primary:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); }
+
+.ds-btn--ghost {
+  background: transparent;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+.ds-btn--ghost:hover { background: hsla(0,0%,100%,0.02); }
+
+/* Form inputs */
+.ds-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: calc(var(--radius) - 0.25rem);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--input));
+  color: hsl(var(--foreground));
+  transition: box-shadow 160ms ease, border-color 160ms ease, background-color 160ms ease;
+}
+.ds-input:focus { box-shadow: 0 4px 18px rgba(0,0,0,0.06); border-color: hsl(var(--ring)); outline: none; }
+
+/* Card base (keeps existing glass-card behaviors intact but provides a simple class) */
+.ds-card {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-md);
+}
+
+/* Layout helpers */
+.ds-stack { display: flex; flex-direction: column; gap: var(--space-4); }
+.ds-row { display: flex; gap: var(--space-4); align-items: center; }
+.ds-container { max-width: 1200px; margin-left: auto; margin-right: auto; padding-left: var(--space-4); padding-right: var(--space-4); }
+
+/* Smooth transitions for interactive elements */
+.smooth-transition { transition: all 180ms cubic-bezier(.2,.8,.2,1); }
+
+/* Accessibility: respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .smooth-transition, .animate-fade-in, .animate-fade-in-up, .animate-scale-in, .animate-slide-in-right, .animate-slide-in-left {
+    transition: none !important;
+    animation: none !important;
   }
 }
 
