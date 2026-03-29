@@ -21,7 +21,7 @@ const isSuperAdmin = (req, res, next) => {
     return next(new ApiError(401, "Unauthorized"));
   }
 
-  if (!["super_admin", "admin"].includes(req.user.role)) {
+  if (req.user.role !== "super_admin") {
     return next(new ApiError(403, "Super admin access only"));
   }
 
