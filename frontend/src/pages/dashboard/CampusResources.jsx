@@ -8,7 +8,6 @@ import {
   FileText,
   Newspaper,
   Pencil,
-  Phone,
   Plus,
   Sparkles,
   ShieldCheck,
@@ -44,8 +43,8 @@ import {
 const CATEGORY_OPTIONS = [
   {
     value: 'faculty_contacts',
-    title: 'Professor Contacts',
-    description: 'Faculty phone numbers, office timings, and department support lines.',
+    title: 'Professor Details',
+    description: 'Faculty contacts with department, designation, email, and phone details.',
     icon: UserSquare2,
     accent: 'from-cyan-500/20 via-sky-500/14 to-transparent',
     badge: 'Faculty',
@@ -87,10 +86,9 @@ const CATEGORY_OPTIONS = [
 const SINGLE_IMAGE_CATEGORIES = new Set(['bus_timing', 'holiday_notice']);
 const CATEGORY_FIELD_RULES = {
   faculty_contacts: {
-    showTitle: true,
-    showDescription: true,
-    showContactName: true,
-    showPhoneNumber: true,
+    showTitle: false,
+    showDescription: false,
+    showProfessorFields: true,
     showLocation: true,
     showExternalLink: false,
     showEffectiveDate: false,
@@ -98,21 +96,18 @@ const CATEGORY_FIELD_RULES = {
     attachmentAccept: 'image/*',
   },
   hostel_updates: {
-    showTitle: true,
-    showDescription: true,
-    showContactName: true,
-    showPhoneNumber: true,
+    showTitle: false,
+    showDescription: false,
+    showHostelFields: true,
     showLocation: true,
     showExternalLink: true,
     showEffectiveDate: false,
-    attachmentLabel: 'Optional image or mess menu photo',
+    attachmentLabel: 'Optional image, mess menu photo, or hostel notice attachment',
     attachmentAccept: 'image/*',
   },
   bus_timing: {
     showTitle: false,
     showDescription: false,
-    showContactName: false,
-    showPhoneNumber: false,
     showLocation: false,
     showExternalLink: false,
     showEffectiveDate: true,
@@ -122,8 +117,6 @@ const CATEGORY_FIELD_RULES = {
   holiday_notice: {
     showTitle: false,
     showDescription: false,
-    showContactName: false,
-    showPhoneNumber: false,
     showLocation: false,
     showExternalLink: false,
     showEffectiveDate: true,
@@ -133,11 +126,9 @@ const CATEGORY_FIELD_RULES = {
   campus_news: {
     showTitle: true,
     showDescription: true,
-    showContactName: false,
-    showPhoneNumber: false,
     showLocation: false,
-    showExternalLink: true,
-    showEffectiveDate: true,
+    showExternalLink: false,
+    showEffectiveDate: false,
     attachmentLabel: 'Optional poster or supporting image',
     attachmentAccept: 'image/*',
   },
@@ -153,6 +144,15 @@ const EMPTY_FORM = {
   externalLink: '',
   effectiveDate: '',
   sortOrder: '0',
+  professorName: '',
+  designation: '',
+  department: '',
+  email: '',
+  phone: '',
+  hostelName: '',
+  wardenName: '',
+  wardenPhone: '',
+  messMenuNote: '',
 };
 
 const formatDate = (value) => {
@@ -219,6 +219,15 @@ const CampusResources = () => {
       externalLink: resource.externalLink || '',
       effectiveDate: resource.effectiveDate ? new Date(resource.effectiveDate).toISOString().slice(0, 10) : '',
       sortOrder: String(resource.sortOrder ?? 0),
+      professorName: resource.professorName || '',
+      designation: resource.designation || '',
+      department: resource.department || '',
+      email: resource.email || '',
+      phone: resource.phone || '',
+      hostelName: resource.hostelName || '',
+      wardenName: resource.wardenName || '',
+      wardenPhone: resource.wardenPhone || '',
+      messMenuNote: resource.messMenuNote || '',
     });
     setImageFile(null);
     setRemoveImage(false);
@@ -247,11 +256,20 @@ const CampusResources = () => {
         ...form,
         title: fieldRules.showTitle ? form.title : '',
         description: fieldRules.showDescription ? form.description : '',
-        contactName: fieldRules.showContactName ? form.contactName : '',
-        phoneNumber: fieldRules.showPhoneNumber ? form.phoneNumber : '',
+        contactName: '',
+        phoneNumber: '',
         location: fieldRules.showLocation ? form.location : '',
         externalLink: fieldRules.showExternalLink ? form.externalLink : '',
         effectiveDate: fieldRules.showEffectiveDate ? form.effectiveDate : '',
+        professorName: fieldRules.showProfessorFields ? form.professorName : '',
+        designation: fieldRules.showProfessorFields ? form.designation : '',
+        department: fieldRules.showProfessorFields ? form.department : '',
+        email: fieldRules.showProfessorFields ? form.email : '',
+        phone: fieldRules.showProfessorFields ? form.phone : '',
+        hostelName: fieldRules.showHostelFields ? form.hostelName : '',
+        wardenName: fieldRules.showHostelFields ? form.wardenName : '',
+        wardenPhone: fieldRules.showHostelFields ? form.wardenPhone : '',
+        messMenuNote: fieldRules.showHostelFields ? form.messMenuNote : '',
       };
 
       Object.entries(normalizedForm).forEach(([key, value]) => {
@@ -298,6 +316,38 @@ const CampusResources = () => {
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete campus resource');
     }
+  };
+
+  const renderCategoryMeta = (resource) => {
+    if (resource.category === 'faculty_contacts') {
+      return [
+        { label: 'Designation', value: resource.designation },
+        { label: 'Department', value: resource.department },
+        { label: 'Email', value: resource.email },
+        { label: 'Phone', value: resource.phone },
+        { label: 'Office', value: resource.location },
+      ].filter((item) => item.value);
+    }
+
+    if (resource.category === 'hostel_updates') {
+      return [
+        { label: 'Hostel', value: resource.hostelName },
+        { label: 'Warden', value: resource.wardenName },
+        { label: 'Warden Phone', value: resource.wardenPhone },
+        { label: 'Location', value: resource.location },
+        { label: 'Mess Note', value: resource.messMenuNote },
+      ].filter((item) => item.value);
+    }
+
+    if (resource.category === 'campus_news') {
+      return [];
+    }
+
+    return [
+      { label: 'Contact', value: resource.contactName },
+      { label: 'Phone', value: resource.phoneNumber },
+      { label: 'Location', value: resource.location },
+    ].filter((item) => item.value);
   };
 
   return (
@@ -393,6 +443,17 @@ const CampusResources = () => {
                       This section is managed as a single visual notice. Upload one latest image and update that same entry whenever timing or holiday information changes.
                     </div>
                   )}
+                  {!isSingleImageSection && items.length > 0 && (
+                    <div className="mb-5 flex flex-wrap items-center gap-3 rounded-[1.35rem] border border-border/70 bg-background/70 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03]">
+                      <div className="text-sm font-medium text-foreground dark:text-white">
+                        {items.length} {items.length === 1 ? 'entry' : 'entries'} in this section
+                      </div>
+                      <div className="h-1 w-1 rounded-full bg-muted-foreground/50" />
+                      <div className="text-sm text-muted-foreground">
+                        Designed for quick browsing and clean campus information.
+                      </div>
+                    </div>
+                  )}
                   {isLoading ? (
                     <div className="rounded-[1.4rem] border border-dashed border-border/70 px-5 py-10 text-center text-muted-foreground">
                       Loading resources...
@@ -406,17 +467,17 @@ const CampusResources = () => {
                       'custom-scrollbar',
                       items.length > 2 ? 'max-h-[44rem] overflow-y-auto pr-1' : ''
                     )}>
-                      <div className="grid gap-4 xl:grid-cols-2">
+                      <div className="grid gap-5 xl:grid-cols-2">
                       {items.map((resource) => (
                         <article
                           key={resource._id}
-                          className="group overflow-hidden rounded-[1.55rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(255,255,255,0.56))] shadow-[0_16px_34px_rgba(15,23,42,0.06)] transition hover:-translate-y-1.5 hover:border-primary/25 hover:shadow-[0_24px_50px_rgba(20,184,166,0.12)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(14,22,36,0.98),rgba(8,14,25,0.95))]"
+                          className="group overflow-hidden rounded-[1.7rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.78))] shadow-[0_18px_38px_rgba(15,23,42,0.08)] transition duration-300 hover:-translate-y-1 hover:border-primary/25 hover:shadow-[0_26px_54px_rgba(20,184,166,0.14)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(14,22,36,0.98),rgba(8,14,25,0.95))]"
                         >
                           {resource.image && resource.attachmentType !== 'pdf' && (
                             <div className="relative overflow-hidden">
                               <img
                                 src={resource.image}
-                                alt={resource.title}
+                                alt={resource.professorName || resource.hostelName || resource.title}
                                 className="h-52 w-full object-cover transition duration-500 group-hover:scale-[1.03]"
                               />
                               <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,23,0.14))]" />
@@ -426,8 +487,11 @@ const CampusResources = () => {
                           <div className="space-y-4 p-5">
                             <div className="flex items-start justify-between gap-4">
                               <div>
+                                <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary">
+                                  {section.badge}
+                                </div>
                                 <h3 className="text-xl font-display font-semibold text-foreground dark:text-white">
-                                  {resource.title}
+                                  {resource.professorName || resource.hostelName || resource.title}
                                 </h3>
                                 {resource.effectiveDate && (
                                   <p className="mt-1 text-sm text-muted-foreground">
@@ -483,41 +547,26 @@ const CampusResources = () => {
                               </div>
                             )}
 
-                            <p className="text-sm leading-7 text-foreground/78 dark:text-white/72">
-                              {resource.description}
-                            </p>
+                            {resource.description && (
+                              <p className="text-sm leading-7 text-foreground/78 dark:text-white/72">
+                                {resource.description}
+                              </p>
+                            )}
 
                             <div className="grid gap-3 sm:grid-cols-2">
-                              {resource.contactName && (
-                                <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03]">
-                                  <div className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Contact</div>
-                                  <div className="mt-2 text-sm font-medium text-foreground dark:text-white">{resource.contactName}</div>
+                              {renderCategoryMeta(resource).map((item) => (
+                                <div key={`${resource._id}-${item.label}`} className="rounded-[1.2rem] border border-border/70 bg-background/80 px-4 py-3 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+                                  <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{item.label}</div>
+                                  <div className="mt-2 text-sm font-medium text-foreground dark:text-white">{item.value}</div>
                                 </div>
-                              )}
-
-                              {resource.phoneNumber && (
-                                <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03]">
-                                  <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                                    <Phone className="h-3.5 w-3.5" />
-                                    Phone
-                                  </div>
-                                  <div className="mt-2 text-sm font-medium text-foreground dark:text-white">{resource.phoneNumber}</div>
-                                </div>
-                              )}
-
-                              {resource.location && (
-                                <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3 dark:border-white/10 dark:bg-white/[0.03]">
-                                  <div className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Location</div>
-                                  <div className="mt-2 text-sm font-medium text-foreground dark:text-white">{resource.location}</div>
-                                </div>
-                              )}
+                              ))}
 
                               {resource.externalLink && (
                                 <a
                                   href={resource.externalLink}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3 transition hover:border-primary/25 hover:text-primary dark:border-white/10 dark:bg-white/[0.03]"
+                                  className="rounded-[1.2rem] border border-border/70 bg-background/80 px-4 py-3 transition hover:border-primary/25 hover:text-primary dark:border-white/10 dark:bg-white/[0.04]"
                                 >
                                   <div className="flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-muted-foreground">
                                     <ExternalLink className="h-3.5 w-3.5" />
@@ -528,7 +577,7 @@ const CampusResources = () => {
                               )}
                             </div>
 
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3 text-xs text-muted-foreground dark:border-white/10">
                               <span>Updated {formatDate(resource.updatedAt)}</span>
                               {resource.updatedBy?.fullName && <span>by {resource.updatedBy.fullName}</span>}
                             </div>
@@ -568,10 +617,11 @@ const CampusResources = () => {
               </div>
             </DialogHeader>
 
-            <div className="max-h-[calc(92vh-170px)] overflow-y-auto px-6 py-6 custom-scrollbar">
-              <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
-                <div className="space-y-6">
-                  <div className="rounded-[1.5rem] border border-border/70 bg-card/70 p-5">
+            <div className="max-h-[calc(92vh-170px)] overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.06),transparent_20%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent)] px-6 py-6 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_22%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent)]">
+              <div className="rounded-[1.7rem] border border-border/70 bg-background/55 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md dark:bg-white/[0.02]">
+                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+                <div className="custom-scrollbar max-h-[58vh] space-y-6 overflow-y-auto pr-2">
+                  <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.52),rgba(8,15,28,0.42))]">
                     <div className="mb-4">
                       <h3 className="text-lg font-display font-semibold text-foreground">Core details</h3>
                       <p className="mt-1 text-sm text-muted-foreground">
@@ -609,6 +659,60 @@ const CampusResources = () => {
                       )}
                     </div>
 
+                    {fieldRules.showProfessorFields && (
+                      <div className="mt-5 grid gap-5 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">Professor Name</label>
+                          <Input className="h-12 rounded-2xl" value={form.professorName} onChange={(e) => handleChange('professorName', e.target.value)} placeholder="Prof. Sharma" required />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">Designation</label>
+                          <Input className="h-12 rounded-2xl" value={form.designation} onChange={(e) => handleChange('designation', e.target.value)} placeholder="Assistant Professor" required />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">Department</label>
+                          <Input className="h-12 rounded-2xl" value={form.department} onChange={(e) => handleChange('department', e.target.value)} placeholder="Computer Science" required />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">Email</label>
+                          <Input type="email" className="h-12 rounded-2xl" value={form.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="faculty@college.edu" required />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">Phone</label>
+                          <Input className="h-12 rounded-2xl" value={form.phone} onChange={(e) => handleChange('phone', e.target.value)} placeholder="+91 ..." required />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">Office / Location</label>
+                          <Input className="h-12 rounded-2xl" value={form.location} onChange={(e) => handleChange('location', e.target.value)} placeholder="CSE block, room 214" />
+                        </div>
+                      </div>
+                    )}
+
+                    {fieldRules.showHostelFields && (
+                      <div className="mt-5 grid gap-5 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">Hostel Name</label>
+                          <Input className="h-12 rounded-2xl" value={form.hostelName} onChange={(e) => handleChange('hostelName', e.target.value)} placeholder="Hostel H-9" required />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">Warden Name</label>
+                          <Input className="h-12 rounded-2xl" value={form.wardenName} onChange={(e) => handleChange('wardenName', e.target.value)} placeholder="Dr. Verma" required />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">Warden Phone</label>
+                          <Input className="h-12 rounded-2xl" value={form.wardenPhone} onChange={(e) => handleChange('wardenPhone', e.target.value)} placeholder="+91 ..." required />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-foreground">Hostel Location</label>
+                          <Input className="h-12 rounded-2xl" value={form.location} onChange={(e) => handleChange('location', e.target.value)} placeholder="North campus hostel wing" />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="text-sm font-medium text-foreground">Mess Menu / Notice Note</label>
+                          <Textarea className="min-h-[120px] rounded-[1.4rem]" value={form.messMenuNote} onChange={(e) => handleChange('messMenuNote', e.target.value)} placeholder="Add a short note about menu changes, notices, or hostel updates..." />
+                        </div>
+                      </div>
+                    )}
+
                     {fieldRules.showDescription && (
                     <div className="mt-5 space-y-2">
                       <label className="text-sm font-medium text-foreground">Description</label>
@@ -617,27 +721,15 @@ const CampusResources = () => {
                     )}
                   </div>
 
-                  {(fieldRules.showContactName || fieldRules.showPhoneNumber || fieldRules.showLocation || fieldRules.showExternalLink || fieldRules.showEffectiveDate) && (
-                  <div className="rounded-[1.5rem] border border-border/70 bg-card/70 p-5">
+                  {((fieldRules.showLocation && !fieldRules.showProfessorFields && !fieldRules.showHostelFields) || fieldRules.showExternalLink || fieldRules.showEffectiveDate) && (
+                  <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.52),rgba(8,15,28,0.42))]">
                     <div className="mb-4">
                       <h3 className="text-lg font-display font-semibold text-foreground">Useful metadata</h3>
-                      <p className="mt-1 text-sm text-muted-foreground">Add the person, number, location, or date that makes this resource actionable.</p>
+                      <p className="mt-1 text-sm text-muted-foreground">Only minimal supporting fields appear here when this category actually needs them.</p>
                     </div>
 
                     <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                      {fieldRules.showContactName && (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground">Contact Name</label>
-                        <Input className="h-12 rounded-2xl" value={form.contactName} onChange={(e) => handleChange('contactName', e.target.value)} placeholder="Warden / professor / office" />
-                      </div>
-                      )}
-                      {fieldRules.showPhoneNumber && (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground">Phone Number</label>
-                        <Input className="h-12 rounded-2xl" value={form.phoneNumber} onChange={(e) => handleChange('phoneNumber', e.target.value)} placeholder="+91 ..." />
-                      </div>
-                      )}
-                      {fieldRules.showLocation && (
+                      {fieldRules.showLocation && !fieldRules.showProfessorFields && !fieldRules.showHostelFields && (
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-foreground">Location</label>
                         <Input className="h-12 rounded-2xl" value={form.location} onChange={(e) => handleChange('location', e.target.value)} placeholder="Block / office / stop" />
@@ -672,8 +764,8 @@ const CampusResources = () => {
                   )}
                 </div>
 
-                <div className="space-y-5">
-                  <div className="rounded-[1.5rem] border border-border/70 bg-card/70 p-5">
+                <div className="custom-scrollbar max-h-[58vh] space-y-5 overflow-y-auto pr-1">
+                  <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.52),rgba(8,15,28,0.42))]">
                     <div className="mb-4">
                       <h3 className="text-lg font-display font-semibold text-foreground">Attachment</h3>
                       <p className="mt-1 text-sm text-muted-foreground">
@@ -681,7 +773,7 @@ const CampusResources = () => {
                       </p>
                     </div>
 
-                    <div className="space-y-3 rounded-[1.35rem] border border-border/70 bg-background/70 p-4">
+                    <div className="space-y-3 rounded-[1.35rem] border border-border/70 bg-background/75 p-4 dark:bg-white/[0.03]">
                       <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm font-medium text-primary transition hover:bg-primary/15">
                         <Upload className="h-4 w-4" />
                         Upload file
@@ -712,7 +804,7 @@ const CampusResources = () => {
                     </div>
                   </div>
 
-                  <div className="rounded-[1.5rem] border border-border/70 bg-card/70 p-5">
+                  <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.52),rgba(8,15,28,0.42))]">
                     <div className="mb-3 text-sm font-medium text-foreground">Publishing tips</div>
                     <ul className="space-y-2.5 text-sm leading-6 text-muted-foreground">
                       <li>Use only the most relevant fields so the section stays clean and trustworthy.</li>
@@ -721,6 +813,7 @@ const CampusResources = () => {
                     </ul>
                   </div>
                 </div>
+              </div>
               </div>
             </div>
 
