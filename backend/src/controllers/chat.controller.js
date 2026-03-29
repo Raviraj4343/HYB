@@ -78,6 +78,7 @@ const getChatById = asyncHandler(async (req, res) => {
 const sendMessage = asyncHandler(async (req, res) => {
   const { content, replyTo } = req.body;
   const chatId = req.params.id;
+  const trimmedContent = content?.trim();
 
   const chat = await Chat.findById(chatId);
   if (!chat) throw new ApiError('Chat not found', 404);
@@ -94,17 +95,25 @@ const sendMessage = asyncHandler(async (req, res) => {
 
   let image = null;
   if (req.file) {
-    image = await uploadOnCloudinary(req.file.buffer, 'hyb/messages');
+    const uploadedImage = await uploadOnCloudinary(req.file.path, {
+      folder: 'hyb/messages',
+      quality: 'auto:good',
+      fetch_format: 'auto',
+    });
+    if (!uploadedImage?.secure_url) {
+      throw new ApiError(500, 'Image upload failed');
+    }
+    image = uploadedImage.secure_url;
   }
 
-  if (!content && !image) {
-    throw new ApiError('Message content or image is required', 400);
+  if (!trimmedContent && !image) {
+    throw new ApiError(400, 'Message content or image is required');
   }
 
   const message = await Message.create({
     chat: chatId,
     sender: req.user.id,
-    content: content || '',
+    content: trimmedContent || '',
     image,
     replyTo: replyMessage?._id || null
   });
