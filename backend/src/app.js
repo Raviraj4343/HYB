@@ -92,13 +92,19 @@ app.use((err, req, res, next) => {
 });
 
 // SPA fallback: serve index.html for non-API GET routes to support client-side routing
-app.get('*', (req, res, next) => {
+// Use `app.use` instead of a wildcard route string to avoid path-to-regexp parsing
+// issues with newer versions of path-to-regexp and to prevent worker crash/restart loops.
+app.use((req, res, next) => {
+  // Only handle GET requests that are not API or static asset requests
   if (req.method !== 'GET') return next();
   if (req.path.startsWith('/api/')) return next();
+  if (req.path.startsWith('/socket.io')) return next();
 
+  // If a file exists in the public folder that matches the path, let express.static handle it
+  // Otherwise, serve the SPA entrypoint
   const indexPath = path.resolve(process.cwd(), 'public', 'index.html');
   res.sendFile(indexPath, (err) => {
-    if (err) next(err);
+    if (err) return next(err);
   });
 });
 
