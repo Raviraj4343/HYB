@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Loader2, Flag, HelpCircle, MessageSquare, Heart } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import { Loader2, Flag, HelpCircle, MessageSquare, Heart, RotateCcw, ShieldBan } from 'lucide-react';
 
 const UserProfile = () => {
   const { userName } = useParams();
@@ -15,12 +18,14 @@ const UserProfile = () => {
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [blockDays, setBlockDays] = useState('');
+  const [blockReason, setBlockReason] = useState('');
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setIsLoading(true);
-        const response = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/user/profile/${userName}`);
+        const response = await api.get(`/user/profile/${userName}`);
         setProfile(response.data.data.user);
         setError(null);
       } catch (err) {
@@ -38,6 +43,49 @@ const UserProfile = () => {
   };
 
   const isOwnProfile = currentUser?.userName === userName;
+  const canModerate = currentUser?.role === 'super_admin' && !isOwnProfile;
+
+  const handleBlockUser = async () => {
+    if (!profile?._id) return;
+    if (!blockDays || !blockReason.trim()) {
+      toast.error('Enter block days and reason');
+      return;
+    }
+
+    try {
+      const response = await api.post(`/report/block/${profile._id}`, {
+        days: Number(blockDays),
+        reason: blockReason.trim(),
+      });
+
+      setProfile((prev) => ({
+        ...prev,
+        isBlocked: true,
+        blockedUntil: response.data.data.blockedUntil,
+        blockReason: response.data.data.blockReason,
+      }));
+      toast.success('User blocked successfully');
+    } catch (err) {
+      toast.error(err.data?.message || err.response?.data?.message || err.message || 'Failed to block user');
+    }
+  };
+
+  const handleUnblockUser = async () => {
+    if (!profile?._id) return;
+
+    try {
+      await api.post(`/report/unblock/${profile._id}`, { resetWarnings: false });
+      setProfile((prev) => ({
+        ...prev,
+        isBlocked: false,
+        blockedUntil: null,
+        blockReason: null,
+      }));
+      toast.success('User unblocked successfully');
+    } catch (err) {
+      toast.error(err.data?.message || err.response?.data?.message || err.message || 'Failed to unblock user');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -50,10 +98,6 @@ const UserProfile = () => {
   if (error || !profile) {
     return (
       <div className="max-w-2xl mx-auto">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back
-        </Button>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="text-lg font-medium">User not found</p>
@@ -66,11 +110,6 @@ const UserProfile = () => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <Button variant="ghost" onClick={() => navigate(-1)} className="mb-2">
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back
-      </Button>
-
       <Card>
         <CardHeader className="pb-0">
           <div className="flex flex-col sm:flex-row items-center gap-6">
@@ -93,11 +132,24 @@ const UserProfile = () => {
                 {profile.hostel && (
                   <Badge variant="outline">{profile.hostel}</Badge>
                 )}
+                {profile.isBlocked && (
+                  <Badge variant="destructive">Blocked</Badge>
+                )}
               </div>
             </div>
           </div>
         </CardHeader>
         <CardContent className="pt-6">
+          {profile.isBlocked && (
+            <div className="mb-6 rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
+              <p className="font-medium text-destructive">This account is currently blocked</p>
+              <p className="mt-1 text-sm text-muted-foreground">Reason: {profile.blockReason || 'Not available'}</p>
+              {profile.blockedUntil && (
+                <p className="mt-1 text-sm text-muted-foreground">Until: {new Date(profile.blockedUntil).toLocaleString()}</p>
+              )}
+            </div>
+          )}
+
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="text-center p-4 bg-muted rounded-xl">
@@ -134,6 +186,43 @@ const UserProfile = () => {
                 <Flag className="w-4 h-4" />
                 Report User
               </Button>
+            </div>
+          )}
+
+          {canModerate && (
+            <div className="mt-6 rounded-2xl border border-border/70 bg-card/70 p-4">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <ShieldBan className="h-4 w-4 text-destructive" />
+                Super Admin Controls
+              </div>
+              <div className="mt-3 grid gap-3 md:grid-cols-[140px_minmax(0,1fr)]">
+                <Input
+                  type="number"
+                  min="1"
+                  max="365"
+                  placeholder="Days"
+                  value={blockDays}
+                  onChange={(e) => setBlockDays(e.target.value)}
+                />
+                <Textarea
+                  rows={3}
+                  placeholder="Reason for blocking this user"
+                  value={blockReason}
+                  onChange={(e) => setBlockReason(e.target.value)}
+                />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button variant="destructive" onClick={handleBlockUser}>
+                  <ShieldBan className="mr-2 h-4 w-4" />
+                  Block User
+                </Button>
+                {profile.isBlocked && (
+                  <Button variant="outline" onClick={handleUnblockUser}>
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Unblock User
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </CardContent>

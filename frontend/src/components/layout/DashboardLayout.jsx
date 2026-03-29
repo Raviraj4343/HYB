@@ -27,7 +27,6 @@ import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../hooks/useNotifications';
 import api from '../../api/axios';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -271,22 +270,6 @@ const DashboardLayout = () => {
             </div>
           )}
         </div>
-        {mobile && (
-          <div className="mb-5 px-1">
-            <div className="rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-3 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
-              <div className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-                Search
-              </div>
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                <Input
-                  placeholder="Search people"
-                  className="h-14 rounded-[1.2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,17,29,0.96),rgba(7,12,23,0.9))] pl-11 text-sm text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_24px_rgba(0,0,0,0.18)] focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-0"
-                />
-              </div>
-            </div>
-          </div>
-        )}
         {navItems
           .filter((item) => !(mobile && item.path === '/dashboard/community-chat'))
           .map((item) => renderNavLink(item, mobile))}
@@ -457,7 +440,7 @@ const DashboardLayout = () => {
             <>
               <motion.div
                 initial={{ opacity: 0, backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
-                animate={{ opacity: 1, backdropFilter: 'blur(24px)', backgroundColor: 'rgba(2,6,23,0.88)' }}
+                animate={{ opacity: 1, backdropFilter: 'blur(28px)', backgroundColor: 'rgba(2,6,23,0.94)' }}
                 exit={{ opacity: 0, backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
                 transition={{ duration: 0.22, ease: 'easeOut' }}
                 className="fixed inset-0 z-40 lg:hidden mobile-overlay"
@@ -468,8 +451,10 @@ const DashboardLayout = () => {
                 animate={{ x: 0 }}
                 exit={{ x: 320 }}
                 transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-                className="fixed inset-y-0 right-0 z-50 flex w-[390px] max-w-[95vw] flex-col overflow-hidden border-l border-white/10 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.14),transparent_18%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.16),transparent_24%),linear-gradient(180deg,rgba(11,18,34,0.99),rgba(15,23,42,0.985))] shadow-[0_24px_80px_rgba(0,0,0,0.66)] backdrop-blur-3xl lg:hidden force-3d"
+                className="fixed inset-y-0 right-0 z-50 flex w-[390px] max-w-[95vw] flex-col overflow-hidden border-l border-white/10 bg-[#08101d] shadow-[0_24px_80px_rgba(0,0,0,0.72)] lg:hidden force-3d"
               >
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.10),transparent_18%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.12),transparent_24%),linear-gradient(180deg,rgba(8,16,29,0.995),rgba(6,11,20,0.995))]" />
+                <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),transparent_22%,transparent_78%,rgba(255,255,255,0.015))]" />
                 <div className="relative border-b border-sidebar-border/70 px-6 py-5">
                   <div className="pointer-events-none absolute inset-x-6 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent)]" />
                   <div className="flex items-center justify-between gap-4">
@@ -491,7 +476,7 @@ const DashboardLayout = () => {
                     </button>
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto overscroll-contain force-3d custom-scrollbar">
+                <div className="relative flex-1 overflow-y-auto overscroll-contain force-3d custom-scrollbar">
                   {sidebarContent(true)}
                 </div>
               </motion.aside>
@@ -502,7 +487,7 @@ const DashboardLayout = () => {
         <div
           className={cn(
             "flex min-h-screen flex-1 flex-col transition-all duration-200",
-            isMobileSidebarOpen && "pointer-events-none scale-[0.992] blur-[6px] brightness-[0.48] lg:pointer-events-auto lg:scale-100 lg:blur-0 lg:brightness-100"
+            isMobileSidebarOpen && "pointer-events-none scale-[0.99] blur-[8px] brightness-[0.34] saturate-[0.75] lg:pointer-events-auto lg:scale-100 lg:blur-0 lg:brightness-100 lg:saturate-100"
           )}
         >
           <header className="sticky top-0 z-30 border-b border-[#1f2a44] bg-[#070d19]/92 shadow-[0_18px_48px_rgba(1,6,20,0.42)] backdrop-blur-2xl">
@@ -535,7 +520,7 @@ const DashboardLayout = () => {
                 >
                   <MessagesSquare className="h-5 w-5" />
                   {communityUnreadCount > 0 && (
-                    <span className="absolute -right-2.5 -top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-background bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground shadow-[0_6px_14px_rgba(20,184,166,0.28)]">
+                    <span className="absolute right-0 top-0 z-10 flex h-5 min-w-5 translate-x-[18%] -translate-y-[18%] items-center justify-center rounded-full border-2 border-[#070d19] bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground shadow-[0_8px_18px_rgba(20,184,166,0.34)]">
                       {communityUnreadCount > 9 ? '9+' : communityUnreadCount}
                     </span>
                   )}
@@ -549,7 +534,7 @@ const DashboardLayout = () => {
                 >
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
-                    <span className="absolute -right-2.5 -top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-background bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground shadow-[0_6px_14px_rgba(239,68,68,0.28)]">
+                    <span className="absolute right-0 top-0 z-10 flex h-5 min-w-5 translate-x-[18%] -translate-y-[18%] items-center justify-center rounded-full border-2 border-[#070d19] bg-destructive px-1 text-[10px] font-bold leading-none text-destructive-foreground shadow-[0_8px_18px_rgba(239,68,68,0.34)]">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
