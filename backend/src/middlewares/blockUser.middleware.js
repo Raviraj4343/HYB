@@ -1,6 +1,21 @@
 import {User} from "../models/user.models.js";
 import ApiError from "../utils/ApiError.js";
 
+const releaseExpiredBlockIfNeeded = async (user) => {
+  if (
+    user?.isBlocked &&
+    user?.blockedUntil &&
+    user.blockedUntil.getTime() <= Date.now()
+  ) {
+    user.isBlocked = false;
+    user.blockedAt = null;
+    user.blockedUntil = null;
+    user.blockReason = null;
+    user.blockedBy = null;
+    await user.save({ validateBeforeSave: false });
+  }
+};
+
 
 /**
  * Middleware to check if user is blocked
@@ -14,18 +29,24 @@ const checkBlockedUser = async (req, res, next) => {
       return next(new ApiError(401, 'Unauthorized: User not authenticated'));
     }
 
-    const user = await User.findById(userId).select('isBlocked warningCount');
+    const user = await User.findById(userId).select('isBlocked warningCount blockedUntil blockReason blockedBy blockedAt');
     
     if (!user) {
       return next(new ApiError(404, 'User not found'));
     }
 
+    await releaseExpiredBlockIfNeeded(user);
+
     if (user.isBlocked) {
       return res.status(403).json({
         success: false,
-        message: '🚫 Your account has been temporarily blocked due to repeated policy violations. You cannot perform this action.',
+        message: user.blockedUntil
+          ? `Your account is blocked until ${user.blockedUntil.toISOString()}`
+          : 'Your account has been temporarily blocked. You cannot perform this action.',
         isBlocked: true,
-        warningCount: user.warningCount
+        warningCount: user.warningCount,
+        blockedUntil: user.blockedUntil,
+        blockReason: user.blockReason
       });
     }
 
@@ -50,7 +71,9 @@ const warnBlockedUser = async (req, res, next) => {
       return next();
     }
 
-    const user = await User.findById(userId).select('isBlocked warningCount');
+    const user = await User.findById(userId).select('isBlocked warningCount blockedUntil blockReason blockedBy blockedAt');
+
+    await releaseExpiredBlockIfNeeded(user);
     
     if (user?.isBlocked) {
       // Attach blocked status to request for controllers to use
@@ -73,15 +96,19 @@ const warnBlockedUser = async (req, res, next) => {
  */
 const isUserBlocked = async (userId) => {
   try {
-    const user = await User.findById(userId).select('isBlocked warningCount');
+    const user = await User.findById(userId).select('isBlocked warningCount blockedUntil blockReason blockedBy blockedAt');
     
     if (!user) {
       return { isBlocked: false, warningCount: 0 };
     }
 
+    await releaseExpiredBlockIfNeeded(user);
+
     return {
       isBlocked: user.isBlocked || false,
-      warningCount: user.warningCount || 0
+      warningCount: user.warningCount || 0,
+      blockedUntil: user.blockedUntil || null,
+      blockReason: user.blockReason || null
     };
 
   } catch (error) {
