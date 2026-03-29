@@ -3,6 +3,21 @@ import * as AvatarPrimitive from "@radix-ui/react-avatar";
 
 import { cn } from "@/lib/utils";
 
+const transformAvatarSrc = (src?: string) => {
+  if (!src || !src.includes("res.cloudinary.com") || !src.includes("/upload/")) {
+    return src;
+  }
+
+  if (src.includes("/upload/c_fill") || src.includes("/upload/w_")) {
+    return src;
+  }
+
+  return src.replace(
+    "/upload/",
+    "/upload/c_fill,g_face,h_320,w_320,q_auto,f_auto/"
+  );
+};
+
 const Avatar = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>
@@ -18,8 +33,13 @@ Avatar.displayName = AvatarPrimitive.Root.displayName;
 const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Image ref={ref} className={cn("aspect-square h-full w-full", className)} {...props} />
+>(({ className, src, ...props }, ref) => (
+  <AvatarPrimitive.Image
+    ref={ref}
+    className={cn("h-full w-full object-cover object-center", className)}
+    src={transformAvatarSrc(src)}
+    {...props}
+  />
 ));
 AvatarImage.displayName = AvatarPrimitive.Image.displayName;
 
