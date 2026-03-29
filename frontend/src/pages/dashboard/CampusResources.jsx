@@ -377,10 +377,17 @@ const CampusResources = () => {
                     }, 120);
                   } else {
                     const el = document.getElementById(`section-${cat.value}`);
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    if (el) {
+                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      // add a brief highlight after scrolling to draw attention
+                      setTimeout(() => {
+                        el.classList.add('scroll-highlight');
+                        setTimeout(() => el.classList.remove('scroll-highlight'), 1200);
+                      }, 350);
+                    }
                   }
                 }}
-                className="text-left rounded-xl border border-border/60 bg-background/80 p-4 hover:shadow-md transition transform hover:-translate-y-1"
+                className="text-left rounded-xl border border-border/60 bg-background/80 p-4 hover:shadow-md transition transform hover:-translate-y-1 nav-focus"
               >
                 <div className="flex items-start gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">

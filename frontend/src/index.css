@@ -299,6 +299,32 @@
   box-shadow: var(--shadow-elev-md);
 }
 
+/* Highlight-on-scroll animation */
+@keyframes flashHighlight {
+  0% { box-shadow: 0 0 0 0 rgba(56,189,248,0.0); }
+  10% { box-shadow: 0 6px 24px rgba(56,189,248,0.12); }
+  60% { box-shadow: 0 10px 36px rgba(56,189,248,0.06); }
+  100% { box-shadow: 0 0 0 0 rgba(56,189,248,0); }
+}
+
+.scroll-highlight {
+  animation: flashHighlight 900ms ease-in-out forwards;
+  border-color: rgba(56,189,248,0.18) !important;
+}
+
+/* Nav focus and button polish */
+.nav-focus:focus,
+.nav-focus:focus-within {
+  outline: none;
+  box-shadow: 0 6px 24px rgba(59,130,246,0.14);
+  border-radius: 0.9rem;
+}
+
+.btn-focus:focus {
+  outline: none;
+  box-shadow: 0 8px 34px rgba(20,184,166,0.14);
+}
+
 /* Accessibility: respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .smooth-transition, .animate-fade-in, .animate-fade-in-up, .animate-scale-in, .animate-slide-in-right, .animate-slide-in-left {
