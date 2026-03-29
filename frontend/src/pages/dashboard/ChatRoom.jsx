@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useChat } from '../../hooks/useChat';
 import { useAuth } from '../../context/AuthContext';
@@ -373,104 +374,103 @@ const ChatRoom = () => {
         </button>
       )}
 
-      {/* Fixed input on small screens; static on larger screens */}
-      <div className="sm:static fixed left-0 right-0 bottom-0 z-50 sm:z-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <form onSubmit={handleSend} className="border-t border-border/70 bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.95),rgba(7,12,20,0.99))] rounded-t-xl sm:rounded-none">
-        {replyTo && (
-          <div className="mb-3 flex items-start justify-between gap-3 rounded-[1rem] border border-primary/15 bg-primary/5 px-4 py-3">
-            <div className="min-w-0">
-              <div className="text-sm font-medium text-primary">Replying to @{replyTo.sender?.userName}</div>
-              <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                {replyTo.isDeleted ? 'Deleted message' : replyTo.content}
+      {typeof document !== 'undefined' && createPortal(
+        <div className="sm:static fixed left-0 right-0 bottom-0 z-50 sm:z-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <form onSubmit={handleSend} className="border-t border-border/70 bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.95),rgba(7,12,20,0.99))] rounded-t-xl sm:rounded-none">
+              {replyTo && (
+                <div className="mb-3 flex items-start justify-between gap-3 rounded-[1rem] border border-primary/15 bg-primary/5 px-4 py-3">
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-primary">Replying to @{replyTo.sender?.userName}</div>
+                    <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                      {replyTo.isDeleted ? 'Deleted message' : replyTo.content}
+                    </div>
+                  </div>
+                  <Button type="button" size="icon" variant="ghost" className="h-8 w-8 shrink-0 rounded-full" onClick={() => setReplyTo(null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+
+              {imageFile && (
+                <div className="mb-3 flex items-center gap-3 rounded-[1rem] border border-border/70 bg-background/80 px-4 py-2.5 text-sm shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+                  <Paperclip className="h-4 w-4 text-primary" />
+                  <span className="min-w-0 flex-1 truncate text-foreground dark:text-white">{imageFile.name}</span>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setImageFile(null)}>
+                    Remove
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex items-end gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageSelect}
+                />
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 rounded-full border-border/70 bg-background/80 shadow-sm dark:border-white/10 dark:bg-white/[0.04]"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Image className="h-4 w-4" />
+                </Button>
+
+                <div className="relative flex-1">
+                  <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[linear-gradient(135deg,rgba(20,184,166,0.12),rgba(59,130,246,0.08))]" />
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    placeholder="Write a message..."
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="h-11 w-full rounded-full border border-slate-900 !bg-slate-950 px-5 text-[15px] font-medium !text-slate-100 placeholder:!text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.26)] outline-none transition focus:border-primary/35 focus:ring-2 focus:ring-primary/20 dark:border-slate-900 dark:!bg-slate-950 dark:!text-slate-100 dark:placeholder:!text-slate-500"
+                    style={{
+                      background: '#020617',
+                      color: '#f8fafc',
+                      WebkitTextFillColor: '#f8fafc',
+                      caretColor: '#f8fafc',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px rgba(15,23,42,0.26)',
+                    }}
+                    disabled={isSending}
+                    onFocus={() => {
+                      const inputEl = inputRef.current;
+                      const container = messagesContainerRef.current;
+                      if (container && inputEl) {
+                        container.style.paddingBottom = `${inputEl.offsetHeight + 24}px`;
+                        setTimeout(() => container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' }), 120);
+                        setShowScrollBtn(false);
+                      }
+                    }}
+                    onBlur={() => {
+                      const inputEl = inputRef.current;
+                      const container = messagesContainerRef.current;
+                      if (container && inputEl) {
+                        container.style.paddingBottom = `${inputEl.offsetHeight + 24}px`;
+                      }
+                    }}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="h-11 rounded-full px-4 btn-gradient-primary shadow-[0_12px_28px_rgba(20,184,166,0.24)]"
+                  disabled={isSending || (!messageText.trim() && !imageFile)}
+                >
+                  {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                </Button>
               </div>
-            </div>
-            <Button type="button" size="icon" variant="ghost" className="h-8 w-8 shrink-0 rounded-full" onClick={() => setReplyTo(null)}>
-              <X className="h-4 w-4" />
-            </Button>
+            </form>
           </div>
-        )}
-
-        {imageFile && (
-          <div className="mb-3 flex items-center gap-3 rounded-[1rem] border border-border/70 bg-background/80 px-4 py-2.5 text-sm shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
-            <Paperclip className="h-4 w-4 text-primary" />
-            <span className="min-w-0 flex-1 truncate text-foreground dark:text-white">{imageFile.name}</span>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setImageFile(null)}>
-              Remove
-            </Button>
-          </div>
-        )}
-
-        <div className="flex items-end gap-3">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleImageSelect}
-          />
-
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-11 w-11 rounded-full border-border/70 bg-background/80 shadow-sm dark:border-white/10 dark:bg-white/[0.04]"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Image className="h-4 w-4" />
-          </Button>
-
-          <div className="relative flex-1">
-            <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[linear-gradient(135deg,rgba(20,184,166,0.12),rgba(59,130,246,0.08))]" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              placeholder="Write a message..."
-              autoComplete="off"
-              spellCheck={false}
-              className="h-11 w-full rounded-full border border-slate-900 !bg-slate-950 px-5 text-[15px] font-medium !text-slate-100 placeholder:!text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.26)] outline-none transition focus:border-primary/35 focus:ring-2 focus:ring-primary/20 dark:border-slate-900 dark:!bg-slate-950 dark:!text-slate-100 dark:placeholder:!text-slate-500"
-              style={{
-                background: '#020617',
-                color: '#f8fafc',
-                WebkitTextFillColor: '#f8fafc',
-                caretColor: '#f8fafc',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px rgba(15,23,42,0.26)',
-              }}
-              disabled={isSending}
-              onFocus={() => setTimeout(() => {
-                try { if (headerRef.current && containerRef.current) {
-                  const h = window.innerHeight - headerRef.current.offsetHeight;
-                  containerRef.current.style.height = `${h}px`;
-                }
-                document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
-                messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' });
-                setShowScrollBtn(false);
-                } catch(e) {}
-              }, 80)}
-              onBlur={() => setTimeout(() => {
-                try { if (headerRef.current && containerRef.current) {
-                  const h = window.innerHeight - headerRef.current.offsetHeight;
-                  containerRef.current.style.height = `${h}px`;
-                }
-                document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
-                } catch(e) {}
-              }, 80)}
-            />
-          </div>
-
-          <Button
-            type="submit"
-            className="h-11 rounded-full px-4 btn-gradient-primary shadow-[0_12px_28px_rgba(20,184,166,0.24)]"
-            disabled={isSending || (!messageText.trim() && !imageFile)}
-          >
-            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
-        </div>
-          </form>
-        </div>
-      </div>
+        </div>, document.body)
+      }
     </div>
   );
 };
