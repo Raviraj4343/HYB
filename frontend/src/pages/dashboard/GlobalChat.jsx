@@ -22,12 +22,6 @@ const GlobalChat = () => {
   const GLOBAL_CHAT_LAST_SEEN_KEY = 'globalChatLastSeenAt';
 
   const canBlockUsers = user?.role === 'super_admin' || user?.role === 'admin';
-  const composerStyle = {
-    background: 'linear-gradient(180deg, rgba(15,23,42,0.96), rgba(17,24,39,0.92))',
-    color: '#e5eefb',
-    WebkitTextFillColor: '#e5eefb',
-    caretColor: '#f8fafc',
-  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -90,7 +84,7 @@ const GlobalChat = () => {
     if (!days || !reason) return;
 
     try {
-      await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/report/block/${targetUser._id}`, {
+      await api.post(`/report/block/${targetUser._id}`, {
         days: Number(days),
         reason,
       });
@@ -101,19 +95,19 @@ const GlobalChat = () => {
   };
 
   return (
-    <div className="relative mx-auto flex h-[calc(100vh-2rem)] max-w-7xl flex-col overflow-hidden rounded-[2rem] bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.08),transparent_24%),linear-gradient(180deg,rgba(7,12,20,0.98),rgba(11,18,32,0.98))] p-2 sm:p-3">
+    <div className="relative mx-auto flex h-[calc(100vh-2rem)] max-w-7xl flex-col overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,rgba(255,255,255,0.68),rgba(255,255,255,0.24))] p-2 shadow-[0_18px_42px_rgba(15,23,42,0.08)] dark:bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.08),transparent_24%),linear-gradient(180deg,rgba(7,12,20,0.98),rgba(11,18,32,0.98))] dark:shadow-[0_24px_56px_rgba(0,0,0,0.22)] sm:p-3">
       <div className="pointer-events-none absolute left-0 top-0 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-0 h-56 w-56 rounded-full bg-sky-500/10 blur-3xl" />
 
-      <Card className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.8rem] border border-white/10 bg-[linear-gradient(180deg,rgba(7,12,20,0.96),rgba(12,18,32,0.96))] shadow-[0_24px_54px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+      <Card className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.8rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.84))] shadow-[0_24px_54px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(7,12,20,0.96),rgba(12,18,32,0.96))] dark:shadow-[0_24px_54px_rgba(0,0,0,0.28)]">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.1),transparent_18%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent_30%)]" />
         <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-          <div className="border-b border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(12,18,32,0.96))] px-4 py-4 backdrop-blur-md sm:px-5">
+          <div className="border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.84))] px-4 py-4 backdrop-blur-md dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(12,18,32,0.96))] sm:px-5">
             <div className="flex items-center gap-3">
               <div className="flex -space-x-3 shrink-0">
                 {activeParticipants.length > 0 ? (
                   activeParticipants.map((participant) => (
-                    <Avatar key={participant._id} className="h-11 w-11 border-2 border-[rgba(7,12,20,0.9)] shadow-sm">
+                    <Avatar key={participant._id} className="h-11 w-11 border-2 border-background shadow-sm dark:border-[rgba(7,12,20,0.9)]">
                       <AvatarImage src={participant.avatar} alt={participant.fullName} />
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                         {getInitials(participant.fullName)}
@@ -121,7 +115,7 @@ const GlobalChat = () => {
                     </Avatar>
                   ))
                 ) : (
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[rgba(7,12,20,0.9)] bg-muted text-muted-foreground">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-background bg-muted text-muted-foreground dark:border-[rgba(7,12,20,0.9)]">
                     <Users className="h-4 w-4" />
                   </div>
                 )}
@@ -148,7 +142,7 @@ const GlobalChat = () => {
             </div>
           </div>
 
-          <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_28%),linear-gradient(180deg,rgba(7,12,20,0.3),rgba(7,12,20,0.06))] px-4 py-5 custom-scrollbar sm:px-5">
+          <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] px-4 py-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_28%),linear-gradient(180deg,rgba(7,12,20,0.3),rgba(7,12,20,0.06))] sm:px-5">
             {isLoading && messages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -186,7 +180,7 @@ const GlobalChat = () => {
                         "mt-2 max-w-[min(720px,100%)] rounded-[1.35rem] border px-4 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.16)] backdrop-blur-md",
                         isOwn
                           ? "border-primary/20 bg-[linear-gradient(135deg,rgba(20,184,166,0.16),rgba(59,130,246,0.12))]"
-                          : "border-white/10 bg-[linear-gradient(180deg,rgba(17,24,39,0.94),rgba(10,15,28,0.92))]"
+                          : "border-border/70 bg-background/85 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(17,24,39,0.94),rgba(10,15,28,0.92))]"
                       )}>
                         {message.replyTo && (
                           <div className="mb-3 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-sm">
@@ -252,7 +246,7 @@ const GlobalChat = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          <div className="border-t border-white/10 bg-[linear-gradient(180deg,rgba(9,15,27,0.88),rgba(7,12,20,0.98))] p-3 backdrop-blur-xl sm:p-4">
+          <div className="border-t border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.86),rgba(248,250,252,0.92))] p-3 backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.88),rgba(7,12,20,0.98))] sm:p-4">
             {replyTo && (
               <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
                 <div className="min-w-0">
@@ -275,13 +269,13 @@ const GlobalChat = () => {
 
             <form onSubmit={handleSend} className="flex items-end gap-3">
               <div className="relative flex-1">
-                <div className="pointer-events-none absolute inset-0 rounded-2xl bg-[linear-gradient(135deg,rgba(20,184,166,0.08),rgba(59,130,246,0.06))]" />
-                <Input
+                <div className="pointer-events-none absolute inset-0 -z-10 rounded-2xl bg-[linear-gradient(135deg,rgba(20,184,166,0.08),rgba(59,130,246,0.06))]" />
+                <input
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   placeholder="Message the whole community..."
-                  className="relative h-[3.25rem] flex-1 rounded-2xl border-white/10 bg-transparent px-5 text-[15px] font-medium !text-slate-100 placeholder:!text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_0_0_1px_rgba(15,23,42,0.25)] focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/20"
-                  style={composerStyle}
+                  className="relative z-10 h-[3.25rem] w-full rounded-2xl border border-slate-800 bg-slate-900 px-5 text-[15px] font-medium text-slate-100 placeholder:text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.24)] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
+                  style={{ backgroundColor: '#0f172a', color: '#f8fafc', WebkitTextFillColor: '#f8fafc', caretColor: '#f8fafc' }}
                   disabled={isSending}
                 />
               </div>
