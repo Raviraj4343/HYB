@@ -16,7 +16,7 @@ router.post(
 
 router.get("/user/:userId", isAdmin, getReportsByUser);
 
-router.post("/unblock/:userId", isAdmin, unblockUser);
+router.post("/unblock/:userId", isSuperAdmin, unblockUser);
 router.post("/block/:userId", isSuperAdmin, blockUserBySuperAdmin);
 
 // General admin routes
