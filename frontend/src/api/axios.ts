@@ -36,7 +36,8 @@ api.interceptors.request.use(
     }
 
     if (typeof config.url === 'string') {
-      config.url = normalizeApiPrefix(config.url);
+      const normalizedUrl = config.url.startsWith('/') ? config.url.slice(1) : config.url;
+      config.url = normalizeApiPrefix(normalizedUrl);
     }
 
     const token = localStorage.getItem('accessToken');
