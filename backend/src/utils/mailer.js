@@ -2,8 +2,10 @@ import nodemailer from 'nodemailer';
 
 const DEFAULT_MAIL_TIMEOUT_MS = Number(process.env.MAIL_TIMEOUT_MS) || 8000;
 const RESEND_API_URL = 'https://api.resend.com/emails';
+const BREVO_API_URL = 'https://api.brevo.com/v3/smtp/email';
 const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
 const COMMON_PERSONAL_EMAIL_DOMAINS = new Set(['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com']);
+const BREVO_API_KEY = process.env.BREVO_API_KEY || process.env.BRECO_API_KEY;
 
 const getMailProvider = () => {
   if (EMAIL_PROVIDER) return EMAIL_PROVIDER;
@@ -60,10 +62,17 @@ export const getMailConfigurationStatus = () => {
 
   if (provider === 'brevo') {
     const missing = [];
-    if (!process.env.EMAIL_HOST) missing.push('EMAIL_HOST');
-    if (!process.env.EMAIL_PORT) missing.push('EMAIL_PORT');
-    if (!process.env.EMAIL_USER) missing.push('EMAIL_USER');
-    if (!process.env.EMAIL_PASS) missing.push('EMAIL_PASS');
+    const hasBrevoApi = Boolean(BREVO_API_KEY);
+    const hasBrevoSmtp = Boolean(
+      process.env.EMAIL_HOST &&
+      process.env.EMAIL_PORT &&
+      process.env.EMAIL_USER &&
+      process.env.EMAIL_PASS
+    );
+
+    if (!hasBrevoApi && !hasBrevoSmtp) {
+      missing.push('BREVO_API_KEY (or BRECO_API_KEY) or EMAIL_HOST/EMAIL_PORT/EMAIL_USER/EMAIL_PASS');
+    }
     if (!process.env.EMAIL_FROM) missing.push('EMAIL_FROM');
 
     const warnings = [];
@@ -219,6 +228,72 @@ const sendWithResend = async ({ to, subject, text, html }) => {
   }
 };
 
+const sendWithBrevoApi = async ({ to, subject, text, html }) => {
+  const apiKey = BREVO_API_KEY;
+  const from = getConfiguredSenderAddress();
+
+  if (!apiKey) {
+    throw new Error('Brevo email provider is not configured. Missing BREVO_API_KEY.');
+  }
+
+  if (!from) {
+    throw new Error('Brevo email provider is not configured. Missing EMAIL_FROM.');
+  }
+
+  const senderMatch = from.match(/^(.*?)<([^>]+)>$/);
+  const sender = senderMatch
+    ? {
+        name: senderMatch[1].trim().replace(/^"|"$/g, ''),
+        email: senderMatch[2].trim(),
+      }
+    : { email: from.trim() };
+
+  const recipients = (Array.isArray(to) ? to : [to]).map((email) => ({ email }));
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), DEFAULT_MAIL_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(BREVO_API_URL, {
+      method: 'POST',
+      headers: {
+        'api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender,
+        to: recipients,
+        subject,
+        htmlContent: html,
+        textContent: text,
+      }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const rawBody = await response.text();
+      let parsedBody;
+
+      try {
+        parsedBody = JSON.parse(rawBody);
+      } catch {
+        parsedBody = null;
+      }
+
+      const brevoMessage =
+        parsedBody?.message ||
+        parsedBody?.code ||
+        rawBody;
+
+      throw new Error(`Brevo API error ${response.status}: ${brevoMessage}`);
+    }
+
+    return response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
 export const sendMail = async ({ to, subject, text, html }) => {
   const provider = getMailProvider();
 
@@ -227,6 +302,14 @@ export const sendMail = async ({ to, subject, text, html }) => {
       sendWithResend({ to, subject, text, html }),
       DEFAULT_MAIL_TIMEOUT_MS,
       'Resend email delivery'
+    );
+  }
+
+  if (provider === 'brevo' && BREVO_API_KEY) {
+    return withTimeout(
+      sendWithBrevoApi({ to, subject, text, html }),
+      DEFAULT_MAIL_TIMEOUT_MS,
+      'Brevo email delivery'
     );
   }
 

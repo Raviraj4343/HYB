@@ -26,6 +26,7 @@
     "multer": "^2.0.2",
     "nodemailer": "^8.0.4",
     "resend": "^6.9.4",
+    "sib-api-v3-sdk": "^8.5.0",
     "socket.io": "^4.8.3"
   }
 }
