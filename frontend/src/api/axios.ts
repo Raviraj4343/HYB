@@ -5,9 +5,27 @@ const normalizeApiPrefix = (value?: string) => {
   return value.replace(/(\/api\/v1)(\/api\/v1)+/g, '$1');
 };
 
+const resolveApiBaseUrl = () => {
+  const configuredUrl = import.meta.env.VITE_API_URL;
+  if (configuredUrl) {
+    return normalizeApiPrefix(configuredUrl);
+  }
+
+  if (typeof window !== 'undefined') {
+    const { origin, hostname } = window.location;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:8000/api/v1';
+    }
+
+    return normalizeApiPrefix(`${origin}/api/v1`);
+  }
+
+  return 'http://localhost:8000/api/v1';
+};
+
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: normalizeApiPrefix(import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'),
+  baseURL: resolveApiBaseUrl(),
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',

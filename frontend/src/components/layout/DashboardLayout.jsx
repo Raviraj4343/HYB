@@ -138,6 +138,18 @@ const DashboardLayout = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isMobileSidebarOpen) return undefined;
+
+    const { body } = document;
+    const previousOverflow = body.style.overflow;
+    body.style.overflow = 'hidden';
+
+    return () => {
+      body.style.overflow = previousOverflow;
+    };
+  }, [isMobileSidebarOpen]);
+
   const renderNavLink = (item, mobile = false) => (
     <Link
       key={item.path}
@@ -147,7 +159,9 @@ const DashboardLayout = () => {
         'group flex items-center gap-3 rounded-[1.35rem] px-4 py-3.5 transition-all duration-200',
         isActive(item.path)
           ? 'bg-[linear-gradient(135deg,hsl(var(--primary))_0%,rgba(59,130,246,0.92)_100%)] text-primary-foreground shadow-[0_16px_34px_rgba(20,184,166,0.28)]'
-          : 'text-sidebar-foreground hover:bg-sidebar-accent/95 hover:text-sidebar-accent-foreground hover:shadow-sm'
+          : mobile
+            ? 'border border-white/10 bg-white/[0.04] text-sidebar-foreground hover:bg-white/[0.09] hover:text-sidebar-accent-foreground hover:shadow-sm'
+            : 'text-sidebar-foreground hover:bg-sidebar-accent/95 hover:text-sidebar-accent-foreground hover:shadow-sm'
       )}
     >
       <div
@@ -155,7 +169,9 @@ const DashboardLayout = () => {
           'flex h-11 w-11 items-center justify-center rounded-2xl transition-all duration-200',
           isActive(item.path)
             ? 'bg-black/10 ring-1 ring-white/10'
-            : 'bg-sidebar-accent text-muted-foreground group-hover:bg-white/70 group-hover:text-foreground'
+            : mobile
+              ? 'bg-white/[0.06] text-slate-300 group-hover:bg-white/[0.12] group-hover:text-white'
+              : 'bg-sidebar-accent text-muted-foreground group-hover:bg-white/70 group-hover:text-foreground'
         )}
       >
         <item.icon className="h-5 w-5" />
@@ -210,10 +226,15 @@ const DashboardLayout = () => {
               'mt-4 flex items-center gap-3 rounded-[1.35rem] px-4 py-3.5 transition-all duration-200',
               location.pathname.startsWith('/dashboard/admin')
                 ? 'bg-destructive text-destructive-foreground shadow-lg'
-                : 'text-sidebar-foreground hover:bg-sidebar-accent/95 hover:text-sidebar-accent-foreground'
+                : mobile
+                  ? 'border border-white/10 bg-white/[0.04] text-sidebar-foreground hover:bg-white/[0.09] hover:text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent/95 hover:text-sidebar-accent-foreground'
             )}
           >
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-black/10">
+            <div className={cn(
+              'flex h-11 w-11 items-center justify-center rounded-2xl',
+              mobile ? 'bg-white/[0.06]' : 'bg-black/10'
+            )}>
               <Flag className="h-5 w-5" />
             </div>
             <span className="font-medium">Reports</span>
@@ -222,7 +243,12 @@ const DashboardLayout = () => {
       </nav>
 
       <div className="border-t border-sidebar-border/80 p-4">
-        <div className="rounded-[1.7rem] border border-sidebar-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-4 shadow-[0_10px_24px_rgba(0,0,0,0.08)]">
+        <div className={cn(
+          'rounded-[1.7rem] border p-4 shadow-[0_10px_24px_rgba(0,0,0,0.08)]',
+          mobile
+            ? 'border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.96))]'
+            : 'border-sidebar-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]'
+        )}>
           {/* Hide avatar block on mobile; show Profile/Settings/Logout directly */}
           {!mobile && (
             <div className="mb-4 flex items-center gap-3">
@@ -251,7 +277,10 @@ const DashboardLayout = () => {
 
           <Button
             variant="ghost"
-            className="mb-1 h-10 w-full justify-start rounded-2xl text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            className={cn(
+              'mb-1 h-10 w-full justify-start rounded-2xl text-muted-foreground hover:text-foreground',
+              mobile ? 'hover:bg-white/[0.08]' : 'hover:bg-white/5'
+            )}
             onClick={() => {
               navigate('/dashboard/profile');
               if (mobile) setIsMobileSidebarOpen(false);
@@ -263,7 +292,10 @@ const DashboardLayout = () => {
 
           <Button
             variant="ghost"
-            className="mb-1 h-10 w-full justify-start rounded-2xl text-muted-foreground hover:bg-white/5 hover:text-foreground"
+            className={cn(
+              'mb-1 h-10 w-full justify-start rounded-2xl text-muted-foreground hover:text-foreground',
+              mobile ? 'hover:bg-white/[0.08]' : 'hover:bg-white/5'
+            )}
             onClick={() => {
               navigate('/dashboard/settings');
               if (mobile) setIsMobileSidebarOpen(false);
@@ -276,7 +308,7 @@ const DashboardLayout = () => {
           {mobile && (
             <Button
               variant="ghost"
-              className="mb-1 h-10 w-full justify-start rounded-2xl text-muted-foreground hover:bg-white/5 hover:text-foreground"
+              className="mb-1 h-10 w-full justify-start rounded-2xl text-muted-foreground hover:bg-white/[0.08] hover:text-foreground"
               onClick={() => {
                 toggleTheme();
               }}
@@ -288,7 +320,10 @@ const DashboardLayout = () => {
 
           <Button
             variant="ghost"
-            className="h-10 w-full justify-start rounded-2xl text-muted-foreground hover:bg-destructive/8 hover:text-destructive"
+            className={cn(
+              'h-10 w-full justify-start rounded-2xl text-muted-foreground hover:text-destructive',
+              mobile ? 'hover:bg-destructive/12' : 'hover:bg-destructive/8'
+            )}
             onClick={() => {
               if (mobile) setIsMobileSidebarOpen(false);
               handleLogout();
@@ -334,7 +369,7 @@ const DashboardLayout = () => {
             <>
               <motion.div
                 initial={{ opacity: 0, backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
-                animate={{ opacity: 1, backdropFilter: 'blur(16px)', backgroundColor: 'rgba(2,6,23,0.72)' }}
+                animate={{ opacity: 1, backdropFilter: 'blur(24px)', backgroundColor: 'rgba(2,6,23,0.88)' }}
                 exit={{ opacity: 0, backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
                 transition={{ duration: 0.22, ease: 'easeOut' }}
                 className="fixed inset-0 z-40 lg:hidden mobile-overlay"
@@ -345,7 +380,7 @@ const DashboardLayout = () => {
                 animate={{ x: 0 }}
                 exit={{ x: 320 }}
                 transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-                className="fixed inset-y-0 right-0 z-50 flex w-[320px] max-w-[92vw] flex-col overflow-hidden border-l border-sidebar-border bg-[linear-gradient(180deg,rgba(15,23,42,1),rgba(15,23,42,0.985))] shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-3xl lg:hidden force-3d"
+                className="fixed inset-y-0 right-0 z-50 flex w-[320px] max-w-[92vw] flex-col overflow-hidden border-l border-white/10 bg-[linear-gradient(180deg,rgba(2,6,23,1),rgba(15,23,42,1))] shadow-[0_24px_80px_rgba(0,0,0,0.66)] backdrop-blur-3xl lg:hidden force-3d"
               >
                 <div className="flex items-center justify-between border-b border-sidebar-border/70 px-5 py-4">
                   <div>

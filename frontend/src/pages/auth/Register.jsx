@@ -169,6 +169,8 @@ const Register = () => {
   const iconInputClassName = `${inputClassName} pl-[3.25rem]`;
   const passwordInputClassName = `${inputClassName} pl-[3.25rem] pr-10`;
   const trailingIconInputClassName = `${inputClassName} pr-10`;
+  const compactInputClassName =
+    'h-9 rounded-xl border-border/70 !bg-[#151b24] !text-foreground placeholder:!text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-0';
   const inputStyle = {
     backgroundColor: '#151b24',
     color: 'hsl(var(--foreground))',
@@ -418,7 +420,7 @@ const Register = () => {
                         <Input
                           id="branch"
                           name="branch"
-                          className="h-9 text-sm"
+                          className={compactInputClassName}
                           style={inputStyle}
                           placeholder="Branch"
                           value={formData.branch}
@@ -430,12 +432,21 @@ const Register = () => {
                       <div className="space-y-1.5">
                         <Label htmlFor="year" className="text-xs">Year</Label>
                         <Select value={formData.year} onValueChange={(value) => handleSelectChange('year', value)} disabled={isLoading}>
-                          <SelectTrigger className="h-9 text-sm">
+                          <SelectTrigger
+                            className={compactInputClassName}
+                            style={inputStyle}
+                          >
                             <SelectValue placeholder="Year" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="border-border/70 bg-[#151b24] text-foreground">
                             {[1, 2, 3, 4, 5].map((year) => (
-                              <SelectItem key={year} value={String(year)}>Year {year}</SelectItem>
+                              <SelectItem
+                                key={year}
+                                value={String(year)}
+                                className="text-foreground focus:bg-white/10 focus:text-foreground"
+                              >
+                                Year {year}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -446,7 +457,7 @@ const Register = () => {
                         <Input
                           id="hostel"
                           name="hostel"
-                          className="h-9 text-sm"
+                          className={compactInputClassName}
                           style={inputStyle}
                           placeholder="Hostel"
                           value={formData.hostel}

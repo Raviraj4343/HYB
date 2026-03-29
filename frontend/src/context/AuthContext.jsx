@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        const response = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/me`);
+        const response = await api.get('/auth/me');
         const userData = response.data.data.user;
         setUser(userData);
         setStoredUser(userData);
@@ -60,13 +60,18 @@ export const AuthProvider = ({ children }) => {
             formData.append(key, value);
           }
         });
-        response = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/register`, formData);
+        response = await api.post('/auth/register', formData);
       } else {
-        response = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/register`, userData);
+        response = await api.post('/auth/register', userData);
       }
 
       const payload = response.data.data || {};
-      toast.success(response.data.message || 'Verification code sent');
+      const emailSent = payload.emailSent !== false;
+      if (emailSent) {
+        toast.success(response.data.message || 'Verification code sent');
+      } else {
+        toast.error(response.data.message || 'We could not send the verification code right now. Please try resend in a moment.');
+      }
       return { success: true, ...payload };
     } catch (error) {
       const message = error.message || 'Registration failed';
@@ -77,7 +82,7 @@ export const AuthProvider = ({ children }) => {
 
   const verifyRegistration = useCallback(async (email, code) => {
     try {
-      const response = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/verify-email`, { email, code });
+      const response = await api.post('/auth/verify-email', { email, code });
       const { user: verifiedUser, accessToken, refreshToken } = response.data.data;
 
       setAuthToken(accessToken);
@@ -96,7 +101,7 @@ export const AuthProvider = ({ children }) => {
 
   const resendVerificationCode = useCallback(async (email) => {
     try {
-      const response = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/resend-verification-code`, { email });
+      const response = await api.post('/auth/resend-verification-code', { email });
       toast.success(response.data.message || 'Verification code sent');
       return { success: true };
     } catch (error) {
@@ -108,7 +113,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = useCallback(async (email, password) => {
     try {
-      const response = await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/login`, { email, password });
+      const response = await api.post('/auth/login', { email, password });
       const { user: loggedInUser, accessToken, refreshToken } = response.data.data;
 
       setAuthToken(accessToken);
@@ -132,7 +137,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(async () => {
     try {
-      await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/logout`);
+      await api.post('/auth/logout');
     } catch (_) {
       // Ignore API failure.
     } finally {
@@ -147,7 +152,7 @@ export const AuthProvider = ({ children }) => {
       const formData = new FormData();
       formData.append('avatar', file);
 
-      const response = await api.put(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/user/avatar`, formData, {
+      const response = await api.put('/user/avatar', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -176,7 +181,7 @@ export const AuthProvider = ({ children }) => {
         }
       });
 
-      const response = await api.put(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/update-profile`, formData);
+      const response = await api.put('/auth/update-profile', formData);
       const updatedUser = response.data.data.user;
 
       setUser(updatedUser);
@@ -193,7 +198,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshUser = useCallback(async () => {
     try {
-      const response = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/auth/me`);
+      const response = await api.get('/auth/me');
       const userData = response.data.data.user;
       setUser(userData);
       setStoredUser(userData);
