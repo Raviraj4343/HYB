@@ -403,14 +403,14 @@ const DashboardLayout = () => {
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "relative h-12 w-12 rounded-[1.1rem] border border-border/70 bg-card/80 shadow-sm",
+                    "relative overflow-visible h-12 w-12 rounded-[1.1rem] border border-border/70 bg-card/80 shadow-sm",
                     location.pathname.startsWith('/dashboard/community-chat') && "border-primary/30 bg-primary/10 text-primary"
                   )}
                   onClick={() => navigate('/dashboard/community-chat')}
                 >
                   <MessagesSquare className="h-5 w-5" />
                   {communityUnreadCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                    <span className="absolute -right-2.5 -top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-background bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground shadow-[0_6px_14px_rgba(20,184,166,0.28)]">
                       {communityUnreadCount > 9 ? '9+' : communityUnreadCount}
                     </span>
                   )}
@@ -419,12 +419,12 @@ const DashboardLayout = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative h-12 w-12 rounded-[1.1rem] border border-border/70 bg-card/80 shadow-sm"
+                  className="relative overflow-visible h-12 w-12 rounded-[1.1rem] border border-border/70 bg-card/80 shadow-sm"
                   onClick={() => navigate('/dashboard/notifications')}
                 >
                   <Bell className="h-5 w-5" />
                   {unreadCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
+                    <span className="absolute -right-2.5 -top-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-background bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground shadow-[0_6px_14px_rgba(239,68,68,0.28)]">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
