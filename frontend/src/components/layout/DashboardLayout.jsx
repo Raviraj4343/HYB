@@ -1,6 +1,7 @@
 import {
   ArrowLeft,
   Bell,
+  ChevronRight,
   Flag,
   HandHeart,
   Home,
@@ -156,11 +157,11 @@ const DashboardLayout = () => {
       to={item.path}
       onClick={() => mobile && setIsMobileSidebarOpen(false)}
       className={cn(
-        'group flex items-center gap-3 rounded-[1.35rem] px-4 py-3.5 transition-all duration-200',
+        'group flex items-center gap-3 rounded-[1.45rem] px-4 py-3.5 transition-all duration-200',
         isActive(item.path)
           ? 'bg-[linear-gradient(135deg,hsl(var(--primary))_0%,rgba(59,130,246,0.92)_100%)] text-primary-foreground shadow-[0_16px_34px_rgba(20,184,166,0.28)]'
           : mobile
-            ? 'border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] text-sidebar-foreground hover:border-primary/35 hover:bg-[linear-gradient(180deg,rgba(20,184,166,0.12),rgba(59,130,246,0.10))] hover:text-white hover:shadow-[0_16px_40px_rgba(8,145,178,0.18)]'
+            ? 'border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.018))] text-sidebar-foreground shadow-[0_14px_32px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 hover:border-primary/35 hover:bg-[linear-gradient(180deg,rgba(20,184,166,0.12),rgba(59,130,246,0.10))] hover:text-white hover:shadow-[0_18px_44px_rgba(8,145,178,0.20)]'
             : 'text-sidebar-foreground hover:bg-sidebar-accent/95 hover:text-sidebar-accent-foreground hover:shadow-sm'
       )}
     >
@@ -177,8 +178,14 @@ const DashboardLayout = () => {
         <item.icon className="h-5 w-5" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">{item.label}</p>
+        <p className="truncate font-medium tracking-tight">{item.label}</p>
+        {mobile && (
+          <p className="mt-0.5 text-xs text-slate-500 transition group-hover:text-slate-300">
+            Jump into {item.label.toLowerCase()}
+          </p>
+        )}
       </div>
+      {mobile && <ChevronRight className="h-4 w-4 text-slate-500 transition group-hover:text-slate-200" />}
       {item.badge > 0 && (
         <Badge className={cn(
           'rounded-full px-2 py-0.5 text-[11px]',
@@ -196,17 +203,37 @@ const DashboardLayout = () => {
     <>
       <div className="px-5 pt-5">
         {mobile ? (
-          <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.03))] p-4 shadow-[0_14px_40px_rgba(0,0,0,0.22)]">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-14 w-14 border border-white/10 shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
+          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(34,197,94,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.025))] p-5 shadow-[0_20px_44px_rgba(0,0,0,0.24)]">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.45),transparent)]" />
+            <div className="flex items-start gap-4">
+              <Avatar className="h-16 w-16 border border-white/10 shadow-[0_12px_28px_rgba(0,0,0,0.28)]">
                 <AvatarImage src={user?.avatar} alt={user?.fullName} />
-                <AvatarFallback className="bg-[linear-gradient(135deg,rgba(20,184,166,0.22),rgba(59,130,246,0.28))] text-white font-semibold">
+                <AvatarFallback className="bg-[linear-gradient(135deg,rgba(20,184,166,0.26),rgba(59,130,246,0.34))] text-white font-semibold">
                   {getInitials(user?.fullName)}
                 </AvatarFallback>
               </Avatar>
-              <div className="min-w-0">
-                <p className="truncate text-xl font-semibold tracking-tight text-white">{user?.fullName || 'User'}</p>
-                <p className="truncate text-xs uppercase tracking-[0.28em] text-slate-400">{user?.role || 'Member'}</p>
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.34em] text-slate-400">Active account</div>
+                <p className="mt-2 truncate text-[1.35rem] font-semibold tracking-tight text-white">{user?.fullName || 'User'}</p>
+                <p className="mt-1 truncate text-xs uppercase tracking-[0.28em] text-slate-500">{user?.role || 'Member'}</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-slate-300">
+                    @{user?.userName || 'account'}
+                  </div>
+                  <div className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-[11px] font-medium text-primary">
+                    HYB Network
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <div className="rounded-[1.2rem] border border-white/10 bg-black/15 px-3 py-3">
+                <div className="text-[10px] uppercase tracking-[0.28em] text-slate-500">Workspace</div>
+                <div className="mt-1 text-sm font-medium text-slate-100">Student Hub</div>
+              </div>
+              <div className="rounded-[1.2rem] border border-primary/20 bg-primary/10 px-3 py-3">
+                <div className="text-[10px] uppercase tracking-[0.28em] text-primary/70">Status</div>
+                <div className="mt-1 text-sm font-medium text-primary-foreground">Online</div>
               </div>
             </div>
           </div>
@@ -227,25 +254,36 @@ const DashboardLayout = () => {
         )}
       </div>
 
-      <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-6 custom-scrollbar">
-        <div className="mb-3 px-2">
+      <nav className="flex-1 space-y-3 overflow-y-auto px-4 py-6 custom-scrollbar">
+        <div className="mb-2 px-2">
           <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-muted-foreground/70">
             {mobile ? 'Menu' : 'Main Menu'}
           </div>
           {mobile && (
-            <div className="mt-1 text-lg font-medium tracking-tight text-slate-300">
-              Quick navigation
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-lg font-semibold tracking-tight text-slate-100">Quick navigation</div>
+                <div className="text-sm text-slate-400">Everything important in one place</div>
+              </div>
+              <div className="hidden rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] font-medium text-slate-300 sm:block">
+                {pageTitle}
+              </div>
             </div>
           )}
         </div>
         {mobile && (
-          <div className="mb-4 px-1">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-              <Input
-                placeholder="Search people"
-                className="h-14 rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(12,17,29,0.96),rgba(7,12,23,0.9))] pl-11 text-sm text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-0"
-              />
+          <div className="mb-5 px-1">
+            <div className="rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-3 shadow-[0_18px_36px_rgba(0,0,0,0.18)]">
+              <div className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
+                Search
+              </div>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                <Input
+                  placeholder="Search people"
+                  className="h-14 rounded-[1.2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,17,29,0.96),rgba(7,12,23,0.9))] pl-11 text-sm text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_24px_rgba(0,0,0,0.18)] focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-0"
+                />
+              </div>
             </div>
           </div>
         )}
@@ -262,17 +300,21 @@ const DashboardLayout = () => {
               location.pathname.startsWith('/dashboard/admin')
                 ? 'bg-destructive text-destructive-foreground shadow-lg'
                 : mobile
-                  ? 'border border-white/10 bg-white/[0.04] text-sidebar-foreground hover:bg-white/[0.09] hover:text-sidebar-accent-foreground'
+                  ? 'border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.018))] text-sidebar-foreground shadow-[0_14px_32px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 hover:border-primary/35 hover:bg-[linear-gradient(180deg,rgba(20,184,166,0.12),rgba(59,130,246,0.10))] hover:text-sidebar-accent-foreground'
                   : 'text-sidebar-foreground hover:bg-sidebar-accent/95 hover:text-sidebar-accent-foreground'
             )}
           >
             <div className={cn(
               'flex h-11 w-11 items-center justify-center rounded-2xl',
-              mobile ? 'bg-white/[0.06]' : 'bg-black/10'
+              mobile ? 'border border-white/10 bg-[#0f172a]' : 'bg-black/10'
             )}>
               <Flag className="h-5 w-5" />
             </div>
-            <span className="font-medium">Reports</span>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium tracking-tight">Reports</p>
+              {mobile && <p className="mt-0.5 text-xs text-slate-500">Moderation and flagged content</p>}
+            </div>
+            {mobile && <ChevronRight className="h-4 w-4 text-slate-500 transition group-hover:text-slate-200" />}
           </Link>
         )}
       </nav>
@@ -284,6 +326,17 @@ const DashboardLayout = () => {
             ? 'border-white/10 bg-[linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.96))]'
             : 'border-sidebar-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))]'
         )}>
+          {mobile && (
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">Account</div>
+                <div className="mt-1 text-base font-semibold tracking-tight text-slate-100">Preferences & actions</div>
+              </div>
+              <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[11px] text-slate-300">
+                Secure
+              </div>
+            </div>
+          )}
           {/* Hide avatar block on mobile; show Profile/Settings/Logout directly */}
           {!mobile && (
             <div className="mb-4 flex items-center gap-3">
@@ -313,8 +366,8 @@ const DashboardLayout = () => {
           <Button
             variant="ghost"
             className={cn(
-              'mb-1 h-10 w-full justify-start rounded-2xl text-muted-foreground hover:text-foreground',
-              mobile ? 'hover:bg-white/[0.08]' : 'hover:bg-white/5'
+              'mb-1 h-11 w-full justify-start rounded-2xl text-muted-foreground hover:text-foreground',
+              mobile ? 'border border-transparent bg-white/[0.015] hover:border-white/10 hover:bg-white/[0.08]' : 'hover:bg-white/5'
             )}
             onClick={() => {
               navigate('/dashboard/profile');
@@ -328,8 +381,8 @@ const DashboardLayout = () => {
           <Button
             variant="ghost"
             className={cn(
-              'mb-1 h-10 w-full justify-start rounded-2xl text-muted-foreground hover:text-foreground',
-              mobile ? 'hover:bg-white/[0.08]' : 'hover:bg-white/5'
+              'mb-1 h-11 w-full justify-start rounded-2xl text-muted-foreground hover:text-foreground',
+              mobile ? 'border border-transparent bg-white/[0.015] hover:border-white/10 hover:bg-white/[0.08]' : 'hover:bg-white/5'
             )}
             onClick={() => {
               navigate('/dashboard/settings');
@@ -343,7 +396,7 @@ const DashboardLayout = () => {
           {mobile && (
             <Button
               variant="ghost"
-              className="mb-1 h-10 w-full justify-start rounded-2xl text-muted-foreground hover:bg-white/[0.08] hover:text-foreground"
+              className="mb-1 h-11 w-full justify-start rounded-2xl border border-transparent bg-white/[0.015] text-muted-foreground hover:border-white/10 hover:bg-white/[0.08] hover:text-foreground"
               onClick={() => {
                 toggleTheme();
               }}
@@ -356,8 +409,8 @@ const DashboardLayout = () => {
           <Button
             variant="ghost"
             className={cn(
-              'h-10 w-full justify-start rounded-2xl text-muted-foreground hover:text-destructive',
-              mobile ? 'hover:bg-destructive/12' : 'hover:bg-destructive/8'
+              'h-11 w-full justify-start rounded-2xl text-muted-foreground hover:text-destructive',
+              mobile ? 'border border-transparent bg-white/[0.015] hover:border-destructive/15 hover:bg-destructive/12' : 'hover:bg-destructive/8'
             )}
             onClick={() => {
               if (mobile) setIsMobileSidebarOpen(false);
@@ -415,19 +468,28 @@ const DashboardLayout = () => {
                 animate={{ x: 0 }}
                 exit={{ x: 320 }}
                 transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-                className="fixed inset-y-0 right-0 z-50 flex w-[380px] max-w-[95vw] flex-col overflow-hidden border-l border-white/10 bg-[linear-gradient(180deg,rgba(11,18,34,0.98),rgba(15,23,42,0.98))] shadow-[0_24px_80px_rgba(0,0,0,0.66)] backdrop-blur-3xl lg:hidden force-3d"
+                className="fixed inset-y-0 right-0 z-50 flex w-[390px] max-w-[95vw] flex-col overflow-hidden border-l border-white/10 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.14),transparent_18%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.16),transparent_24%),linear-gradient(180deg,rgba(11,18,34,0.99),rgba(15,23,42,0.985))] shadow-[0_24px_80px_rgba(0,0,0,0.66)] backdrop-blur-3xl lg:hidden force-3d"
               >
-                <div className="flex items-center justify-between border-b border-sidebar-border/70 px-6 py-6">
-                  <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-muted-foreground/70">Menu</div>
-                    <div className="mt-1 text-2xl font-semibold tracking-tight text-sidebar-foreground">Quick navigation</div>
+                <div className="relative border-b border-sidebar-border/70 px-6 py-5">
+                  <div className="pointer-events-none absolute inset-x-6 bottom-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.12),transparent)]" />
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-[1.3rem] border border-white/10 bg-[linear-gradient(135deg,rgba(20,184,166,0.18),rgba(59,130,246,0.22))] shadow-[0_12px_24px_rgba(0,0,0,0.22)]">
+                        <img src="/logo.png" alt="HYB Logo" className="h-8 w-8 object-contain" />
+                      </div>
+                      <div>
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-muted-foreground/70">Menu</div>
+                        <div className="mt-1 text-xl font-semibold tracking-tight text-sidebar-foreground">Quick navigation</div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setIsMobileSidebarOpen(false)}
+                      className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+                      aria-label="Close menu"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => setIsMobileSidebarOpen(false)}
-                    className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-base font-medium text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
-                  >
-                    Close
-                  </button>
                 </div>
                 <div className="flex-1 overflow-y-auto overscroll-contain force-3d custom-scrollbar">
                   {sidebarContent(true)}
