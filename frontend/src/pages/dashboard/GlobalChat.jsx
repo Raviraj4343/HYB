@@ -5,7 +5,6 @@ import { useGlobalChat } from '../../hooks/useChat';
 import api from '../../api/axios';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
@@ -142,7 +141,7 @@ const GlobalChat = () => {
             </div>
           </div>
 
-          <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] px-4 py-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_28%),linear-gradient(180deg,rgba(7,12,20,0.3),rgba(7,12,20,0.06))] sm:px-5">
+          <div className="relative flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] px-4 py-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_28%),linear-gradient(180deg,rgba(7,12,20,0.3),rgba(7,12,20,0.06))] sm:px-5">
             {isLoading && messages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -274,8 +273,8 @@ const GlobalChat = () => {
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
                   placeholder="Message the whole community..."
-                  className="relative z-10 h-[3.25rem] w-full rounded-2xl border border-slate-800 bg-slate-900 px-5 text-[15px] font-medium text-slate-100 placeholder:text-slate-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.24)] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
-                  style={{ backgroundColor: '#0f172a', color: '#f8fafc', WebkitTextFillColor: '#f8fafc', caretColor: '#f8fafc' }}
+                  className="relative z-10 h-[3.25rem] w-full rounded-2xl border border-slate-800 bg-slate-950 px-5 text-[15px] font-medium text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.24)] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
+                  style={{ backgroundColor: '#020617', color: '#f8fafc', WebkitTextFillColor: '#f8fafc', caretColor: '#f8fafc' }}
                   disabled={isSending}
                 />
               </div>
