@@ -160,7 +160,7 @@ const DashboardLayout = () => {
         isActive(item.path)
           ? 'bg-[linear-gradient(135deg,hsl(var(--primary))_0%,rgba(59,130,246,0.92)_100%)] text-primary-foreground shadow-[0_16px_34px_rgba(20,184,166,0.28)]'
           : mobile
-            ? 'border border-white/10 bg-white/[0.04] text-sidebar-foreground hover:bg-white/[0.09] hover:text-sidebar-accent-foreground hover:shadow-sm'
+            ? 'border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] text-sidebar-foreground hover:border-primary/35 hover:bg-[linear-gradient(180deg,rgba(20,184,166,0.12),rgba(59,130,246,0.10))] hover:text-white hover:shadow-[0_16px_40px_rgba(8,145,178,0.18)]'
             : 'text-sidebar-foreground hover:bg-sidebar-accent/95 hover:text-sidebar-accent-foreground hover:shadow-sm'
       )}
     >
@@ -170,7 +170,7 @@ const DashboardLayout = () => {
           isActive(item.path)
             ? 'bg-black/10 ring-1 ring-white/10'
             : mobile
-              ? 'bg-white/[0.06] text-slate-300 group-hover:bg-white/[0.12] group-hover:text-white'
+              ? 'border border-white/10 bg-[#0f172a] text-slate-300 group-hover:border-primary/30 group-hover:bg-[#10243a] group-hover:text-white'
               : 'bg-sidebar-accent text-muted-foreground group-hover:bg-white/70 group-hover:text-foreground'
         )}
       >
@@ -195,25 +195,60 @@ const DashboardLayout = () => {
   const sidebarContent = (mobile = false) => (
     <>
       <div className="px-5 pt-5">
-        <Link
-          to="/dashboard"
-          className="flex items-center gap-3 rounded-[1.7rem] border border-sidebar-border/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] px-4 py-4 shadow-[0_12px_30px_rgba(0,0,0,0.12)]"
-          onClick={() => setIsMobileSidebarOpen(false)}
-        >
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 ring-1 ring-primary/15 shadow-inner">
-            <img src="/logo.png" alt="HYB Logo" className="h-9 w-9 object-contain" />
+        {mobile ? (
+          <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.03))] p-4 shadow-[0_14px_40px_rgba(0,0,0,0.22)]">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-14 w-14 border border-white/10 shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
+                <AvatarImage src={user?.avatar} alt={user?.fullName} />
+                <AvatarFallback className="bg-[linear-gradient(135deg,rgba(20,184,166,0.22),rgba(59,130,246,0.28))] text-white font-semibold">
+                  {getInitials(user?.fullName)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="truncate text-xl font-semibold tracking-tight text-white">{user?.fullName || 'User'}</p>
+                <p className="truncate text-xs uppercase tracking-[0.28em] text-slate-400">{user?.role || 'Member'}</p>
+              </div>
+            </div>
           </div>
-          <div>
-            <p className="text-lg font-display font-bold tracking-tight text-sidebar-foreground">HYB</p>
-            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Help Your Buddy</p>
-          </div>
-        </Link>
+        ) : (
+          <Link
+            to="/dashboard"
+            className="flex items-center gap-3 rounded-[1.7rem] border border-sidebar-border/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] px-4 py-4 shadow-[0_12px_30px_rgba(0,0,0,0.12)]"
+            onClick={() => setIsMobileSidebarOpen(false)}
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/12 ring-1 ring-primary/15 shadow-inner">
+              <img src="/logo.png" alt="HYB Logo" className="h-9 w-9 object-contain" />
+            </div>
+            <div>
+              <p className="text-lg font-display font-bold tracking-tight text-sidebar-foreground">HYB</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Help Your Buddy</p>
+            </div>
+          </Link>
+        )}
       </div>
 
       <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-6 custom-scrollbar">
-        <div className="mb-3 px-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">
-          Main Menu
+        <div className="mb-3 px-2">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-muted-foreground/70">
+            {mobile ? 'Menu' : 'Main Menu'}
+          </div>
+          {mobile && (
+            <div className="mt-1 text-lg font-medium tracking-tight text-slate-300">
+              Quick navigation
+            </div>
+          )}
         </div>
+        {mobile && (
+          <div className="mb-4 px-1">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              <Input
+                placeholder="Search people"
+                className="h-14 rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(12,17,29,0.96),rgba(7,12,23,0.9))] pl-11 text-sm text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] focus-visible:ring-2 focus-visible:ring-primary/55 focus-visible:ring-offset-0"
+              />
+            </div>
+          </div>
+        )}
         {navItems
           .filter((item) => !(mobile && item.path === '/dashboard/community-chat'))
           .map((item) => renderNavLink(item, mobile))}
@@ -380,18 +415,18 @@ const DashboardLayout = () => {
                 animate={{ x: 0 }}
                 exit={{ x: 320 }}
                 transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-                className="fixed inset-y-0 right-0 z-50 flex w-[320px] max-w-[92vw] flex-col overflow-hidden border-l border-white/10 bg-[linear-gradient(180deg,rgba(2,6,23,1),rgba(15,23,42,1))] shadow-[0_24px_80px_rgba(0,0,0,0.66)] backdrop-blur-3xl lg:hidden force-3d"
+                className="fixed inset-y-0 right-0 z-50 flex w-[380px] max-w-[95vw] flex-col overflow-hidden border-l border-white/10 bg-[linear-gradient(180deg,rgba(11,18,34,0.98),rgba(15,23,42,0.98))] shadow-[0_24px_80px_rgba(0,0,0,0.66)] backdrop-blur-3xl lg:hidden force-3d"
               >
-                <div className="flex items-center justify-between border-b border-sidebar-border/70 px-5 py-4">
+                <div className="flex items-center justify-between border-b border-sidebar-border/70 px-6 py-6">
                   <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground/70">Menu</div>
-                    <div className="mt-1 text-base font-semibold text-sidebar-foreground">Navigation</div>
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.32em] text-muted-foreground/70">Menu</div>
+                    <div className="mt-1 text-2xl font-semibold tracking-tight text-sidebar-foreground">Quick navigation</div>
                   </div>
                   <button
                     onClick={() => setIsMobileSidebarOpen(false)}
-                    className="rounded-2xl border border-sidebar-border/70 bg-white/5 p-2 text-muted-foreground transition hover:bg-white/10 hover:text-foreground"
+                    className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-base font-medium text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
                   >
-                    <X className="h-5 w-5" />
+                    Close
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto overscroll-contain force-3d custom-scrollbar">
@@ -408,38 +443,31 @@ const DashboardLayout = () => {
             isMobileSidebarOpen && "pointer-events-none scale-[0.992] blur-[6px] brightness-[0.48] lg:pointer-events-auto lg:scale-100 lg:blur-0 lg:brightness-100"
           )}
         >
-          <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 shadow-[0_10px_30px_rgba(0,0,0,0.08)] backdrop-blur-2xl">
-            <div className="flex h-28 items-center justify-between px-5 sm:px-6 lg:h-32 lg:px-10">
+          <header className="sticky top-0 z-30 border-b border-[#1f2a44] bg-[#070d19]/92 shadow-[0_18px_48px_rgba(1,6,20,0.42)] backdrop-blur-2xl">
+            <div className="flex h-24 items-center justify-between gap-4 px-4 sm:px-6 lg:h-28 lg:px-8">
               <div className="flex min-w-0 items-center gap-4">
                 <Link
                   to="/dashboard"
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[1.1rem] border border-border/70 bg-card/85 shadow-[0_10px_24px_rgba(0,0,0,0.10)]"
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1.35rem] border border-[#3050d3]/60 bg-[linear-gradient(180deg,rgba(40,56,115,0.9),rgba(72,35,115,0.68))] shadow-[0_0_0_1px_rgba(96,165,250,0.14),0_18px_32px_rgba(34,44,115,0.35)]"
                 >
-                  <img src="/logo.png" alt="HYB logo" className="h-9 w-9 object-contain" />
+                  <img src="/logo.png" alt="HYB logo" className="h-10 w-10 object-contain" />
                 </Link>
 
-                <div className="min-w-0">
-                  <h1 className="truncate text-2xl font-display font-bold tracking-tight text-foreground lg:text-[2rem]">
+                <div className="min-w-0 hidden lg:block">
+                  <div className="truncate text-sm uppercase tracking-[0.48em] text-slate-500">HYB</div>
+                  <h1 className="truncate text-lg font-semibold tracking-[0.18em] text-slate-200">
                     {pageTitle}
                   </h1>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 pr-1 sm:gap-3 sm:pr-0">
-                <div className="hidden xl:block relative w-72">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Search requests, chats, people..."
-                    className="h-12 rounded-[1.1rem] border-border/70 bg-card/80 pl-11 shadow-sm"
-                  />
-                </div>
-
+              <div className="flex items-center justify-end gap-2 pr-1 sm:gap-3 sm:pr-0">
                 <Button
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "relative overflow-visible h-12 w-12 rounded-[1.1rem] border border-border/70 bg-card/80 shadow-sm",
-                    location.pathname.startsWith('/dashboard/community-chat') && "border-primary/30 bg-primary/10 text-primary"
+                    "relative overflow-visible h-12 w-12 rounded-full border border-[#3050d3]/40 bg-[radial-gradient(circle_at_top,rgba(95,127,255,0.22),rgba(14,20,36,0.95))] text-slate-200 shadow-[0_0_0_1px_rgba(86,123,255,0.08),0_14px_30px_rgba(28,39,86,0.28)] hover:text-white",
+                    location.pathname.startsWith('/dashboard/community-chat') && "border-primary/50 text-primary shadow-[0_0_28px_rgba(45,212,191,0.18)]"
                   )}
                   onClick={() => navigate('/dashboard/community-chat')}
                 >
@@ -454,7 +482,7 @@ const DashboardLayout = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="relative overflow-visible h-12 w-12 rounded-[1.1rem] border border-border/70 bg-card/80 shadow-sm"
+                  className="relative overflow-visible h-12 w-12 rounded-full border border-[#8b3561]/45 bg-[radial-gradient(circle_at_top,rgba(244,114,182,0.16),rgba(14,20,36,0.95))] text-slate-200 shadow-[0_0_0_1px_rgba(244,114,182,0.08),0_14px_30px_rgba(77,24,52,0.24)] hover:text-white"
                   onClick={() => navigate('/dashboard/notifications')}
                 >
                   <Bell className="h-5 w-5" />
@@ -467,7 +495,7 @@ const DashboardLayout = () => {
 
                 <button
                   onClick={() => setIsMobileSidebarOpen(true)}
-                  className="rounded-[1.1rem] border border-border/70 bg-card/80 p-3 text-muted-foreground shadow-sm transition hover:border-primary/30 hover:text-foreground lg:hidden"
+                  className="rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(25,31,44,0.96),rgba(14,20,32,0.96))] p-3 text-slate-200 shadow-[0_16px_30px_rgba(0,0,0,0.28)] transition hover:border-primary/35 hover:text-white lg:hidden"
                   aria-label="Open navigation menu"
                 >
                   <Menu className="h-5 w-5" />
