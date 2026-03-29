@@ -76,13 +76,21 @@ const getChatById = asyncHandler(async (req, res) => {
 });
 
 const sendMessage = asyncHandler(async (req, res) => {
-  const { content } = req.body;
+  const { content, replyTo } = req.body;
   const chatId = req.params.id;
 
   const chat = await Chat.findById(chatId);
   if (!chat) throw new ApiError('Chat not found', 404);
   if (!isParticipant(chat, req.user.id))
     throw new ApiError('Not authorized to send messages', 403);
+
+  let replyMessage = null;
+  if (replyTo) {
+    replyMessage = await Message.findById(replyTo);
+    if (!replyMessage || replyMessage.chat.toString() !== chatId) {
+      throw new ApiError('Reply target not found', 404);
+    }
+  }
 
   let image = null;
   if (req.file) {
@@ -97,10 +105,20 @@ const sendMessage = asyncHandler(async (req, res) => {
     chat: chatId,
     sender: req.user.id,
     content: content || '',
-    image
+    image,
+    replyTo: replyMessage?._id || null
   });
 
   await message.populate('sender', 'fullName userName avatar');
+  if (replyMessage) {
+    await message.populate({
+      path: 'replyTo',
+      populate: {
+        path: 'sender',
+        select: 'fullName userName avatar',
+      },
+    });
+  }
 
   chat.updatedAt = Date.now();
   await chat.save();
@@ -144,6 +162,13 @@ const getMessages = asyncHandler(async (req, res) => {
   const [messages, total] = await Promise.all([
     Message.find({ chat: chatId })
       .populate('sender', 'fullName userName avatar')
+      .populate({
+        path: 'replyTo',
+        populate: {
+          path: 'sender',
+          select: 'fullName userName avatar',
+        },
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit),
@@ -165,10 +190,11 @@ const getMessages = asyncHandler(async (req, res) => {
 
   const sanitizedMessages = messages.map(msg => {
   if (msg.isDeleted) {
-    return {
+      return {
       _id: msg._id,
       chat: msg.chat,
       sender: msg.sender,
+      replyTo: msg.replyTo,
       isDeleted: true,
       deletedAt: msg.deletedAt,
       createdAt: msg.createdAt
