@@ -24,6 +24,12 @@ connectToDatabase()
         );
     }
 
+    if (mailStatus.warnings?.length) {
+        mailStatus.warnings.forEach((warning) => {
+            console.warn(`Email configuration warning: ${warning}`);
+        });
+    }
+
     server.listen(process.env.PORT || 8000, () => {
         console.log(`${DB_NAME} server is running on port ${process.env.PORT}`);
     });

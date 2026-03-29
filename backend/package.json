@@ -25,6 +25,7 @@
     "mongoose-aggregate-paginate-v2": "^1.1.4",
     "multer": "^2.0.2",
     "nodemailer": "^8.0.4",
+    "resend": "^6.9.4",
     "socket.io": "^4.8.3"
   }
 }

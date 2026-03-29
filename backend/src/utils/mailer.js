@@ -3,6 +3,7 @@ import nodemailer from 'nodemailer';
 const DEFAULT_MAIL_TIMEOUT_MS = Number(process.env.MAIL_TIMEOUT_MS) || 8000;
 const RESEND_API_URL = 'https://api.resend.com/emails';
 const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER?.trim().toLowerCase();
+const COMMON_PERSONAL_EMAIL_DOMAINS = new Set(['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com']);
 
 const getMailProvider = () => {
   if (EMAIL_PROVIDER) return EMAIL_PROVIDER;
@@ -17,15 +18,28 @@ export const getMailConfigurationStatus = () => {
 
   if (provider === 'resend') {
     const missing = [];
+    const resendFrom = process.env.RESEND_FROM_EMAIL || process.env.EMAIL_FROM;
     if (!process.env.RESEND_API_KEY) missing.push('RESEND_API_KEY');
-    if (!process.env.EMAIL_FROM && !process.env.RESEND_FROM_EMAIL) {
-      missing.push('EMAIL_FROM or RESEND_FROM_EMAIL');
+    if (!resendFrom) {
+      missing.push('RESEND_FROM_EMAIL or EMAIL_FROM');
+    }
+
+    const warnings = [];
+    const senderMatch = resendFrom?.match(/<([^>]+)>|^([^<\s]+@[^>\s]+)$/);
+    const senderEmail = senderMatch?.[1] || senderMatch?.[2] || '';
+    const senderDomain = senderEmail.split('@')[1]?.toLowerCase();
+
+    if (senderDomain && COMMON_PERSONAL_EMAIL_DOMAINS.has(senderDomain) && !senderEmail.endsWith('@resend.dev')) {
+      warnings.push(
+        `Resend sender "${senderEmail}" looks like a personal inbox. Use a verified domain sender or a resend.dev test sender.`
+      );
     }
 
     return {
       provider,
       configured: missing.length === 0,
       missing,
+      warnings,
     };
   }
 
@@ -38,6 +52,7 @@ export const getMailConfigurationStatus = () => {
     provider,
     configured: missing.length === 0,
     missing,
+    warnings: [],
   };
 };
 
@@ -98,14 +113,14 @@ const withTimeout = async (promise, timeoutMs, label) => {
 
 const sendWithResend = async ({ to, subject, text, html }) => {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || process.env.RESEND_FROM_EMAIL;
+  const from = process.env.RESEND_FROM_EMAIL || process.env.EMAIL_FROM;
 
   if (!apiKey) {
     throw new Error('Resend email provider is not configured. Missing RESEND_API_KEY.');
   }
 
   if (!from) {
-    throw new Error('Resend email provider is not configured. Missing EMAIL_FROM or RESEND_FROM_EMAIL.');
+    throw new Error('Resend email provider is not configured. Missing RESEND_FROM_EMAIL or EMAIL_FROM.');
   }
 
   const controller = new AbortController();
