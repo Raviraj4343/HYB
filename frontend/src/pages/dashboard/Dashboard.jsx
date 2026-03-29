@@ -1,26 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  BellRing,
-  CheckCircle2,
   HelpCircle,
   ArrowUpRight,
   MessageSquare,
   Plus,
   Sparkles,
-  TrendingUp,
-  Zap
+  Zap,
+  Camera
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import api from '../../api/axios';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, updateAvatar } = useAuth();
   const { socket } = useSocket();
   const navigate = useNavigate();
   const [statsData, setStatsData] = useState({
@@ -67,6 +65,26 @@ const Dashboard = () => {
   }, [socket]);
 
   const firstName = user?.fullName?.split(' ')[0] || 'Friend';
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name
+      .split(' ')
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      await updateAvatar(file);
+    } catch (err) {
+      console.error('Avatar update failed', err);
+    }
+  };
+
   const overviewCards = [
     {
       label: 'Active Requests',
@@ -115,12 +133,6 @@ const Dashboard = () => {
     },
   ];
 
-  const tips = [
-    'Use clear titles so people can decide faster.',
-    'Keep your branch, year, and profile photo updated.',
-    'Reply quickly in chats to build trust.',
-  ];
-
   const allTiles = [
     overviewCards[0] ? { ...overviewCards[0], kind: 'live' } : null,
     quickActions[0] ? { ...quickActions[0], kind: 'action' } : null,
@@ -141,40 +153,61 @@ const Dashboard = () => {
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45 }}
-        className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(135deg,rgba(20,184,166,0.14),rgba(59,130,246,0.08)_45%,rgba(255,255,255,0.72))] p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] dark:bg-[linear-gradient(135deg,rgba(20,184,166,0.16),rgba(59,130,246,0.08)_45%,rgba(15,23,42,0.4))] dark:shadow-[0_24px_60px_rgba(0,0,0,0.18)] lg:p-8"
+        className="relative overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(135deg,rgba(255,255,255,0.52),rgba(255,255,255,0.18))] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(135deg,rgba(20,184,166,0.12),rgba(59,130,246,0.06)_45%,rgba(15,23,42,0.28))] dark:shadow-[0_24px_60px_rgba(0,0,0,0.16)] lg:p-8"
       >
-        <div className="absolute right-0 top-0 h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
-        <div className="relative flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+        <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-primary/8 blur-3xl" />
+        <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-center">
           <div className="max-w-2xl">
-            <Badge className="mb-4 rounded-full border border-primary/10 bg-white/65 px-3 py-1 text-xs font-medium text-foreground shadow-sm dark:border-white/10 dark:bg-white/10 dark:text-white/90">
+            <Badge className="mb-4 rounded-full border border-primary/10 bg-white/60 px-3 py-1 text-xs font-medium text-foreground dark:border-white/10 dark:bg-white/10 dark:text-white/90">
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
               Community workspace
             </Badge>
-            <h2 className="text-3xl font-display font-bold text-foreground dark:text-white sm:text-4xl">
+            <h2 className="text-3xl font-display font-semibold text-foreground dark:text-white sm:text-[2.35rem]">
               Welcome back, {firstName}
             </h2>
-            <p className="mt-3 max-w-xl text-sm leading-7 text-foreground/72 dark:text-white/72 sm:text-base">
-              Your dashboard is ready. Track requests, continue conversations, and keep your profile sharp.
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-foreground/68 dark:text-white/68 sm:text-base">
+              Keep up with your requests and conversations without the clutter.
             </p>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button
-              asChild
-              className="h-12 rounded-2xl btn-gradient-primary text-primary-foreground shadow-xl hover:opacity-95"
-            >
-              <Link to="/dashboard/requests/create">
-                <Plus className="mr-2 h-4 w-4" />
-                New Request
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="secondary"
-              className="h-12 rounded-2xl border border-border/70 bg-white/70 text-foreground shadow-sm hover:bg-white dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/14"
-            >
-              <Link to="/dashboard/requests">Browse Requests</Link>
-            </Button>
+          <div className="rounded-[1.2rem] border border-white/8 bg-gradient-to-b from-black/6 to-black/3 p-3 sm:p-4 shadow-lg backdrop-blur-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="relative group">
+                <input id="avatarUpload" type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                <div className="overflow-hidden rounded-lg">
+                  {/* animate avatar on change */}
+                  <motion.div
+                    key={user?.avatar || 'avatar'}
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.35 }}
+                  >
+                    <Avatar className="h-10 w-10 shrink-0 rounded-lg border border-white/8 bg-card shadow-sm">
+                      <AvatarImage src={user?.avatar} alt={user?.fullName} />
+                      <AvatarFallback className="rounded-lg bg-primary/18 text-primary text-sm font-semibold">
+                        {getInitials(user?.fullName)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </motion.div>
+                </div>
+
+                <label htmlFor="avatarUpload" title="Change avatar" className="absolute -bottom-1 -right-1 h-7 w-7 items-center justify-center rounded-full bg-primary text-white border border-white/20 shadow-sm cursor-pointer transition-transform transform scale-95 flex group-hover:scale-105">
+                  <Camera className="h-4 w-4" />
+                </label>
+              </div>
+
+              <div className="min-w-0">
+                <div className="truncate text-lg sm:text-2xl font-display font-semibold leading-tight text-foreground dark:text-white">
+                  {firstName}
+                </div>
+                <div className="mt-0.5 truncate text-sm text-foreground/70 dark:text-white/70">
+                  @{user?.userName || 'profile'}
+                </div>
+                <div className="mt-2 text-sm sm:text-base font-display font-semibold text-foreground dark:text-white">
+                  Help Count {user?.helpCount || 0}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </motion.section>
@@ -236,36 +269,6 @@ const Dashboard = () => {
           </motion.div>
         ))}
       </section>
-
-      <motion.section
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.15 }}
-      >
-        <Card className="rounded-[1.75rem] border border-border/70 bg-[linear-gradient(135deg,rgba(250,204,21,0.12),rgba(251,146,60,0.06))] shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl font-display">
-              <BellRing className="h-5 w-5 text-amber-300" />
-              Better Habits
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {tips.map((tip) => (
-              <div key={tip} className="flex items-start gap-3 rounded-2xl bg-black/10 px-4 py-3">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
-                <p className="text-sm leading-6 text-foreground/90">{tip}</p>
-              </div>
-            ))}
-            <div className="flex items-center justify-between rounded-2xl bg-black/10 px-4 py-3 text-sm">
-              <span className="text-foreground/80">Help Count</span>
-              <Badge className="rounded-full bg-emerald-500/12 text-emerald-300">
-                <TrendingUp className="mr-1.5 h-3.5 w-3.5" />
-                {user?.helpCount || 0}
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.section>
     </div>
   );
 };
