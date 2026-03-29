@@ -1,12 +1,13 @@
 import { Request } from "../models/request.models.js";
 import { User } from "../models/user.models.js";
 import {Chat} from "../models/chat.models.js";
+import {Message} from "../models/message.models.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { DEFAULT_PAGE_SIZE, DELETE_WINDOW_MINUTES } from "../constants.js";
-import { emitChatListRefresh, emitRequestChanged } from "../utils/realtime.js";
+import { createAndEmitNotification, emitChatListRefresh, emitRequestChanged } from "../utils/realtime.js";
 
 
 const createRequest = asyncHandler(async (req, res) => {
@@ -318,6 +319,42 @@ const getRequestStats = async (req, res) => {
   });
 };
 
+const adminDeleteRequest = asyncHandler(async (req, res) => {
+  const request = await Request.findById(req.params.id).populate("requestedBy", "fullName userName");
+
+  if (!request) {
+    throw new ApiError(404, "Request not found");
+  }
+
+  const moderationReason = req.body?.reason?.trim() || "Removed by super admin";
+  const chat = await Chat.findOne({ request: request._id });
+
+  if (chat) {
+    await Message.deleteMany({ chat: chat._id });
+    await Chat.deleteOne({ _id: chat._id });
+    emitChatListRefresh(chat.participants);
+  }
+
+  await Request.deleteOne({ _id: request._id });
+  emitRequestChanged("deleted", { _id: request._id });
+
+  await createAndEmitNotification({
+    user: request.requestedBy._id,
+    type: "system",
+    title: "Request removed by moderation",
+    message: `Your request "${request.title}" was removed. Reason: ${moderationReason}`,
+    data: {
+      requestId: request._id,
+      reason: moderationReason,
+    },
+    isRead: false,
+  });
+
+  return res.status(200).json(
+    new ApiResponse(200, { deletedRequestId: request._id }, "Request deleted by super admin")
+  );
+});
+
 export {
   createRequest,
   getAllRequests,
@@ -328,5 +365,6 @@ export {
   cancelRequest,
   fulfillRequest,
   deleteRequest,
-  getRequestStats
+  getRequestStats,
+  adminDeleteRequest
 };
