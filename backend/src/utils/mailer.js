@@ -29,6 +29,12 @@ export const getMailConfigurationStatus = () => {
     const senderEmail = senderMatch?.[1] || senderMatch?.[2] || '';
     const senderDomain = senderEmail.split('@')[1]?.toLowerCase();
 
+    if (senderEmail.endsWith('@resend.dev')) {
+      warnings.push(
+        `Resend sender "${senderEmail}" is a test sender. It can only send to the email address associated with your Resend account.`
+      );
+    }
+
     if (senderDomain && COMMON_PERSONAL_EMAIL_DOMAINS.has(senderDomain) && !senderEmail.endsWith('@resend.dev')) {
       warnings.push(
         `Resend sender "${senderEmail}" looks like a personal inbox. Use a verified domain sender or a resend.dev test sender.`
@@ -144,8 +150,30 @@ const sendWithResend = async ({ to, subject, text, html }) => {
     });
 
     if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`Resend API error ${response.status}: ${errorBody}`);
+      const rawBody = await response.text();
+      let parsedBody;
+
+      try {
+        parsedBody = JSON.parse(rawBody);
+      } catch {
+        parsedBody = null;
+      }
+
+      const resendMessage =
+        parsedBody?.message ||
+        parsedBody?.error ||
+        rawBody;
+
+      if (
+        response.status === 403 &&
+        from.includes('@resend.dev')
+      ) {
+        throw new Error(
+          'Resend test sender can only deliver to your own Resend account email. Verify a domain in Resend and use that sender to email other users.'
+        );
+      }
+
+      throw new Error(`Resend API error ${response.status}: ${resendMessage}`);
     }
 
     return response.json();
