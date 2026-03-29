@@ -21,6 +21,7 @@ const GlobalChat = () => {
   const messagesContainerRef = useRef(null);
   const containerRef = useRef(null);
   const headerRef = useRef(null);
+  const inputRef = useRef(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const GLOBAL_CHAT_LAST_SEEN_KEY = 'globalChatLastSeenAt';
 
@@ -61,6 +62,47 @@ const GlobalChat = () => {
     const container = messagesContainerRef.current;
     container?.addEventListener('scroll', onScroll);
     return () => container?.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Ensure input stays visible when mobile keyboard opens (Android/iOS adjustments)
+  useEffect(() => {
+    const adjustForKeyboard = () => {
+      try {
+        if (containerRef.current && headerRef.current) {
+          const h = window.innerHeight - headerRef.current.offsetHeight;
+          containerRef.current.style.height = `${h}px`;
+        }
+        document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+        // keep view scrolled to bottom
+        setTimeout(() => {
+          messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' });
+          setShowScrollBtn(false);
+        }, 120);
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    const onFocusIn = (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+        adjustForKeyboard();
+      }
+    };
+
+    const onResize = () => {
+      // recalc height on resize (keyboard show/hide often triggers resize)
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        adjustForKeyboard();
+      }
+    };
+
+    window.addEventListener('resize', onResize);
+    document.addEventListener('focusin', onFocusIn);
+
+    return () => {
+      window.removeEventListener('resize', onResize);
+      document.removeEventListener('focusin', onFocusIn);
+    };
   }, []);
 
   const activeParticipants = useMemo(() => {
@@ -296,47 +338,70 @@ const GlobalChat = () => {
             </button>
           )}
 
-          <div className="border-t border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.86),rgba(248,250,252,0.92))] p-3 backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.88),rgba(7,12,20,0.98))] sm:p-4">
-              {replyTo && (
-                <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-medium text-primary">Replying to @{replyTo.sender?.userName}</div>
-                  <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                    {replyTo.isDeleted ? 'Deleted message' : replyTo.content}
+          <div className="sm:static fixed left-0 right-0 bottom-0 z-50 sm:z-auto">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="border-t border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.86),rgba(248,250,252,0.92))] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.88),rgba(7,12,20,0.98))] sm:p-4">
+                {replyTo && (
+                  <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-primary">Replying to @{replyTo.sender?.userName}</div>
+                      <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                        {replyTo.isDeleted ? 'Deleted message' : replyTo.content}
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 shrink-0 rounded-full"
+                      onClick={() => setReplyTo(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
-                </div>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 shrink-0 rounded-full"
-                  onClick={() => setReplyTo(null)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
+                )}
 
-            <form onSubmit={handleSend} className="flex items-end gap-3">
-              <div className="relative flex-1">
-                <div className="pointer-events-none absolute inset-0 -z-10 rounded-2xl bg-[linear-gradient(135deg,rgba(20,184,166,0.08),rgba(59,130,246,0.06))]" />
-                <input
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  placeholder="Message the whole community..."
-                  className="relative z-10 h-[3.25rem] w-full rounded-2xl border border-slate-800 bg-slate-950 px-5 text-[15px] font-medium text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.24)] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
-                  style={{ backgroundColor: '#020617', color: '#f8fafc', WebkitTextFillColor: '#f8fafc', caretColor: '#f8fafc' }}
-                  disabled={isSending}
-                />
+                <form onSubmit={handleSend} className="flex items-end gap-3">
+                  <div className="relative flex-1">
+                    <div className="pointer-events-none absolute inset-0 -z-10 rounded-2xl bg-[linear-gradient(135deg,rgba(20,184,166,0.08),rgba(59,130,246,0.06))]" />
+                    <input
+                      ref={inputRef}
+                      value={messageText}
+                      onChange={(e) => setMessageText(e.target.value)}
+                      placeholder="Message the whole community..."
+                      className="relative z-10 h-[3.25rem] w-full rounded-2xl border border-slate-800 bg-slate-950 px-5 text-[15px] font-medium text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.24)] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
+                      style={{ backgroundColor: '#020617', color: '#f8fafc', WebkitTextFillColor: '#f8fafc', caretColor: '#f8fafc' }}
+                      disabled={isSending}
+                      onFocus={() => setTimeout(() => {
+                        try { if (headerRef.current && containerRef.current) {
+                          const h = window.innerHeight - headerRef.current.offsetHeight;
+                          containerRef.current.style.height = `${h}px`;
+                        }
+                        document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+                        messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' });
+                        setShowScrollBtn(false);
+                        } catch(e) { }
+                      }, 80)}
+                      onBlur={() => setTimeout(() => {
+                        try { if (headerRef.current && containerRef.current) {
+                          const h = window.innerHeight - headerRef.current.offsetHeight;
+                          containerRef.current.style.height = `${h}px`;
+                        }
+                        document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+                        } catch(e) { }
+                      }, 80)}
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className={cn("h-[3.25rem] min-w-[3.25rem] rounded-2xl px-5 btn-gradient-primary shadow-[0_12px_28px_rgba(20,184,166,0.24)]", isSending && "opacity-80")}
+                    disabled={isSending || !messageText.trim()}
+                  >
+                    {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  </Button>
+                </form>
               </div>
-              <Button
-                type="submit"
-                className={cn("h-[3.25rem] min-w-[3.25rem] rounded-2xl px-5 btn-gradient-primary shadow-[0_12px_28px_rgba(20,184,166,0.24)]", isSending && "opacity-80")}
-                disabled={isSending || !messageText.trim()}
-              >
-                {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              </Button>
-            </form>
+            </div>
           </div>
         </CardContent>
       </Card>

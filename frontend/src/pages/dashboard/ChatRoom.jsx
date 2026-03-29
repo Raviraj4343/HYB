@@ -32,6 +32,7 @@ const ChatRoom = () => {
   const messagesContainerRef = useRef(null);
   const containerRef = useRef(null);
   const headerRef = useRef(null);
+  const inputRef = useRef(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const fileInputRef = useRef(null);
   const canBlockUser = user?.role === 'super_admin' || user?.role === 'admin';
@@ -83,6 +84,43 @@ const ChatRoom = () => {
     const container = messagesContainerRef.current;
     container?.addEventListener('scroll', onScroll);
     return () => container?.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Adjust layout when mobile keyboard appears so input stays visible
+  useEffect(() => {
+    const adjustForKeyboard = () => {
+      try {
+        if (containerRef.current && headerRef.current) {
+          const h = window.innerHeight - headerRef.current.offsetHeight;
+          containerRef.current.style.height = `${h}px`;
+        }
+        document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+        setTimeout(() => {
+          messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' });
+          setShowScrollBtn(false);
+        }, 100);
+      } catch (e) {}
+    };
+
+    const onFocusIn = (e) => {
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+        adjustForKeyboard();
+      }
+    };
+
+    const onResize = () => {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
+        adjustForKeyboard();
+      }
+    };
+
+    window.addEventListener('resize', onResize);
+    document.addEventListener('focusin', onFocusIn);
+
+    return () => {
+      window.removeEventListener('resize', onResize);
+      document.removeEventListener('focusin', onFocusIn);
+    };
   }, []);
 
   const getOtherParticipant = () => {
@@ -369,6 +407,7 @@ const ChatRoom = () => {
           <div className="relative flex-1">
             <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[linear-gradient(135deg,rgba(20,184,166,0.12),rgba(59,130,246,0.08))]" />
             <input
+              ref={inputRef}
               type="text"
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
@@ -384,6 +423,24 @@ const ChatRoom = () => {
                 boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px rgba(15,23,42,0.26)',
               }}
               disabled={isSending}
+              onFocus={() => setTimeout(() => {
+                try { if (headerRef.current && containerRef.current) {
+                  const h = window.innerHeight - headerRef.current.offsetHeight;
+                  containerRef.current.style.height = `${h}px`;
+                }
+                document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+                messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' });
+                setShowScrollBtn(false);
+                } catch(e) {}
+              }, 80)}
+              onBlur={() => setTimeout(() => {
+                try { if (headerRef.current && containerRef.current) {
+                  const h = window.innerHeight - headerRef.current.offsetHeight;
+                  containerRef.current.style.height = `${h}px`;
+                }
+                document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+                } catch(e) {}
+              }, 80)}
             />
           </div>
 
