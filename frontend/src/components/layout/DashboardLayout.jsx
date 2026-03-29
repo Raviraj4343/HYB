@@ -155,18 +155,21 @@ const DashboardLayout = () => {
 
       <div className="border-t border-sidebar-border/80 p-4">
         <div className="rounded-[1.7rem] border border-sidebar-border/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-4 shadow-[0_10px_24px_rgba(0,0,0,0.08)]">
-          <div className="mb-4 flex items-center gap-3">
-            <Avatar className="h-12 w-12 border border-sidebar-border shadow-sm">
-              <AvatarImage src={user?.avatar} alt={user?.fullName} />
-              <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                {getInitials(user?.fullName)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <p className="truncate font-medium text-sidebar-foreground">{user?.fullName || 'User'}</p>
-              <p className="truncate text-sm text-muted-foreground">@{user?.userName || 'account'}</p>
+          {/* Hide avatar block on mobile; show Profile/Settings/Logout directly */}
+          {!mobile && (
+            <div className="mb-4 flex items-center gap-3">
+              <Avatar className="h-12 w-12 border border-sidebar-border shadow-sm">
+                <AvatarImage src={user?.avatar} alt={user?.fullName} />
+                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                  {getInitials(user?.fullName)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="truncate font-medium text-sidebar-foreground">{user?.fullName || 'User'}</p>
+                <p className="truncate text-sm text-muted-foreground">@{user?.userName || 'account'}</p>
+              </div>
             </div>
-          </div>
+          )}
 
           {!mobile && (
             <Button
