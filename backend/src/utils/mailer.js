@@ -1,17 +1,42 @@
 import nodemailer from 'nodemailer';
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT) || 587,
-  secure: process.env.EMAIL_SECURE === 'true' || false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
+const getMailConfig = () => {
+  const host = process.env.EMAIL_HOST;
+  const port = Number(process.env.EMAIL_PORT) || 587;
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
+
+  if (!user || !pass) {
+    throw new Error('Email service is not configured. Missing EMAIL_USER or EMAIL_PASS.');
+  }
+
+  return {
+    host,
+    port,
+    secure: process.env.EMAIL_SECURE === 'true' || port === 465,
+    service: !host ? 'gmail' : undefined,
+    auth: {
+      user,
+      pass,
+    },
+    tls: {
+      minVersion: 'TLSv1.2',
+    },
+  };
+};
+
+let transporter;
+
+const getTransporter = () => {
+  if (!transporter) {
+    transporter = nodemailer.createTransport(getMailConfig());
+  }
+
+  return transporter;
+};
 
 export const sendMail = async ({ to, subject, text, html }) => {
-  const from = process.env.EMAIL_FROM;
+  const from = process.env.EMAIL_FROM || process.env.EMAIL_USER;
 
   const mailOptions = {
     from,
@@ -21,7 +46,7 @@ export const sendMail = async ({ to, subject, text, html }) => {
     html,
   };
 
-  return transporter.sendMail(mailOptions);
+  return getTransporter().sendMail(mailOptions);
 };
 
 export const buildAuthCodeEmail = ({

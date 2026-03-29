@@ -21,6 +21,9 @@ const generateVerificationPayload = () => ({
   expires: new Date(Date.now() + 15 * 60 * 1000),
 });
 
+const createMailDeliveryError = (context) =>
+  new ApiError(503, `${context} is unavailable right now. Please try again in a moment.`);
+
 const sendVerificationCodeEmail = async (email, code, fullName = "there") => {
   const subject = "Verify your HYB account";
   const { text, html } = buildAuthCodeEmail({
@@ -163,7 +166,7 @@ const registerUser = asyncHandler(async (req, res) => {
       },
       emailSent
         ? "Account created. Verification code sent to your email"
-        : "Account created. Use resend to get a verification code"
+        : "Account created, but we could not send the verification code. Please use resend after fixing email service configuration."
     )
   );
 });
@@ -245,6 +248,7 @@ const resendVerificationCode = asyncHandler(async (req, res) => {
     await sendVerificationCodeEmail(user.email, code, user.fullName);
   } catch (err) {
     console.error("Failed to resend verification email", err);
+    throw createMailDeliveryError("Verification email delivery");
   }
 
   res.status(200).json(new ApiResponse(200, { email: user.email }, "Verification code sent"));
@@ -440,8 +444,8 @@ const forgotPassword = asyncHandler(async (req, res) => {
   try {
     await sendPasswordResetCodeEmail(user.email, code);
   } catch (err) {
-    // Log but don't reveal details to caller
     console.error('Failed to send reset email', err);
+    throw createMailDeliveryError("Password reset email delivery");
   }
 
   res.status(200).json(new ApiResponse(200, null, 'If that email exists, a verification code was sent'));
