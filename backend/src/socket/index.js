@@ -25,7 +25,7 @@ const extractToken = (socket) => {
   return null;
 };
 
-export const initializeSocket = (server) => {
+export const initializeSocket = async (server) => {
   const allowedOrigins = getAllowedOrigins();
 
   ioInstance = new Server(server, {
