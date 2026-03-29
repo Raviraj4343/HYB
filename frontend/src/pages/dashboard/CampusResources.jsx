@@ -5,11 +5,12 @@ import {
   BusFront,
   CalendarDays,
   ExternalLink,
-  Megaphone,
+  FileText,
   Newspaper,
   Pencil,
   Phone,
   Plus,
+  Sparkles,
   ShieldCheck,
   Trash2,
   Upload,
@@ -83,6 +84,65 @@ const CATEGORY_OPTIONS = [
   },
 ];
 
+const SINGLE_IMAGE_CATEGORIES = new Set(['bus_timing', 'holiday_notice']);
+const CATEGORY_FIELD_RULES = {
+  faculty_contacts: {
+    showTitle: true,
+    showDescription: true,
+    showContactName: true,
+    showPhoneNumber: true,
+    showLocation: true,
+    showExternalLink: false,
+    showEffectiveDate: false,
+    attachmentLabel: 'Optional supporting image',
+    attachmentAccept: 'image/*',
+  },
+  hostel_updates: {
+    showTitle: true,
+    showDescription: true,
+    showContactName: true,
+    showPhoneNumber: true,
+    showLocation: true,
+    showExternalLink: true,
+    showEffectiveDate: false,
+    attachmentLabel: 'Optional image or mess menu photo',
+    attachmentAccept: 'image/*',
+  },
+  bus_timing: {
+    showTitle: false,
+    showDescription: false,
+    showContactName: false,
+    showPhoneNumber: false,
+    showLocation: false,
+    showExternalLink: false,
+    showEffectiveDate: true,
+    attachmentLabel: 'Upload the latest bus timing image or PDF',
+    attachmentAccept: 'image/*,.pdf,application/pdf',
+  },
+  holiday_notice: {
+    showTitle: false,
+    showDescription: false,
+    showContactName: false,
+    showPhoneNumber: false,
+    showLocation: false,
+    showExternalLink: false,
+    showEffectiveDate: true,
+    attachmentLabel: 'Upload the latest holiday list image or PDF',
+    attachmentAccept: 'image/*,.pdf,application/pdf',
+  },
+  campus_news: {
+    showTitle: true,
+    showDescription: true,
+    showContactName: false,
+    showPhoneNumber: false,
+    showLocation: false,
+    showExternalLink: true,
+    showEffectiveDate: true,
+    attachmentLabel: 'Optional poster or supporting image',
+    attachmentAccept: 'image/*',
+  },
+};
+
 const EMPTY_FORM = {
   category: 'faculty_contacts',
   title: '',
@@ -114,6 +174,7 @@ const CampusResources = () => {
   const [imageFile, setImageFile] = useState(null);
   const [removeImage, setRemoveImage] = useState(false);
   const isSuperAdmin = user?.role === 'super_admin';
+  const fieldRules = CATEGORY_FIELD_RULES[form.category] || CATEGORY_FIELD_RULES.faculty_contacts;
 
   const groupedResources = useMemo(() => {
     return CATEGORY_OPTIONS.reduce((acc, option) => {
@@ -182,7 +243,18 @@ const CampusResources = () => {
 
     try {
       const payload = new FormData();
-      Object.entries(form).forEach(([key, value]) => {
+      const normalizedForm = {
+        ...form,
+        title: fieldRules.showTitle ? form.title : '',
+        description: fieldRules.showDescription ? form.description : '',
+        contactName: fieldRules.showContactName ? form.contactName : '',
+        phoneNumber: fieldRules.showPhoneNumber ? form.phoneNumber : '',
+        location: fieldRules.showLocation ? form.location : '',
+        externalLink: fieldRules.showExternalLink ? form.externalLink : '',
+        effectiveDate: fieldRules.showEffectiveDate ? form.effectiveDate : '',
+      };
+
+      Object.entries(normalizedForm).forEach(([key, value]) => {
         payload.append(key, value ?? '');
       });
 
@@ -271,6 +343,8 @@ const CampusResources = () => {
         {CATEGORY_OPTIONS.map((section) => {
           const Icon = section.icon;
           const items = groupedResources[section.value] || [];
+          const isSingleImageSection = SINGLE_IMAGE_CATEGORIES.has(section.value);
+          const hasExistingSingleItem = isSingleImageSection && items.length > 0;
 
           return (
             <Card key={section.value} className="overflow-hidden rounded-[1.8rem] border border-border/70 bg-card/80 shadow-[0_18px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:bg-[linear-gradient(180deg,rgba(8,15,28,0.94),rgba(8,12,22,0.92))]">
@@ -298,16 +372,27 @@ const CampusResources = () => {
                       <Button
                         variant="outline"
                         className="h-11 rounded-2xl border-primary/15 bg-background/80 px-4 shadow-sm dark:bg-white/[0.03]"
-                        onClick={() => openCreateDialog(section.value)}
+                        onClick={() => {
+                          if (hasExistingSingleItem) {
+                            openEditDialog(items[0]);
+                            return;
+                          }
+                          openCreateDialog(section.value);
+                        }}
                       >
                         <Plus className="mr-2 h-4 w-4" />
-                        Add to {section.title}
+                        {hasExistingSingleItem ? `Edit ${section.title}` : `Add to ${section.title}`}
                       </Button>
                     )}
                   </div>
                 </div>
 
                 <div className="p-6">
+                  {isSingleImageSection && (
+                    <div className="mb-5 rounded-[1.25rem] border border-primary/15 bg-primary/6 px-4 py-3 text-sm text-muted-foreground">
+                      This section is managed as a single visual notice. Upload one latest image and update that same entry whenever timing or holiday information changes.
+                    </div>
+                  )}
                   {isLoading ? (
                     <div className="rounded-[1.4rem] border border-dashed border-border/70 px-5 py-10 text-center text-muted-foreground">
                       Loading resources...
@@ -317,18 +402,25 @@ const CampusResources = () => {
                       No resources added in this section yet.
                     </div>
                   ) : (
-                    <div className="grid gap-4 xl:grid-cols-2">
+                    <div className={cn(
+                      'custom-scrollbar',
+                      items.length > 2 ? 'max-h-[44rem] overflow-y-auto pr-1' : ''
+                    )}>
+                      <div className="grid gap-4 xl:grid-cols-2">
                       {items.map((resource) => (
                         <article
                           key={resource._id}
-                          className="group overflow-hidden rounded-[1.45rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,255,255,0.52))] shadow-[0_16px_34px_rgba(15,23,42,0.06)] transition hover:-translate-y-1 hover:border-primary/25 hover:shadow-[0_22px_42px_rgba(20,184,166,0.10)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(14,22,36,0.96),rgba(8,14,25,0.94))]"
+                          className="group overflow-hidden rounded-[1.55rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.78),rgba(255,255,255,0.56))] shadow-[0_16px_34px_rgba(15,23,42,0.06)] transition hover:-translate-y-1.5 hover:border-primary/25 hover:shadow-[0_24px_50px_rgba(20,184,166,0.12)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(14,22,36,0.98),rgba(8,14,25,0.95))]"
                         >
-                          {resource.image && (
-                            <img
-                              src={resource.image}
-                              alt={resource.title}
-                              className="h-48 w-full object-cover"
-                            />
+                          {resource.image && resource.attachmentType !== 'pdf' && (
+                            <div className="relative overflow-hidden">
+                              <img
+                                src={resource.image}
+                                alt={resource.title}
+                                className="h-52 w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                              />
+                              <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(2,6,23,0.14))]" />
+                            </div>
                           )}
 
                           <div className="space-y-4 p-5">
@@ -345,28 +437,51 @@ const CampusResources = () => {
                               </div>
 
                               {isSuperAdmin && (
-                                <div className="flex items-center gap-2 opacity-100 sm:opacity-0 sm:transition sm:group-hover:opacity-100">
+                                <div className="flex items-center gap-2">
                                   <Button
                                     type="button"
                                     variant="outline"
-                                    size="icon"
-                                    className="h-10 w-10 rounded-xl"
+                                    className="h-10 rounded-xl border-primary/20 bg-primary/10 px-3 text-primary hover:bg-primary/15 hover:text-primary"
                                     onClick={() => openEditDialog(resource)}
                                   >
-                                    <Pencil className="h-4 w-4" />
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit
                                   </Button>
                                   <Button
                                     type="button"
                                     variant="outline"
-                                    size="icon"
-                                    className="h-10 w-10 rounded-xl text-destructive hover:text-destructive"
+                                    className="h-10 rounded-xl border-destructive/20 bg-destructive/10 px-3 text-destructive hover:bg-destructive/15 hover:text-destructive"
                                     onClick={() => handleDelete(resource._id)}
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
                                   </Button>
                                 </div>
                               )}
                             </div>
+
+                            {resource.attachmentType === 'pdf' && resource.image && (
+                              <div className="rounded-[1.25rem] border border-border/70 bg-background/75 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                                <div className="flex items-start gap-3">
+                                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                                    <FileText className="h-5 w-5" />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="font-medium text-foreground dark:text-white">
+                                      {resource.attachmentName || 'Attached PDF notice'}
+                                    </div>
+                                    <div className="mt-1 text-sm text-muted-foreground">
+                                      Open the latest uploaded document for this notice.
+                                    </div>
+                                  </div>
+                                  <Button asChild variant="outline" className="rounded-xl">
+                                    <a href={resource.image} target="_blank" rel="noreferrer">
+                                      Open PDF
+                                    </a>
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
 
                             <p className="text-sm leading-7 text-foreground/78 dark:text-white/72">
                               {resource.description}
@@ -420,6 +535,7 @@ const CampusResources = () => {
                           </div>
                         </article>
                       ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -430,116 +546,185 @@ const CampusResources = () => {
       </section>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => (!open ? closeDialog() : setIsDialogOpen(true))}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-[1.6rem] border-border/70 p-0 sm:max-w-3xl">
+        <DialogContent className="max-h-[92vh] overflow-hidden rounded-[1.8rem] border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))] p-0 shadow-[0_30px_90px_rgba(15,23,42,0.18)] dark:bg-[linear-gradient(180deg,rgba(8,15,28,0.98),rgba(6,10,18,0.98))] sm:max-w-4xl">
           <form onSubmit={handleSubmit}>
-            <DialogHeader className="border-b border-border/70 px-6 py-5">
-              <DialogTitle className="text-2xl font-display">
-                {editingResource ? 'Edit campus resource' : 'Add campus resource'}
-              </DialogTitle>
-              <DialogDescription>
-                Publish structured college information that every student can access, while keeping moderation locked to super admin only.
-              </DialogDescription>
+            <DialogHeader className="sticky top-0 z-10 border-b border-border/70 bg-background/92 px-6 py-5 backdrop-blur-xl dark:bg-[rgba(8,15,28,0.94)]">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Super Admin Editor
+                  </div>
+                  <DialogTitle className="text-2xl font-display">
+                    {editingResource ? 'Edit campus resource' : 'Add campus resource'}
+                  </DialogTitle>
+                  <DialogDescription className="mt-2 max-w-2xl">
+                    Publish structured college information that every student can access, while keeping moderation locked to super admin only.
+                  </DialogDescription>
+                </div>
+                <div className="rounded-2xl border border-primary/15 bg-primary/8 px-4 py-3 text-sm text-muted-foreground">
+                  Keep details crisp and verified so students can trust this hub.
+                </div>
+              </div>
             </DialogHeader>
 
-            <div className="grid gap-5 px-6 py-6">
-              <div className="grid gap-5 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Category</label>
-                  <Select value={form.category} onValueChange={(value) => handleChange('category', value)}>
-                    <SelectTrigger className="h-12 rounded-2xl">
-                      <SelectValue placeholder="Choose a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORY_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Title</label>
-                  <Input className="h-12 rounded-2xl" value={form.title} onChange={(e) => handleChange('title', e.target.value)} placeholder="e.g. Prof. Sharma - CSE Office" required />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Description</label>
-                <Textarea className="min-h-[130px] rounded-[1.4rem]" value={form.description} onChange={(e) => handleChange('description', e.target.value)} placeholder="Write the details students should know..." required />
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Contact Name</label>
-                  <Input className="h-12 rounded-2xl" value={form.contactName} onChange={(e) => handleChange('contactName', e.target.value)} placeholder="Warden / professor / office" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Phone Number</label>
-                  <Input className="h-12 rounded-2xl" value={form.phoneNumber} onChange={(e) => handleChange('phoneNumber', e.target.value)} placeholder="+91 ..." />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Location</label>
-                  <Input className="h-12 rounded-2xl" value={form.location} onChange={(e) => handleChange('location', e.target.value)} placeholder="Block / office / stop" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Effective Date</label>
-                  <Input type="date" className="h-12 rounded-2xl" value={form.effectiveDate} onChange={(e) => handleChange('effectiveDate', e.target.value)} />
-                </div>
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-[minmax(0,1fr)_160px]">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">External Link</label>
-                  <Input className="h-12 rounded-2xl" value={form.externalLink} onChange={(e) => handleChange('externalLink', e.target.value)} placeholder="Drive / website / pdf link" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground">Sort Order</label>
-                  <Input type="number" className="h-12 rounded-2xl" value={form.sortOrder} onChange={(e) => handleChange('sortOrder', e.target.value)} placeholder="0" />
-                </div>
-              </div>
-
-              <div className="space-y-3 rounded-[1.4rem] border border-border/70 bg-card/70 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-medium text-foreground">Attachment image</div>
-                    <div className="mt-1 text-sm text-muted-foreground">
-                      Upload mess menu photos, holiday notices, or resource visuals.
+            <div className="max-h-[calc(92vh-170px)] overflow-y-auto px-6 py-6 custom-scrollbar">
+              <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
+                <div className="space-y-6">
+                  <div className="rounded-[1.5rem] border border-border/70 bg-card/70 p-5">
+                    <div className="mb-4">
+                      <h3 className="text-lg font-display font-semibold text-foreground">Core details</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {SINGLE_IMAGE_CATEGORIES.has(form.category)
+                          ? 'This section is a single notice upload, so the form stays minimal on purpose.'
+                          : 'Only the fields relevant to this category are shown here.'}
+                      </p>
                     </div>
-                  </div>
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition hover:bg-primary/15">
-                    <Upload className="h-4 w-4" />
-                    Upload
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
-                  </label>
-                </div>
 
-                {(editingResource?.image || imageFile) && (
-                  <div className="flex flex-wrap items-center gap-3 text-sm">
-                    <span className="rounded-full border border-border/70 bg-background/80 px-3 py-1.5">
-                      {imageFile ? imageFile.name : 'Current image attached'}
-                    </span>
-                    {editingResource?.image && !imageFile && (
-                      <button
-                        type="button"
-                        className={cn(
-                          'rounded-full border px-3 py-1.5 transition',
-                          removeImage
-                            ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                            : 'border-border/70 bg-background/80 text-muted-foreground'
-                        )}
-                        onClick={() => setRemoveImage((prev) => !prev)}
-                      >
-                        {removeImage ? 'Image will be removed' : 'Remove current image'}
-                      </button>
+                    <div className={cn(
+                      'grid gap-5',
+                      fieldRules.showTitle ? 'md:grid-cols-2' : 'md:grid-cols-1'
+                    )}>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Category</label>
+                        <Select value={form.category} onValueChange={(value) => handleChange('category', value)}>
+                          <SelectTrigger className="h-12 rounded-2xl">
+                            <SelectValue placeholder="Choose a category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {CATEGORY_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {fieldRules.showTitle && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Title</label>
+                        <Input className="h-12 rounded-2xl" value={form.title} onChange={(e) => handleChange('title', e.target.value)} placeholder="e.g. Prof. Sharma - CSE Office" required />
+                      </div>
+                      )}
+                    </div>
+
+                    {fieldRules.showDescription && (
+                    <div className="mt-5 space-y-2">
+                      <label className="text-sm font-medium text-foreground">Description</label>
+                      <Textarea className="min-h-[150px] rounded-[1.4rem]" value={form.description} onChange={(e) => handleChange('description', e.target.value)} placeholder="Write the details students should know..." required />
+                    </div>
                     )}
                   </div>
-                )}
+
+                  {(fieldRules.showContactName || fieldRules.showPhoneNumber || fieldRules.showLocation || fieldRules.showExternalLink || fieldRules.showEffectiveDate) && (
+                  <div className="rounded-[1.5rem] border border-border/70 bg-card/70 p-5">
+                    <div className="mb-4">
+                      <h3 className="text-lg font-display font-semibold text-foreground">Useful metadata</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">Add the person, number, location, or date that makes this resource actionable.</p>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                      {fieldRules.showContactName && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Contact Name</label>
+                        <Input className="h-12 rounded-2xl" value={form.contactName} onChange={(e) => handleChange('contactName', e.target.value)} placeholder="Warden / professor / office" />
+                      </div>
+                      )}
+                      {fieldRules.showPhoneNumber && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Phone Number</label>
+                        <Input className="h-12 rounded-2xl" value={form.phoneNumber} onChange={(e) => handleChange('phoneNumber', e.target.value)} placeholder="+91 ..." />
+                      </div>
+                      )}
+                      {fieldRules.showLocation && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Location</label>
+                        <Input className="h-12 rounded-2xl" value={form.location} onChange={(e) => handleChange('location', e.target.value)} placeholder="Block / office / stop" />
+                      </div>
+                      )}
+                      {fieldRules.showEffectiveDate && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Effective Date</label>
+                        <Input type="date" className="h-12 rounded-2xl" value={form.effectiveDate} onChange={(e) => handleChange('effectiveDate', e.target.value)} />
+                      </div>
+                      )}
+                    </div>
+
+                    {(fieldRules.showExternalLink || !SINGLE_IMAGE_CATEGORIES.has(form.category)) && (
+                    <div className={cn(
+                      'mt-5 grid gap-5',
+                      fieldRules.showExternalLink ? 'md:grid-cols-[minmax(0,1fr)_160px]' : 'md:grid-cols-[160px]'
+                    )}>
+                      {fieldRules.showExternalLink && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">External Link</label>
+                        <Input className="h-12 rounded-2xl" value={form.externalLink} onChange={(e) => handleChange('externalLink', e.target.value)} placeholder="Drive / website / pdf link" />
+                      </div>
+                      )}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-foreground">Sort Order</label>
+                        <Input type="number" className="h-12 rounded-2xl" value={form.sortOrder} onChange={(e) => handleChange('sortOrder', e.target.value)} placeholder="0" />
+                      </div>
+                    </div>
+                    )}
+                  </div>
+                  )}
+                </div>
+
+                <div className="space-y-5">
+                  <div className="rounded-[1.5rem] border border-border/70 bg-card/70 p-5">
+                    <div className="mb-4">
+                      <h3 className="text-lg font-display font-semibold text-foreground">Attachment</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {fieldRules.attachmentLabel}
+                      </p>
+                    </div>
+
+                    <div className="space-y-3 rounded-[1.35rem] border border-border/70 bg-background/70 p-4">
+                      <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm font-medium text-primary transition hover:bg-primary/15">
+                        <Upload className="h-4 w-4" />
+                        Upload file
+                        <input type="file" accept={fieldRules.attachmentAccept} className="hidden" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+                      </label>
+
+                      {(editingResource?.image || imageFile) && (
+                        <div className="space-y-3 text-sm">
+                          <span className="block rounded-2xl border border-border/70 bg-background/80 px-3 py-2.5 text-foreground">
+                            {imageFile ? imageFile.name : 'Current image attached'}
+                          </span>
+                          {editingResource?.image && !imageFile && (
+                            <button
+                              type="button"
+                              className={cn(
+                                'w-full rounded-2xl border px-3 py-2.5 transition',
+                                removeImage
+                                  ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                                  : 'border-border/70 bg-background/80 text-muted-foreground'
+                              )}
+                              onClick={() => setRemoveImage((prev) => !prev)}
+                            >
+                              {removeImage ? 'Image will be removed on save' : 'Remove current image'}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="rounded-[1.5rem] border border-border/70 bg-card/70 p-5">
+                    <div className="mb-3 text-sm font-medium text-foreground">Publishing tips</div>
+                    <ul className="space-y-2.5 text-sm leading-6 text-muted-foreground">
+                      <li>Use only the most relevant fields so the section stays clean and trustworthy.</li>
+                      <li>For bus timing and holiday list, replace the single notice instead of creating duplicates.</li>
+                      <li>Add contact numbers only after verifying them once.</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <DialogFooter className="border-t border-border/70 px-6 py-5">
+            <DialogFooter className="sticky bottom-0 z-10 border-t border-border/70 bg-background/94 px-6 py-5 backdrop-blur-xl dark:bg-[rgba(8,15,28,0.94)]">
               <Button type="button" variant="outline" className="rounded-2xl" onClick={closeDialog}>
                 Cancel
               </Button>

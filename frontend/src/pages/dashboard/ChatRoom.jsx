@@ -311,12 +311,21 @@ const ChatRoom = () => {
           <div className="relative flex-1">
             <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[linear-gradient(135deg,rgba(20,184,166,0.12),rgba(59,130,246,0.08))]" />
             <input
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
-            placeholder="Write a message..."
-            className="h-11 w-full rounded-full border border-slate-800 bg-slate-950 px-5 text-[15px] font-medium text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.26)] outline-none transition focus:border-primary/35 focus:ring-2 focus:ring-primary/20 dark:border-slate-800 dark:bg-[rgba(8,15,28,0.98)] dark:text-slate-100 dark:placeholder:text-slate-500"
-            style={{ color: '#f8fafc', WebkitTextFillColor: '#f8fafc', caretColor: '#f8fafc' }}
-            disabled={isSending}
+              type="text"
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              placeholder="Write a message..."
+              autoComplete="off"
+              spellCheck={false}
+              className="h-11 w-full rounded-full border border-slate-900 !bg-slate-950 px-5 text-[15px] font-medium !text-slate-100 placeholder:!text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.26)] outline-none transition focus:border-primary/35 focus:ring-2 focus:ring-primary/20 dark:border-slate-900 dark:!bg-slate-950 dark:!text-slate-100 dark:placeholder:!text-slate-500"
+              style={{
+                background: '#020617',
+                color: '#f8fafc',
+                WebkitTextFillColor: '#f8fafc',
+                caretColor: '#f8fafc',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px rgba(15,23,42,0.26)',
+              }}
+              disabled={isSending}
             />
           </div>
 
