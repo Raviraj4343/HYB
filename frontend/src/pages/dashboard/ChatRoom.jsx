@@ -3,11 +3,17 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useChat } from '../../hooks/useChat';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Send, Image, Loader2, Trash2, Paperclip, Reply, MoreHorizontal, X } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ArrowLeft, Send, Image, Loader2, Trash2, Paperclip, Reply, MoreHorizontal, X, Flag, ShieldBan } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -24,6 +30,7 @@ const ChatRoom = () => {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const canBlockUser = user?.role === 'super_admin' || user?.role === 'admin';
 
   useEffect(() => {
     const fetchChatInfo = async () => {
@@ -70,11 +77,36 @@ const ChatRoom = () => {
     if (file) setImageFile(file);
   };
 
+  const handleReportUser = () => {
+    const participant = getOtherParticipant();
+    if (!participant?._id) return;
+    navigate(`/dashboard/report?userId=${participant._id}&userName=${participant.userName}`);
+  };
+
+  const handleBlockUser = async () => {
+    const participant = getOtherParticipant();
+    if (!participant?._id) return;
+
+    const days = window.prompt(`Block @${participant.userName} for how many days?`, '7');
+    const reason = window.prompt(`Reason for blocking @${participant.userName}?`, 'Chat policy violation');
+    if (!days || !reason) return;
+
+    try {
+      await api.post(`/report/block/${participant._id}`, {
+        days: Number(days),
+        reason,
+      });
+      toast.success(`@${participant.userName} blocked successfully`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to block user');
+    }
+  };
+
   const otherUser = getOtherParticipant();
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-1.5rem)] max-w-7xl flex-col overflow-hidden rounded-[2rem] border border-border/70 bg-background shadow-[0_24px_60px_rgba(15,23,42,0.10)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(8,15,28,0.99),rgba(5,10,20,0.99))] dark:shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
-      <div className="border-b border-border/70 bg-background/90 px-4 py-3 backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.96),rgba(8,15,28,0.96))] sm:px-5">
+    <div className="mx-auto flex h-[calc(100vh-1.5rem)] max-w-7xl flex-col overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.98))] shadow-[0_24px_60px_rgba(15,23,42,0.10)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(6,11,21,0.995),rgba(3,7,18,0.995))] dark:shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
+      <div className="border-b border-border/70 bg-background/90 px-4 py-3 backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(13,20,35,0.97),rgba(8,13,24,0.98))] sm:px-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <Button
@@ -108,18 +140,37 @@ const ChatRoom = () => {
             )}
           </div>
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm dark:border-white/10 dark:bg-white/[0.04]"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm dark:border-white/10 dark:bg-white/[0.05]"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 rounded-2xl border-border/70 bg-background/95 p-2 shadow-[0_24px_60px_rgba(15,23,42,0.18)] backdrop-blur-xl dark:border-white/10 dark:bg-[rgba(7,12,20,0.96)]">
+              <DropdownMenuItem className="rounded-xl" onClick={handleReportUser}>
+                <Flag className="mr-2 h-4 w-4" />
+                Report user
+              </DropdownMenuItem>
+              {canBlockUser && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="rounded-xl text-destructive focus:text-destructive" onClick={handleBlockUser}>
+                    <ShieldBan className="mr-2 h-4 w-4" />
+                    Block user
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_20%)] px-4 py-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_22%),linear-gradient(180deg,rgba(8,15,28,0.20),rgba(5,10,20,0.04))] sm:px-6">
+      <div className="flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_20%)] px-4 py-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.07),transparent_22%),linear-gradient(180deg,rgba(8,15,28,0.28),rgba(5,10,20,0.08))] sm:px-6">
         {isLoading && messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -153,10 +204,10 @@ const ChatRoom = () => {
                   <div className={cn('group relative max-w-[min(78%,34rem)]', isOwn ? 'items-end' : 'items-start')}>
                     <div
                       className={cn(
-                        'rounded-[1.25rem] border px-4 py-2.5 shadow-[0_10px_24px_rgba(15,23,42,0.06)]',
+                        'rounded-[1.25rem] border px-4 py-2.5 shadow-[0_14px_28px_rgba(15,23,42,0.08)]',
                         isOwn
-                          ? 'rounded-br-md border-primary/20 bg-[linear-gradient(135deg,rgba(37,211,102,0.24),rgba(20,184,166,0.18))] text-foreground dark:text-white'
-                          : 'rounded-bl-md border-border/70 bg-background/95 text-foreground dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(2,6,23,0.94))] dark:text-white'
+                          ? 'rounded-br-md border-primary/20 bg-[linear-gradient(135deg,rgba(37,211,102,0.26),rgba(20,184,166,0.2))] text-foreground dark:text-white'
+                          : 'rounded-bl-md border-border/70 bg-background/95 text-foreground dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(14,20,36,0.96),rgba(5,10,20,0.97))] dark:text-white'
                       )}
                     >
                       {message.replyTo && (
@@ -251,19 +302,23 @@ const ChatRoom = () => {
             type="button"
             variant="outline"
             size="icon"
-            className="h-11 w-11 rounded-full border-border/70 bg-background/80 dark:border-white/10 dark:bg-white/[0.04]"
+            className="h-11 w-11 rounded-full border-border/70 bg-background/80 shadow-sm dark:border-white/10 dark:bg-white/[0.04]"
             onClick={() => fileInputRef.current?.click()}
           >
             <Image className="h-4 w-4" />
           </Button>
 
-          <Input
+          <div className="relative flex-1">
+            <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[linear-gradient(135deg,rgba(20,184,166,0.12),rgba(59,130,246,0.08))]" />
+            <input
             value={messageText}
             onChange={(e) => setMessageText(e.target.value)}
             placeholder="Write a message..."
-            className="h-11 flex-1 rounded-full border-border/70 bg-background/90 px-5 text-[15px] shadow-sm dark:border-white/10 dark:bg-white/[0.04]"
+            className="h-11 w-full rounded-full border border-slate-800 bg-slate-950 px-5 text-[15px] font-medium text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.26)] outline-none transition focus:border-primary/35 focus:ring-2 focus:ring-primary/20 dark:border-slate-800 dark:bg-[rgba(8,15,28,0.98)] dark:text-slate-100 dark:placeholder:text-slate-500"
+            style={{ color: '#f8fafc', WebkitTextFillColor: '#f8fafc', caretColor: '#f8fafc' }}
             disabled={isSending}
-          />
+            />
+          </div>
 
           <Button
             type="submit"
