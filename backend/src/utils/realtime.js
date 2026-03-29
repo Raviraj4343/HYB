@@ -1,5 +1,5 @@
 import { Notification } from "../models/notification.models.js";
-import { emitToAdmins, emitToChat, emitToUser, emitToUsers, emitRequestEvent } from "../socket/index.js";
+import { emitToAdmins, emitToChat, emitToGlobalChat, emitToUser, emitToUsers, emitRequestEvent } from "../socket/index.js";
 
 export const getUnreadNotificationCount = async (userId) => (
   Notification.countDocuments({
@@ -58,6 +58,20 @@ export const emitChatMessageDeleted = (chatId, messageId, deletedAt) => {
 
 export const emitChatListRefresh = (userIds) => {
   emitToUsers(userIds, "chat:list:refresh", { at: new Date().toISOString() });
+};
+
+export const emitGlobalChatMessageCreated = (message) => {
+  emitToGlobalChat("global-chat:message:new", {
+    message,
+    at: new Date().toISOString(),
+  });
+};
+
+export const emitGlobalChatMessageDeleted = (messageId, deletedAt) => {
+  emitToGlobalChat("global-chat:message:deleted", {
+    messageId: messageId.toString(),
+    deletedAt,
+  });
 };
 
 export const emitRequestChanged = (action, request) => {
