@@ -8,6 +8,16 @@ import ApiResponse from '../utils/ApiResponse.js';
 import {  uploadOnCloudinary } from '../utils/cloudinary.js';
 import { createAndEmitNotification } from '../utils/realtime.js';
 
+const avatarUploadOptions = {
+    folder: "hyb/avatars",
+    width: 512,
+    height: 512,
+    crop: "fill",
+    gravity: "face",
+    quality: "auto:good",
+    fetch_format: "auto",
+};
+
 const getUserProfile = asyncHandler(async (req, res, next) =>{
     const {userName} = req.params;
     
@@ -41,7 +51,11 @@ const uploadAvatar = asyncHandler(async (req, res, next) => {
         return next(new ApiError(400, "please upload an image"));
     }
 
-    const uploaded = await uploadOnCloudinary(req.file.path);
+    const uploaded = await uploadOnCloudinary(req.file.path, avatarUploadOptions);
+
+    if(!uploaded?.secure_url){
+        return next(new ApiError(500, "Avatar upload failed"));
+    }
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
