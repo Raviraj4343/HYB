@@ -13,8 +13,8 @@ const resourceUploadOptions = {
 
 const SINGLE_IMAGE_CATEGORIES = ["bus_timing", "holiday_notice"];
 const CATEGORY_DEFAULT_TITLES = {
-  faculty_contacts: "Faculty Contact",
-  hostel_updates: "Hostel Update",
+  faculty_contacts: "Professor Detail",
+  hostel_updates: "Hostel Detail",
   bus_timing: "Bus Timing Notice",
   holiday_notice: "Holiday Notice",
   campus_news: "Campus News",
@@ -22,6 +22,112 @@ const CATEGORY_DEFAULT_TITLES = {
 
 const normalizeOptionalString = (value) => (typeof value === "string" ? value.trim() : "");
 const isPdfUpload = (file) => file?.mimetype === "application/pdf";
+const normalizeEmail = (value) => normalizeOptionalString(value).toLowerCase();
+
+const buildCategoryFields = (category, payload = {}) => {
+  if (category === "faculty_contacts") {
+    return {
+      professorName: normalizeOptionalString(payload.professorName),
+      designation: normalizeOptionalString(payload.designation),
+      department: normalizeOptionalString(payload.department),
+      email: normalizeEmail(payload.email),
+      phone: normalizeOptionalString(payload.phone),
+      hostelName: "",
+      wardenName: "",
+      wardenPhone: "",
+      messMenuNote: "",
+      contactName: "",
+      phoneNumber: "",
+      location: "",
+      externalLink: "",
+    };
+  }
+
+  if (category === "hostel_updates") {
+    return {
+      hostelName: normalizeOptionalString(payload.hostelName),
+      wardenName: normalizeOptionalString(payload.wardenName),
+      wardenPhone: normalizeOptionalString(payload.wardenPhone),
+      messMenuNote: normalizeOptionalString(payload.messMenuNote),
+      professorName: "",
+      designation: "",
+      department: "",
+      email: "",
+      phone: "",
+      contactName: "",
+      phoneNumber: "",
+    };
+  }
+
+  return {
+    professorName: "",
+    designation: "",
+    department: "",
+    email: "",
+    phone: "",
+    hostelName: "",
+    wardenName: "",
+    wardenPhone: "",
+    messMenuNote: "",
+    contactName: normalizeOptionalString(payload.contactName),
+    phoneNumber: normalizeOptionalString(payload.phoneNumber),
+    location: normalizeOptionalString(payload.location),
+    externalLink: normalizeOptionalString(payload.externalLink),
+  };
+};
+
+const buildDisplayFields = (category, payload = {}) => {
+  const categoryFields = buildCategoryFields(category, payload);
+
+  if (category === "faculty_contacts") {
+    const professorName = categoryFields.professorName;
+    const designation = categoryFields.designation;
+    const department = categoryFields.department;
+
+    return {
+      ...categoryFields,
+      title:
+        normalizeOptionalString(payload.title) ||
+        professorName ||
+        CATEGORY_DEFAULT_TITLES[category],
+      description:
+        normalizeOptionalString(payload.description) ||
+        [designation, department].filter(Boolean).join(" • ") ||
+        `${CATEGORY_DEFAULT_TITLES[category]} uploaded for students.`,
+      location: normalizeOptionalString(payload.location),
+      effectiveDate: payload.effectiveDate ? new Date(payload.effectiveDate) : null,
+    };
+  }
+
+  if (category === "hostel_updates") {
+    const hostelName = categoryFields.hostelName;
+    const messMenuNote = categoryFields.messMenuNote;
+
+    return {
+      ...categoryFields,
+      title:
+        normalizeOptionalString(payload.title) ||
+        hostelName ||
+        CATEGORY_DEFAULT_TITLES[category],
+      description:
+        normalizeOptionalString(payload.description) ||
+        messMenuNote ||
+        `${CATEGORY_DEFAULT_TITLES[category]} uploaded for students.`,
+      location: normalizeOptionalString(payload.location),
+      externalLink: normalizeOptionalString(payload.externalLink),
+      effectiveDate: payload.effectiveDate ? new Date(payload.effectiveDate) : null,
+    };
+  }
+
+  return {
+    ...categoryFields,
+    title: normalizeOptionalString(payload.title) || CATEGORY_DEFAULT_TITLES[category],
+    description:
+      normalizeOptionalString(payload.description) ||
+      `${CATEGORY_DEFAULT_TITLES[category]} uploaded for students.`,
+    effectiveDate: payload.effectiveDate ? new Date(payload.effectiveDate) : null,
+  };
+};
 
 const buildGroupedResources = (resources) =>
   CAMPUS_RESOURCE_CATEGORIES.reduce((acc, category) => {
@@ -68,6 +174,15 @@ const createCampusResource = asyncHandler(async (req, res) => {
     externalLink,
     effectiveDate,
     sortOrder,
+    professorName,
+    designation,
+    department,
+    email,
+    phone,
+    hostelName,
+    wardenName,
+    wardenPhone,
+    messMenuNote,
   } = req.body;
 
   if (!CAMPUS_RESOURCE_CATEGORIES.includes(category)) {
@@ -91,21 +206,46 @@ const createCampusResource = asyncHandler(async (req, res) => {
     attachmentName = req.file.originalname || "";
   }
 
-  const normalizedTitle = normalizeOptionalString(title) || CATEGORY_DEFAULT_TITLES[category];
-  const normalizedDescription = normalizeOptionalString(description) || `${CATEGORY_DEFAULT_TITLES[category]} uploaded for students.`;
+  const displayFields = buildDisplayFields(category, {
+    title,
+    description,
+    contactName,
+    phoneNumber,
+    location,
+    externalLink,
+    effectiveDate,
+    professorName,
+    designation,
+    department,
+    email,
+    phone,
+    hostelName,
+    wardenName,
+    wardenPhone,
+    messMenuNote,
+  });
 
   const resource = await CampusResource.create({
     category,
-    title: normalizedTitle,
-    description: normalizedDescription,
-    contactName: normalizeOptionalString(contactName),
-    phoneNumber: normalizeOptionalString(phoneNumber),
-    location: normalizeOptionalString(location),
-    externalLink: normalizeOptionalString(externalLink),
-    effectiveDate: effectiveDate ? new Date(effectiveDate) : null,
+    title: displayFields.title,
+    description: displayFields.description,
+    contactName: displayFields.contactName,
+    phoneNumber: displayFields.phoneNumber,
+    location: displayFields.location,
+    externalLink: displayFields.externalLink,
+    effectiveDate: displayFields.effectiveDate,
     image: imageUrl,
     attachmentType,
     attachmentName,
+    professorName: displayFields.professorName,
+    designation: displayFields.designation,
+    department: displayFields.department,
+    email: displayFields.email,
+    phone: displayFields.phone,
+    hostelName: displayFields.hostelName,
+    wardenName: displayFields.wardenName,
+    wardenPhone: displayFields.wardenPhone,
+    messMenuNote: displayFields.messMenuNote,
     sortOrder: Number(sortOrder) || 0,
     createdBy: req.user._id,
     updatedBy: req.user._id,
@@ -137,6 +277,15 @@ const updateCampusResource = asyncHandler(async (req, res) => {
     effectiveDate,
     sortOrder,
     removeImage,
+    professorName,
+    designation,
+    department,
+    email,
+    phone,
+    hostelName,
+    wardenName,
+    wardenPhone,
+    messMenuNote,
   } = req.body;
 
   if (category !== undefined) {
@@ -158,15 +307,42 @@ const updateCampusResource = asyncHandler(async (req, res) => {
     resource.category = category;
   }
 
-  if (title !== undefined) resource.title = title;
-  if (description !== undefined) resource.description = description;
-  if (contactName !== undefined) resource.contactName = normalizeOptionalString(contactName);
-  if (phoneNumber !== undefined) resource.phoneNumber = normalizeOptionalString(phoneNumber);
-  if (location !== undefined) resource.location = normalizeOptionalString(location);
-  if (externalLink !== undefined) resource.externalLink = normalizeOptionalString(externalLink);
-  if (effectiveDate !== undefined) {
-    resource.effectiveDate = effectiveDate ? new Date(effectiveDate) : null;
-  }
+  const nextCategory = category || resource.category;
+  const displayFields = buildDisplayFields(nextCategory, {
+    title,
+    description,
+    contactName,
+    phoneNumber,
+    location,
+    externalLink,
+    effectiveDate,
+    professorName,
+    designation,
+    department,
+    email,
+    phone,
+    hostelName,
+    wardenName,
+    wardenPhone,
+    messMenuNote,
+  });
+
+  resource.title = displayFields.title;
+  resource.description = displayFields.description;
+  resource.contactName = displayFields.contactName;
+  resource.phoneNumber = displayFields.phoneNumber;
+  resource.location = displayFields.location;
+  resource.externalLink = displayFields.externalLink;
+  resource.effectiveDate = displayFields.effectiveDate;
+  resource.professorName = displayFields.professorName;
+  resource.designation = displayFields.designation;
+  resource.department = displayFields.department;
+  resource.email = displayFields.email;
+  resource.phone = displayFields.phone;
+  resource.hostelName = displayFields.hostelName;
+  resource.wardenName = displayFields.wardenName;
+  resource.wardenPhone = displayFields.wardenPhone;
+  resource.messMenuNote = displayFields.messMenuNote;
   if (sortOrder !== undefined) {
     resource.sortOrder = Number(sortOrder) || 0;
   }
