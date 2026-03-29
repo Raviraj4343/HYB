@@ -1,8 +1,13 @@
 import axios from 'axios';
 
+const normalizeApiPrefix = (value?: string) => {
+  if (!value) return value;
+  return value.replace(/(\/api\/v1)(\/api\/v1)+/g, '$1');
+};
+
 // Create axios instance with base configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
+  baseURL: normalizeApiPrefix(import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'),
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
@@ -13,6 +18,14 @@ const api = axios.create({
 // Request interceptor - attach JWT token
 api.interceptors.request.use(
   (config) => {
+    if (config.baseURL) {
+      config.baseURL = normalizeApiPrefix(config.baseURL);
+    }
+
+    if (typeof config.url === 'string') {
+      config.url = normalizeApiPrefix(config.url);
+    }
+
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
