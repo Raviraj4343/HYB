@@ -5,8 +5,10 @@ const connectToDatabase = async () => {
     try{
         const connectionInstance = await mongoose.connect(process.env.MONGODB_URI,{
             dbName: DB_NAME,
-            // useNewUrlParser: true,
-            // useUnifiedTopology: true
+            // Connection pool and timeouts tuned for higher concurrency
+            maxPoolSize: Number(process.env.MONGODB_MAX_POOL_SIZE || 20),
+            serverSelectionTimeoutMS: 5000,
+            socketTimeoutMS: 45000,
         });
         console.log("\n Connected to MongoDB", `${connectionInstance.connection.host}`);
 

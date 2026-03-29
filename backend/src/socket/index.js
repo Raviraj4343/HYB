@@ -1,4 +1,6 @@
 import { Server } from "socket.io";
+import { createAdapter } from '@socket.io/redis-adapter';
+import { createClient } from 'redis';
 import jwt from "jsonwebtoken";
 import { User } from "../models/user.models.js";
 
@@ -32,6 +34,20 @@ export const initializeSocket = (server) => {
       credentials: true,
     },
   });
+
+  // If REDIS_URL is provided, configure the Redis adapter for horizontal scaling
+  if (process.env.REDIS_URL) {
+    try {
+      const pubClient = createClient({ url: process.env.REDIS_URL });
+      const subClient = pubClient.duplicate();
+      await pubClient.connect();
+      await subClient.connect();
+      ioInstance.adapter(createAdapter(pubClient, subClient));
+      console.log('Socket.io Redis adapter configured');
+    } catch (err) {
+      console.warn('Failed to configure Redis adapter for socket.io:', err.message || err);
+    }
+  }
 
   ioInstance.use(async (socket, next) => {
     try {

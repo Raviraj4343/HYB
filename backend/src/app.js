@@ -1,6 +1,9 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import compression from "compression";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import ApiError from "./utils/ApiError.js";
 
 const app = express();
@@ -9,37 +12,45 @@ const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",")
   : [];
 
+// Security and performance middlewares
+app.use(helmet());
+app.use(compression());
+
+// Basic rate limiting - tune per-route as needed
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 120, // limit each IP to 120 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', apiLimiter);
+
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow server-to-server, Postman, Render health checks
       if (!origin) return callback(null, true);
-
-      // Allow listed frontend origins
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      // ❌ Do NOT throw error — just block silently
+      if (allowedOrigins.includes(origin)) return callback(null, true);
       return callback(null, false);
     },
     credentials: true,
   })
 );
 
+app.set('trust proxy', true);
 
-app.use(express.json({
-    limit: "20kb"
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
+
+// Serve static assets with cache headers
+app.use(express.static('public', {
+  maxAge: '7d',
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }
 }));
 
-app.use(express.urlencoded({
-    extended: true,
-    limit: "20kb"
-}));
-
-app.use(express.static("public"));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 
