@@ -59,6 +59,7 @@ export const initializeSocket = (server) => {
 
     socket.join(`user:${userId}`);
     socket.join("requests:feed");
+    socket.join("chat:global");
 
     if (socket.user.role === "admin" || socket.user.role === "moderator") {
       socket.join("role:admin");
@@ -97,6 +98,11 @@ export const emitToUsers = (userIds, event, payload) => {
 export const emitToChat = (chatId, event, payload) => {
   if (!ioInstance || !chatId) return;
   ioInstance.to(`chat:${chatId.toString()}`).emit(event, payload);
+};
+
+export const emitToGlobalChat = (event, payload) => {
+  if (!ioInstance) return;
+  ioInstance.to("chat:global").emit(event, payload);
 };
 
 export const emitRequestEvent = (event, payload) => {
