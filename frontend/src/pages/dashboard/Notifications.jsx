@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Bell, Check, CheckCheck, Trash2, Loader2, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
+import api from '@/api/axios';
 
 const Notifications = () => {
   const {
@@ -30,6 +32,45 @@ const Notifications = () => {
       default:
         return '🔔';
     }
+  };
+
+  const navigate = useNavigate();
+
+  const openNotification = async (notification) => {
+    try {
+      await markAsRead(notification._id);
+    } catch (err) {
+      console.error('Failed to mark notification as read before navigation', err);
+    }
+
+    // If the notification explicitly carries a chatId in data, navigate directly
+    const chatIdFromData = notification.data && (notification.data.chatId || notification.data.chat);
+    if (chatIdFromData) {
+      navigate(`/dashboard/chats/${chatIdFromData}`);
+      return;
+    }
+
+    // If notification relates to a request, try to find the chat for that request
+    if (notification.request) {
+      try {
+        const resp = await api.get('/chat');
+        const chats = resp.data?.data?.chats || [];
+        const notifReqId = notification.request._id || notification.request;
+        const match = chats.find((c) => {
+          const reqId = c.request?._id || c.request;
+          return reqId && notifReqId && reqId.toString() === notifReqId.toString();
+        });
+        if (match) {
+          navigate(`/dashboard/chats/${match._id}`);
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to fetch chats while opening notification', err);
+      }
+    }
+
+    // Fallback: open chat list
+    navigate('/dashboard/chats');
   };
 
   return (
@@ -75,8 +116,9 @@ const Notifications = () => {
           {notifications.map((notification) => (
             <Card
               key={notification._id}
+              onClick={() => openNotification(notification)}
               className={cn(
-                "transition-all duration-200 hover:shadow-md",
+                "transition-all duration-200 hover:shadow-md cursor-pointer",
                 !notification.isRead && "border-primary/50 bg-primary/5"
               )}
             >
@@ -106,7 +148,7 @@ const Notifications = () => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => markAsRead(notification._id)}
+                        onClick={(e) => { e.stopPropagation(); markAsRead(notification._id); }}
                         title="Mark as read"
                       >
                         <Check className="w-4 h-4" />
@@ -115,7 +157,7 @@ const Notifications = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => deleteNotification(notification._id)}
+                      onClick={(e) => { e.stopPropagation(); deleteNotification(notification._id); }}
                       className="text-destructive hover:text-destructive"
                       title="Delete"
                     >
