@@ -94,6 +94,14 @@ export const CONTACT_OPTION = [
     "call"
 ];
 
+export const CAMPUS_RESOURCE_CATEGORIES = [
+    "faculty_contacts",
+    "hostel_updates",
+    "bus_timing",
+    "holiday_notice",
+    "campus_news"
+];
+
 
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;
