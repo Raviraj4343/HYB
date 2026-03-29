@@ -18,13 +18,50 @@ const GlobalChat = () => {
   const [replyTo, setReplyTo] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const containerRef = useRef(null);
+  const headerRef = useRef(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
   const GLOBAL_CHAT_LAST_SEEN_KEY = 'globalChatLastSeenAt';
 
   const canBlockUsers = user?.role === 'super_admin' || user?.role === 'admin';
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const handleResize = () => {
+      if (containerRef.current && headerRef.current) {
+        const h = window.innerHeight - headerRef.current.offsetHeight;
+        containerRef.current.style.height = `${h}px`;
+      }
+      document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const atBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 80;
+    if (atBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setShowScrollBtn(false);
+    } else {
+      setShowScrollBtn(true);
+    }
   }, [messages]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const container = messagesContainerRef.current;
+      if (!container) return;
+      const dist = container.scrollHeight - container.scrollTop - container.clientHeight;
+      setShowScrollBtn(dist > 120);
+    };
+    const container = messagesContainerRef.current;
+    container?.addEventListener('scroll', onScroll);
+    return () => container?.removeEventListener('scroll', onScroll);
+  }, []);
 
   const activeParticipants = useMemo(() => {
     const seen = new Map();
@@ -94,14 +131,14 @@ const GlobalChat = () => {
   };
 
   return (
-    <div className="relative mx-auto flex h-[calc(100vh-2rem)] max-w-7xl flex-col overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,rgba(255,255,255,0.68),rgba(255,255,255,0.24))] p-2 shadow-[0_18px_42px_rgba(15,23,42,0.08)] dark:bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.08),transparent_24%),linear-gradient(180deg,rgba(7,12,20,0.98),rgba(11,18,32,0.98))] dark:shadow-[0_24px_56px_rgba(0,0,0,0.22)] sm:p-3">
+    <div ref={containerRef} className="relative mx-auto flex max-w-7xl flex-col overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,rgba(255,255,255,0.68),rgba(255,255,255,0.24))] p-2 shadow-[0_18px_42px_rgba(15,23,42,0.08)] dark:bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.08),transparent_24%),linear-gradient(180deg,rgba(7,12,20,0.98),rgba(11,18,32,0.98))] dark:shadow-[0_24px_56px_rgba(0,0,0,0.22)] sm:p-3" style={{height: 'calc(var(--app-height, 100vh) - 32px)'}}>
       <div className="pointer-events-none absolute left-0 top-0 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-0 h-56 w-56 rounded-full bg-sky-500/10 blur-3xl" />
 
       <Card className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.8rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.84))] shadow-[0_24px_54px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(7,12,20,0.96),rgba(12,18,32,0.96))] dark:shadow-[0_24px_54px_rgba(0,0,0,0.28)]">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.1),transparent_18%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent_30%)]" />
         <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-          <div className="border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.84))] px-4 py-4 backdrop-blur-md dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(12,18,32,0.96))] sm:px-5">
+          <div ref={headerRef} className="border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.84))] px-4 py-4 backdrop-blur-md dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(12,18,32,0.96))] sm:px-5">
             <div className="flex items-center gap-3">
               <div className="flex -space-x-3 shrink-0">
                 {activeParticipants.length > 0 ? (
@@ -141,7 +178,7 @@ const GlobalChat = () => {
             </div>
           </div>
 
-          <div className="relative flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] px-4 py-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_28%),linear-gradient(180deg,rgba(7,12,20,0.3),rgba(7,12,20,0.06))] sm:px-5">
+          <div ref={messagesContainerRef} className="relative flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] px-4 py-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_28%),linear-gradient(180deg,rgba(7,12,20,0.3),rgba(7,12,20,0.06))] sm:px-5">
             {isLoading && messages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -244,6 +281,20 @@ const GlobalChat = () => {
             )}
             <div ref={messagesEndRef} />
           </div>
+
+          {showScrollBtn && (
+            <button
+              type="button"
+              onClick={() => {
+                messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' });
+                setShowScrollBtn(false);
+              }}
+              className="fixed right-4 bottom-28 z-40 rounded-full bg-primary p-3 text-white shadow-lg"
+              aria-label="Scroll to latest"
+            >
+              <Send className="transform rotate-90 h-4 w-4" />
+            </button>
+          )}
 
           <div className="border-t border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.86),rgba(248,250,252,0.92))] p-3 backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.88),rgba(7,12,20,0.98))] sm:p-4">
             {replyTo && (

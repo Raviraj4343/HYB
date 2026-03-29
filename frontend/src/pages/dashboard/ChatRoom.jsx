@@ -29,6 +29,10 @@ const ChatRoom = () => {
   const [replyTo, setReplyTo] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const containerRef = useRef(null);
+  const headerRef = useRef(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
   const fileInputRef = useRef(null);
   const canBlockUser = user?.role === 'super_admin' || user?.role === 'admin';
 
@@ -45,8 +49,41 @@ const ChatRoom = () => {
   }, [chatId]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const handleResize = () => {
+      if (containerRef.current && headerRef.current) {
+        const h = window.innerHeight - headerRef.current.offsetHeight;
+        containerRef.current.style.height = `${h}px`;
+      }
+      document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const atBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 80;
+    if (atBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      setShowScrollBtn(false);
+    } else {
+      setShowScrollBtn(true);
+    }
   }, [messages]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const container = messagesContainerRef.current;
+      if (!container) return;
+      const dist = container.scrollHeight - container.scrollTop - container.clientHeight;
+      setShowScrollBtn(dist > 120);
+    };
+    const container = messagesContainerRef.current;
+    container?.addEventListener('scroll', onScroll);
+    return () => container?.removeEventListener('scroll', onScroll);
+  }, []);
 
   const getOtherParticipant = () => {
     return chatInfo?.participants?.find((p) => p._id !== user?._id);
@@ -105,8 +142,8 @@ const ChatRoom = () => {
   const otherUser = getOtherParticipant();
 
   return (
-    <div className="mx-auto flex h-[calc(100dvh-1.5rem)] max-w-7xl flex-col overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.98))] shadow-[0_24px_60px_rgba(15,23,42,0.10)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(6,11,21,0.995),rgba(3,7,18,0.995))] dark:shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
-      <div className="border-b border-border/70 bg-background/90 px-4 py-3 backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(13,20,35,0.97),rgba(8,13,24,0.98))] sm:px-5">
+    <div ref={containerRef} className="mx-auto flex max-w-7xl flex-col overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.98))] shadow-[0_24px_60px_rgba(15,23,42,0.10)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(6,11,21,0.995),rgba(3,7,18,0.995))] dark:shadow-[0_30px_80px_rgba(0,0,0,0.28)]" style={{height: 'calc(var(--app-height, 100vh) - 24px)'}}>
+      <div ref={headerRef} className="border-b border-border/70 bg-background/90 px-4 py-3 backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(13,20,35,0.97),rgba(8,13,24,0.98))] sm:px-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <Button
@@ -174,7 +211,7 @@ const ChatRoom = () => {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_20%)] px-4 py-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.07),transparent_22%),linear-gradient(180deg,rgba(8,15,28,0.28),rgba(5,10,20,0.08))] sm:px-6">
+      <div ref={messagesContainerRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_20%)] px-4 py-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.07),transparent_22%),linear-gradient(180deg,rgba(8,15,28,0.28),rgba(5,10,20,0.08))] sm:px-6">
         {isLoading && messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -267,6 +304,20 @@ const ChatRoom = () => {
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {showScrollBtn && (
+        <button
+          type="button"
+          onClick={() => {
+            messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' });
+            setShowScrollBtn(false);
+          }}
+          className="fixed right-4 bottom-24 z-40 rounded-full bg-primary p-3 text-white shadow-lg"
+          aria-label="Scroll to latest"
+        >
+          <ArrowLeft className="transform rotate-[270deg] h-4 w-4" />
+        </button>
+      )}
 
       <form onSubmit={handleSend} className="sticky bottom-0 z-10 border-t border-border/70 bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.95),rgba(7,12,20,0.99))]">
         {replyTo && (
