@@ -171,8 +171,8 @@ const Dashboard = () => {
           </div>
 
           <div className="rounded-[1.2rem] border border-white/8 bg-gradient-to-b from-black/6 to-black/3 p-3 sm:p-4 shadow-lg backdrop-blur-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-              <div className="relative group">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="relative shrink-0 group">
                 <input id="avatarUpload" type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                 <div className="overflow-hidden rounded-lg">
                   {/* animate avatar on change */}
@@ -182,7 +182,7 @@ const Dashboard = () => {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.35 }}
                   >
-                    <Avatar className="h-10 w-10 shrink-0 rounded-lg border border-white/8 bg-card shadow-sm">
+                    <Avatar className="h-12 w-12 shrink-0 rounded-lg border border-white/8 bg-card shadow-sm sm:h-10 sm:w-10">
                       <AvatarImage src={user?.avatar} alt={user?.fullName} />
                       <AvatarFallback className="rounded-lg bg-primary/18 text-primary text-sm font-semibold">
                         {getInitials(user?.fullName)}
@@ -191,19 +191,19 @@ const Dashboard = () => {
                   </motion.div>
                 </div>
 
-                <label htmlFor="avatarUpload" title="Change avatar" className="absolute -bottom-1 -right-1 h-7 w-7 items-center justify-center rounded-full bg-primary text-white border border-white/20 shadow-sm cursor-pointer transition-transform transform scale-95 flex group-hover:scale-105">
+                <label htmlFor="avatarUpload" title="Change avatar" className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-primary text-white shadow-sm transition-transform transform scale-95 cursor-pointer group-hover:scale-105">
                   <Camera className="h-4 w-4" />
                 </label>
               </div>
 
-              <div className="min-w-0">
-                <div className="truncate text-lg sm:text-2xl font-display font-semibold leading-tight text-foreground dark:text-white">
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-xl font-display font-semibold leading-tight text-foreground dark:text-white sm:text-2xl">
                   {firstName}
                 </div>
                 <div className="mt-0.5 truncate text-sm text-foreground/70 dark:text-white/70">
                   @{user?.userName || 'profile'}
                 </div>
-                <div className="mt-2 text-sm sm:text-base font-display font-semibold text-foreground dark:text-white">
+                <div className="mt-2 truncate text-base font-display font-semibold text-foreground dark:text-white">
                   Help Count {user?.helpCount || 0}
                 </div>
               </div>

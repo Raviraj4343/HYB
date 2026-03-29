@@ -492,15 +492,11 @@ const DashboardLayout = () => {
           {isMobileSidebarOpen && (
             <>
               <motion.div
-                initial={{ opacity: 0, backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
-                animate={{
-                  opacity: 1,
-                  backdropFilter: 'blur(22px)',
-                  backgroundColor: isDarkTheme ? 'rgba(2,6,23,0.72)' : 'rgba(15,23,42,0.30)'
-                }}
-                exit={{ opacity: 0, backdropFilter: 'blur(0px)', backgroundColor: 'rgba(0,0,0,0)' }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 transition={{ duration: 0.22, ease: 'easeOut' }}
-                className="fixed inset-0 z-40 lg:hidden mobile-overlay"
+                className="fixed inset-0 z-40 lg:hidden mobile-backdrop"
                 onClick={() => setIsMobileSidebarOpen(false)}
               />
               <motion.aside
@@ -509,10 +505,9 @@ const DashboardLayout = () => {
                 exit={{ x: 340, opacity: 0.96 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 className={cn(
-                  'fixed inset-y-0 right-0 z-50 flex w-[320px] max-w-[88vw] flex-col overflow-hidden rounded-l-[2rem] backdrop-blur-[28px] lg:hidden force-3d',
-                  isDarkTheme
-                    ? 'border-l border-white/14 bg-[linear-gradient(180deg,rgba(8,16,29,0.88),rgba(6,11,20,0.84))] shadow-[0_28px_90px_rgba(0,0,0,0.62)]'
-                    : 'border-l border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.95))] shadow-[0_28px_90px_rgba(15,23,42,0.22)]'
+                  'fixed inset-y-0 right-0 z-50 flex w-[320px] max-w-[88vw] flex-col overflow-hidden rounded-l-[2rem] force-3d',
+                  'mobile-glass',
+                  !isDarkTheme && 'mobile-glass light'
                 )}
               >
                 <div className={cn(
