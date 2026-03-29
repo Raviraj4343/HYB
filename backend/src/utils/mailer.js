@@ -58,6 +58,34 @@ export const getMailConfigurationStatus = () => {
     };
   }
 
+  if (provider === 'brevo') {
+    const missing = [];
+    if (!process.env.EMAIL_HOST) missing.push('EMAIL_HOST');
+    if (!process.env.EMAIL_PORT) missing.push('EMAIL_PORT');
+    if (!process.env.EMAIL_USER) missing.push('EMAIL_USER');
+    if (!process.env.EMAIL_PASS) missing.push('EMAIL_PASS');
+    if (!process.env.EMAIL_FROM) missing.push('EMAIL_FROM');
+
+    const warnings = [];
+    const sender = getConfiguredSenderAddress();
+    const senderMatch = sender?.match(/<([^>]+)>|^([^<\s]+@[^>\s]+)$/);
+    const senderEmail = senderMatch?.[1] || senderMatch?.[2] || '';
+    const senderDomain = senderEmail.split('@')[1]?.toLowerCase();
+
+    if (senderDomain && COMMON_PERSONAL_EMAIL_DOMAINS.has(senderDomain)) {
+      warnings.push(
+        `Brevo sender "${senderEmail}" looks like a personal inbox. Make sure it is verified in Brevo Sender Identities.`
+      );
+    }
+
+    return {
+      provider,
+      configured: missing.length === 0,
+      missing,
+      warnings,
+    };
+  }
+
   const missing = [];
   if (!process.env.EMAIL_USER) missing.push('EMAIL_USER');
   if (!process.env.EMAIL_PASS) missing.push('EMAIL_PASS');
