@@ -4,6 +4,7 @@ import { isSuperAdmin } from "../middlewares/admin.middleware.js";
 import { uploadCampusResource, handleMulterError } from "../middlewares/multer.middleware.js";
 import {
   getCampusResources,
+  getCampusResource,
   createCampusResource,
   updateCampusResource,
   deleteCampusResource,
@@ -12,6 +13,8 @@ import {
 const router = Router();
 
 router.get("/", getCampusResources);
+
+router.get("/:id", getCampusResource);
 
 // accept multiple named fields: image (single), images (multiple for news), messMenu (single for hostel)
 router.post(

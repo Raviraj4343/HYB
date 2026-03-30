@@ -11,29 +11,43 @@ const ResourceCard = ({
   handleDelete,
   formatDate,
   renderCategoryMeta,
+  onOpenDetail,
+  isDetail,
 }) => {
   return (
     <article
       key={resource._id}
+      onClick={onOpenDetail ? () => onOpenDetail(resource._id) : undefined}
+      role={onOpenDetail ? 'button' : undefined}
+      tabIndex={onOpenDetail ? 0 : undefined}
       className={cn(
-        'group overflow-hidden rounded-2xl border border-border/70 bg-card/90 shadow-md transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl',
+        'group overflow-hidden rounded-2xl border border-border/70 bg-card/90 shadow-md transition-transform duration-300',
+        onOpenDetail ? 'hover:-translate-y-2 hover:shadow-xl cursor-pointer' : 'hover:-translate-y-2 hover:shadow-xl',
       )}
     >
       {resource.images && resource.images.length > 0 ? (
-        <div className="relative overflow-hidden h-44 sm:h-52">
+        <div
+          className={cn('relative overflow-hidden', !isDetail ? 'h-44 sm:h-52' : '')}
+          style={isDetail ? { height: '100%' } : undefined}
+        >
           <img
             src={resource.images[0]}
             alt={resource.professorName || resource.hostelName || resource.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            style={isDetail ? { objectFit: 'contain', height: '100%', width: '100%' } : undefined}
+            className={cn('h-full w-full transition-transform duration-500', !isDetail && 'object-cover group-hover:scale-105')}
           />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
         </div>
       ) : resource.image && resource.attachmentType !== 'pdf' && (
-        <div className="relative overflow-hidden h-44 sm:h-52">
+        <div
+          className={cn('relative overflow-hidden', !isDetail ? 'h-44 sm:h-52' : '')}
+          style={isDetail ? { height: '100%' } : undefined}
+        >
           <img
             src={resource.image}
             alt={resource.professorName || resource.hostelName || resource.title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            style={isDetail ? { objectFit: 'contain', height: '100%', width: '100%' } : undefined}
+            className={cn('h-full w-full transition-transform duration-500', !isDetail && 'object-cover group-hover:scale-105')}
           />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
         </div>
@@ -61,7 +75,7 @@ const ResourceCard = ({
                 type="button"
                 variant="outline"
                 className="h-9 rounded-xl px-3 text-sm"
-                onClick={() => openEditDialog(resource)}
+                onClick={(e) => { e.stopPropagation(); openEditDialog(resource); }}
               >
                 <Pencil className="mr-2 h-4 w-4" />
                 Edit
@@ -70,7 +84,7 @@ const ResourceCard = ({
                 type="button"
                 variant="outline"
                 className="h-9 rounded-xl px-3 text-sm text-destructive"
-                onClick={() => handleDelete(resource._id)}
+                onClick={(e) => { e.stopPropagation(); handleDelete(resource._id); }}
               >
                 <Trash2 className="mr-2 h-4 w-4" />
                 Delete

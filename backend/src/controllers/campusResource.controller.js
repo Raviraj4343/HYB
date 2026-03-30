@@ -165,6 +165,22 @@ const getCampusResources = asyncHandler(async (req, res) => {
   );
 });
 
+const getCampusResource = asyncHandler(async (req, res) => {
+  const id = req.params.id;
+
+  const resource = await CampusResource.findById(id)
+    .populate("createdBy", "fullName userName")
+    .populate("updatedBy", "fullName userName");
+
+  if (!resource) {
+    throw new ApiError(404, "Campus resource not found");
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, { resource }, "Campus resource fetched successfully")
+  );
+});
+
 const createCampusResource = asyncHandler(async (req, res) => {
   const {
     category,
@@ -461,6 +477,7 @@ const deleteCampusResource = asyncHandler(async (req, res) => {
 
 export {
   getCampusResources,
+  getCampusResource,
   createCampusResource,
   updateCampusResource,
   deleteCampusResource,

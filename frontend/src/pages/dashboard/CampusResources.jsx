@@ -14,6 +14,7 @@ import {
   Trash2,
   Upload,
   UserSquare2
+  ,Maximize2, Minimize2, X
 } from 'lucide-react';
 import ResourceCard from '@/components/campus/ResourceCard';
 import { useAuth } from '../../context/AuthContext';
@@ -171,6 +172,12 @@ const CampusResources = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingResource, setEditingResource] = useState(null);
+  const [viewCategory, setViewCategory] = useState(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isViewFullScreen, setIsViewFullScreen] = useState(false);
+  const [selectedResource, setSelectedResource] = useState(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isDetailFullScreen, setIsDetailFullScreen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [imageFile, setImageFile] = useState(null);
   const [imageFiles, setImageFiles] = useState([]); // for multiple news images
@@ -215,6 +222,50 @@ const CampusResources = () => {
       const body = document.getElementById('campus-resource-dialog-body');
       if (body) body.scrollTop = 0;
     }, 120);
+  };
+
+  const openViewCategory = (category) => {
+    setViewCategory(category);
+    setIsViewFullScreen(false);
+    setIsViewDialogOpen(true);
+    // small delay to ensure dialog body exists before scrolling
+    setTimeout(() => {
+      const body = document.getElementById('campus-resource-view-body');
+      if (body) body.scrollTop = 0;
+    }, 120);
+  };
+
+  const closeViewDialog = () => {
+    setIsViewDialogOpen(false);
+    setViewCategory(null);
+    setIsViewFullScreen(false);
+  };
+
+  const openResourceDetail = async (resourceId) => {
+    try {
+      setIsDetailFullScreen(false);
+      // close the category view dialog to avoid dual dialogs/icons
+      setIsViewDialogOpen(false);
+      setViewCategory(null);
+      setIsDetailOpen(true);
+      // fetch single resource
+      const resp = await api.get(`/campus-resources/${resourceId}`);
+      setSelectedResource(resp.data.data?.resource || null);
+      // scroll top
+      setTimeout(() => {
+        const b = document.getElementById('campus-resource-detail-body');
+        if (b) b.scrollTop = 0;
+      }, 80);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to load resource');
+      setIsDetailOpen(false);
+    }
+  };
+
+  const closeDetail = () => {
+    setIsDetailOpen(false);
+    setSelectedResource(null);
+    setIsDetailFullScreen(false);
   };
 
   const openEditDialog = (resource) => {
@@ -453,15 +504,8 @@ const CampusResources = () => {
                       if (body) body.scrollTop = 0;
                     }, 120);
                   } else {
-                    const el = document.getElementById(`section-${cat.value}`);
-                    if (el) {
-                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      // add a brief highlight after scrolling to draw attention
-                      setTimeout(() => {
-                        el.classList.add('scroll-highlight');
-                        setTimeout(() => el.classList.remove('scroll-highlight'), 1200);
-                      }, 350);
-                    }
+                    // show a read-only list of resources for this category to normal users
+                    openViewCategory(cat.value);
                   }
                 }}
                 className="text-left rounded-xl border border-border/60 bg-background/80 p-4 hover:shadow-md transition transform hover:-translate-y-1 nav-focus"
@@ -802,6 +846,125 @@ const CampusResources = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Read-only view dialog for members to see resources in a category */}
+      <Dialog open={isViewDialogOpen} onOpenChange={(open) => (!open ? closeViewDialog() : setIsViewDialogOpen(true))}>
+        <DialogContent
+          id="campus-resource-view"
+          className={cn(
+            'ds-dialog max-h-[92vh] overflow-hidden rounded-[1.8rem] p-0 sm:max-w-4xl hide-default-close',
+            isViewFullScreen && 'fixed inset-0 m-0 h-screen max-w-none rounded-none left-0 top-0 translate-x-0 translate-y-0'
+          )}
+          role="dialog"
+          aria-modal="true"
+        >
+          <DialogHeader className="sticky top-0 z-10 border-b bg-background/95 px-5 py-3">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <DialogTitle className="text-lg font-semibold">{viewCategory ? (CATEGORY_OPTIONS.find(o => o.value === viewCategory)?.title || 'Resources') : 'Resources'}</DialogTitle>
+                <div className="text-sm text-muted-foreground">Resources published by super admin</div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsViewFullScreen((s) => !s)}
+                  aria-label={isViewFullScreen ? 'Exit fullscreen' : 'Fullscreen'}
+                >
+                  {isViewFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </Button>
+
+                <Button variant="ghost" size="icon" onClick={closeViewDialog} aria-label="Close">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div id="campus-resource-view-body" className="dialog-body custom-scrollbar p-5">
+            {viewCategory && (resources.filter((r) => r.category === viewCategory) || []).length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground">No resources published in this section yet.</div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                {resources
+                  .filter((r) => r.category === viewCategory)
+                  .map((r) => (
+                    <ResourceCard
+                      key={r._id}
+                      resource={r}
+                      section={CATEGORY_OPTIONS.find((o) => o.value === r.category) || { badge: '' }}
+                      isSuperAdmin={false}
+                      openEditDialog={() => {}}
+                      handleDelete={() => {}}
+                      formatDate={formatDate}
+                      renderCategoryMeta={renderCategoryMeta}
+                      onOpenDetail={openResourceDetail}
+                    />
+                  ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail dialog for a single resource */}
+      <Dialog open={isDetailOpen} onOpenChange={(open) => (!open ? closeDetail() : setIsDetailOpen(true))}>
+        <DialogContent
+          id="campus-resource-detail"
+          className={cn(
+            'ds-dialog max-h-[92vh] overflow-hidden rounded-[1.8rem] p-0 sm:max-w-4xl hide-default-close',
+            isDetailFullScreen && 'fixed inset-0 m-0 h-screen max-w-none rounded-none z-50 left-0 top-0 translate-x-0 translate-y-0'
+          )}
+          role="dialog"
+          aria-modal="true"
+        >
+          <DialogHeader className="sticky top-0 z-20 border-b bg-background/95 px-5 py-3">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <DialogTitle className="text-lg font-semibold">{selectedResource ? (selectedResource.title || 'Resource') : 'Resource'}</DialogTitle>
+                <div className="text-sm text-muted-foreground">Published by {selectedResource?.createdBy?.fullName || 'admin'}</div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsDetailFullScreen((s) => !s)}
+                  aria-label={isDetailFullScreen ? 'Exit fullscreen' : 'Fullscreen'}
+                >
+                  {isDetailFullScreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+                </Button>
+
+                <Button variant="ghost" size="icon" onClick={closeDetail} aria-label="Close">
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div
+            id="campus-resource-detail-body"
+            className="dialog-body custom-scrollbar p-5"
+            style={isDetailFullScreen ? { height: 'calc(100vh - 64px)', overflow: 'auto' } : undefined}
+          >
+            {selectedResource ? (
+              <ResourceCard
+                resource={selectedResource}
+                section={CATEGORY_OPTIONS.find((o) => o.value === selectedResource.category) || { badge: '' }}
+                isSuperAdmin={false}
+                openEditDialog={() => {}}
+                handleDelete={() => {}}
+                formatDate={formatDate}
+                renderCategoryMeta={renderCategoryMeta}
+                isDetail={true}
+              />
+            ) : (
+              <div className="py-12 text-center text-muted-foreground">Loading...</div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
