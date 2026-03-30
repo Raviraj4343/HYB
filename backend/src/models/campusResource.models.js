@@ -55,6 +55,10 @@ const campusResourceSchema = new mongoose.Schema(
       type: String,
       default: null,
     },
+    images: {
+      type: [String],
+      default: [],
+    },
     attachmentType: {
       type: String,
       enum: ["image", "pdf", null],
@@ -113,6 +117,32 @@ const campusResourceSchema = new mongoose.Schema(
       trim: true,
       maxlength: [40, "Warden phone cannot exceed 40 characters"],
       default: "",
+    },
+    wardens: {
+      type: [
+        {
+          name: { type: String, trim: true, maxlength: [120, 'Name cannot exceed 120 characters'], default: '' },
+          phone: { type: String, trim: true, maxlength: [40, 'Phone cannot exceed 40 characters'], default: '' },
+          email: { type: String, trim: true, maxlength: [160, 'Email cannot exceed 160 characters'], default: '' },
+          designation: { type: String, trim: true, maxlength: [120, 'Designation cannot exceed 120 characters'], default: '' },
+        }
+      ],
+      default: [],
+    },
+    messMenuUrl: {
+      type: String,
+      default: null,
+    },
+    messMenuName: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: [200, "Mess menu name cannot exceed 200 characters"],
+    },
+    messMenuType: {
+      type: String,
+      enum: ["image", "pdf", null],
+      default: null,
     },
     messMenuNote: {
       type: String,
