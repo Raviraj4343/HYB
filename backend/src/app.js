@@ -37,7 +37,17 @@ app.use(
   })
 );
 
-app.set('trust proxy', true);
+// Configure `trust proxy` carefully. A permissive `true` allows clients to spoof
+// IPs (via X-Forwarded-For) and can trivially bypass IP-based rate limits.
+// Default to 'loopback' for safety in local/dev environments and allow
+// overriding via the TRUST_PROXY environment variable in production where you
+// control the reverse proxy chain (e.g. '127.0.0.1' or 'loopback' or a CSV of IPs).
+const trustProxySetting = process.env.TRUST_PROXY;
+if (typeof trustProxySetting !== 'undefined' && trustProxySetting !== '') {
+  app.set('trust proxy', trustProxySetting);
+} else {
+  app.set('trust proxy', 'loopback');
+}
 
 app.use(express.json({ limit: '100kb' }));
 app.use(express.urlencoded({ extended: true, limit: '100kb' }));
