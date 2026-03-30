@@ -1,5 +1,6 @@
 import { Request } from "../models/request.models.js";
 import { User } from "../models/user.models.js";
+import { Response } from "../models/response.models.js";
 import {Chat} from "../models/chat.models.js";
 import {Message} from "../models/message.models.js";
 import asyncHandler from "../utils/asyncHandler.js";
@@ -239,6 +240,7 @@ const cancelRequest = asyncHandler(async (req, res) => {
 });
 
 const fulfillRequest = asyncHandler(async (req, res) => {
+  const { helperId } = req.body;
   const request = await Request.findById(req.params.id);
 
   if (!request) {
@@ -255,6 +257,45 @@ const fulfillRequest = asyncHandler(async (req, res) => {
       "Only in-progress requests can be fulfilled"
     );
   }
+
+  const responses = await Response.find({ request: request._id }).select("responder status");
+  const responderIds = responses.map((response) => response.responder.toString());
+  const currentHelperId = request.acceptedHelper?.toString() || null;
+
+  let selectedHelperId = helperId?.toString().trim() || currentHelperId;
+
+  if (!selectedHelperId) {
+    throw new ApiError(400, "Please select the user who helped you");
+  }
+
+  const isValidSelectedHelper =
+    responderIds.includes(selectedHelperId) || currentHelperId === selectedHelperId;
+
+  if (!isValidSelectedHelper) {
+    throw new ApiError(400, "Selected helper did not respond to this request");
+  }
+
+  if (request.acceptedHelper?.toString() !== selectedHelperId) {
+    request.acceptedHelper = selectedHelperId;
+  }
+
+  await Response.updateMany(
+    { request: request._id },
+    {
+      $set: {
+        status: "rejected",
+      },
+    }
+  );
+
+  await Response.updateMany(
+    { request: request._id, responder: selectedHelperId },
+    {
+      $set: {
+        status: "accepted",
+      },
+    }
+  );
 
   request.status = "fulfilled";
   request.fulfilledAt = new Date();
