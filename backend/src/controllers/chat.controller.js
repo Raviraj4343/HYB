@@ -61,6 +61,27 @@ const getMyChats = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { chats: result }, 'Chats retrieved successfully'));
 });
 
+const ensureChat = asyncHandler(async (req, res) => {
+  const { requestId, otherUserId } = req.body;
+  if (!requestId || !otherUserId) {
+    throw new ApiError(400, 'requestId and otherUserId are required');
+  }
+
+  const ownerId = req.user._id;
+  const ownerObj = ownerId;
+  const otherObj = otherUserId;
+
+  let chat = await Chat.findOne({ request: requestId, participants: { $all: [ownerObj, otherObj] } });
+  if (!chat) {
+    chat = await Chat.create({ request: requestId, participants: [ownerObj, otherObj] });
+  }
+
+  await chat.populate('participants', 'fullName userName avatar');
+  await chat.populate('request', 'title status');
+
+  return res.status(200).json(new ApiResponse(200, { chat }, 'Chat ensured'));
+});
+
 const getChatById = asyncHandler(async (req, res) => {
     const chat = await Chat.findById(req.params.id)
     .populate("participants", "fullName userName avatar")
@@ -406,13 +427,14 @@ const deleteGlobalMessage = asyncHandler(async (req, res) => {
 });
 
 export {
-    getMyChats,
-    getChatById,
-    sendMessage,
-    getMessages,
-    deleteMessage,
-    getGlobalMessages,
-    getGlobalUnreadCount,
-    sendGlobalMessage,
-    deleteGlobalMessage
+  getMyChats,
+  getChatById,
+  sendMessage,
+  getMessages,
+  deleteMessage,
+  getGlobalMessages,
+  getGlobalUnreadCount,
+  sendGlobalMessage,
+  deleteGlobalMessage,
+  ensureChat
 }

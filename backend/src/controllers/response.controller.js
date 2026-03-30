@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import { Response } from "../models/response.models.js";
 import { Request } from "../models/request.models.js";
 import { Chat } from "../models/chat.models.js";
+import { User } from "../models/user.models.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
@@ -81,22 +82,23 @@ const getResponsesForRequest = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Request not found");
   }
 
-   let responses;
+  let responses;
 
-  // ✅ Case 1: request owner → see all responses
-  if (request.requestedBy.toString() === req.user._id.toString()) {
+  const viewerId = req.user?._id?.toString?.() || null;
+  const ownerId = request.requestedBy.toString();
+
+  if (viewerId && viewerId === ownerId) {
+    // request owner: see all responses
     responses = await Response.find({ request: requestId });
-  } 
-  // ✅ Case 2: responder → see only own response
-  else {
-    responses = await Response.find({
-      request: requestId,
-      responder: req.user._id
-    });
-
+  } else if (viewerId) {
+    // authenticated non-owner: show their own response if any, otherwise show accepted/completed responses
+    responses = await Response.find({ request: requestId, responder: viewerId });
     if (!responses.length) {
-      throw new ApiError(403, "Not authorized to view responses");
+      responses = await Response.find({ request: requestId, status: { $in: ['accepted', 'completed'] } });
     }
+  } else {
+    // unauthenticated: only show accepted/completed responses
+    responses = await Response.find({ request: requestId, status: { $in: ['accepted', 'completed'] } });
   }
 
   // ✅ populate responder info
@@ -109,7 +111,7 @@ const getResponsesForRequest = asyncHandler(async (req, res) => {
     .map((response) => response.responder?._id?.toString?.() || response.responder?.toString?.())
     .filter(Boolean);
 
-  const participantIds = Array.from(new Set([req.user._id.toString(), ...responderIds]));
+  const participantIds = Array.from(new Set([ownerId, ...responderIds]));
   const chats = await Chat.find({
     request: requestId,
     participants: { $in: participantIds }
@@ -131,6 +133,35 @@ const getResponsesForRequest = asyncHandler(async (req, res) => {
       ) || null,
   }));
 
+  // Add phone number to responses conditionally:
+  // - super_admin can see all phones
+  // - responder can see own phone
+  // - request owner can see helper phone only when response is accepted/completed
+  for (let i = 0; i < responses.length; i++) {
+    const resp = responses[i];
+    try {
+      const responderId = resp.responder?._id?.toString?.() || resp.responder;
+      const canSeePhone = (
+        req.user?.role === 'super_admin' ||
+        viewerId === responderId ||
+        (ownerId === viewerId && ['accepted', 'completed'].includes(resp.status))
+      );
+
+      if (canSeePhone && responderId) {
+        const u = await User.findById(responderId).select('phone');
+        if (u && u.phone) {
+          // put phone on responder object for frontend convenience
+          if (resp.responder && typeof resp.responder === 'object') {
+            resp.responder.phone = u.phone;
+          } else {
+            resp.responder = { _id: responderId, phone: u.phone };
+          }
+        }
+      }
+    } catch (err) {
+      console.error('phone attach error', err.message);
+    }
+  }
   // Ensure any responses that missed chatId get checked individually (covers type/race edge cases)
   for (let i = 0; i < responses.length; i++) {
     if (!responses[i].chatId) {

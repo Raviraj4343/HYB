@@ -352,12 +352,14 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
 const updateUserProfile = asyncHandler(async (req, res) => {
   const { fullName, branch, year, hostel } = req.body;
+  const { phone } = req.body;
 
   const updates = {};
   if (fullName !== undefined) updates.fullName = fullName;
   if (branch !== undefined) updates.branch = branch;
   if (year !== undefined) updates.year = year;
   if (hostel !== undefined) updates.hostel = hostel;
+  if (phone !== undefined) updates.phone = phone;
 
   const user = await User.findById(req.user._id);
 

@@ -112,6 +112,59 @@ const getRequestById = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Request not found");
   }
 
+  // Attach phone numbers conditionally:
+  // - request owner: can see acceptedHelper phone
+  // - acceptedHelper: can see request owner's phone
+  // - super_admin: can see both
+  try {
+    const viewerId = req.user?._id?.toString?.() || null;
+    const ownerId = request.requestedBy?._id?.toString?.() || request.requestedBy?.toString?.();
+    const acceptedHelperId = request.acceptedHelper?._id?.toString?.() || request.acceptedHelper?.toString?.() || null;
+
+    if (viewerId) {
+      // owner viewing -> include acceptedHelper phone
+      if (viewerId === ownerId && acceptedHelperId) {
+        const helper = await User.findById(acceptedHelperId).select('phone');
+        if (helper && helper.phone) {
+          // ensure acceptedHelper is an object
+          if (request.acceptedHelper && typeof request.acceptedHelper === 'object') {
+            request.acceptedHelper = request.acceptedHelper.toObject ? request.acceptedHelper.toObject() : request.acceptedHelper;
+            request.acceptedHelper.phone = helper.phone;
+          } else {
+            request.acceptedHelper = { _id: acceptedHelperId, phone: helper.phone };
+          }
+        }
+      }
+
+      // accepted helper viewing -> include owner phone
+      if (acceptedHelperId && viewerId === acceptedHelperId) {
+        const owner = await User.findById(ownerId).select('phone');
+        if (owner && owner.phone) {
+          request.requestedBy = request.requestedBy.toObject ? request.requestedBy.toObject() : request.requestedBy;
+          request.requestedBy.phone = owner.phone;
+        }
+      }
+
+      // super_admin can see both
+      if (req.user?.role === 'super_admin') {
+        if (acceptedHelperId) {
+          const helper = await User.findById(acceptedHelperId).select('phone');
+          if (helper && helper.phone) {
+            request.acceptedHelper = request.acceptedHelper.toObject ? request.acceptedHelper.toObject() : request.acceptedHelper;
+            request.acceptedHelper.phone = helper.phone;
+          }
+        }
+        const owner = await User.findById(ownerId).select('phone');
+        if (owner && owner.phone) {
+          request.requestedBy = request.requestedBy.toObject ? request.requestedBy.toObject() : request.requestedBy;
+          request.requestedBy.phone = owner.phone;
+        }
+      }
+    }
+  } catch (err) {
+    console.error('attach phones error', err.message);
+  }
+
   res.status(200).json(
     new ApiResponse(200, { request }, "Request retrieved successfully")
   );
