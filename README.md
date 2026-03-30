@@ -1,6 +1,6 @@
 # 🚀 HYB — Help Your Buddy
 
-> A community-driven platform where students can request help and support each other during critical situations.
+> HYB(Help Your Buddy) is a campus-focused platform that enables students to quickly request and offer help for academic, personal, or emotional needs within a trusted peer network. With real-time chat, notifications, and admin moderation, it ensures safe, fast, and meaningful support—turning student challenges into collaborative solutions
 
 ---
 
