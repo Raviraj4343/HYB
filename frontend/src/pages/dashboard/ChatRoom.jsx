@@ -60,18 +60,6 @@ const ChatRoom = () => {
     }
   }, [messages]);
 
-  const scrollToBottom = (opts = { behavior: 'smooth' }) => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
-    try {
-      container.scrollTo({ top: container.scrollHeight, behavior: opts.behavior });
-      messagesEndRef.current?.scrollIntoView({ behavior: opts.behavior });
-    } catch (e) {
-      messagesEndRef.current?.scrollIntoView();
-    }
-    setShowScrollBtn(false);
-  };
-
   useEffect(() => {
     const onScroll = () => {
       const container = messagesContainerRef.current;
@@ -113,11 +101,6 @@ const ChatRoom = () => {
     if (file) setImageFile(file);
   };
 
-  // Keep latest messages visible when user focuses or types
-  const handleInputFocus = () => {
-    scrollToBottom({ behavior: 'auto' });
-  };
-
   const handleReportUser = () => {
     const participant = getOtherParticipant();
     if (!participant?._id) return;
@@ -147,7 +130,7 @@ const ChatRoom = () => {
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-24px)] max-w-7xl flex-col overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.98))] shadow-[0_24px_60px_rgba(15,23,42,0.10)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(6,11,21,0.995),rgba(3,7,18,0.995))] dark:shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
-      <div className="sticky top-0 z-[1000] border-b border-border/70 bg-background/95 px-4 py-3 backdrop-blur-xl shadow-sm dark:border-white/10 dark:bg-[#071018] sm:px-5" style={{ position: 'sticky', top: 0 }}>
+      <div className="sticky top-0 z-30 border-b border-border/70 bg-background/100 px-4 py-3 backdrop-blur-xl shadow-sm dark:border-white/10 dark:bg-[#071018] sm:px-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <Button
@@ -215,11 +198,7 @@ const ChatRoom = () => {
         </div>
       </div>
 
-      <div
-        ref={messagesContainerRef}
-        className="min-h-0 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_20%)] px-4 py-4 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.07),transparent_22%),linear-gradient(180deg,rgba(8,15,28,0.28),rgba(5,10,20,0.08))] sm:px-6"
-        style={{ height: 'calc(100dvh - 64px - 96px)', paddingBottom: '110px' }}
-      >
+      <div ref={messagesContainerRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_20%)] px-4 py-4 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.07),transparent_22%),linear-gradient(180deg,rgba(8,15,28,0.28),rgba(5,10,20,0.08))] sm:px-6">
         {isLoading && messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -265,11 +244,7 @@ const ChatRoom = () => {
         </button>
       )}
 
-      <form
-        onSubmit={handleSend}
-        className="shrink-0 border-t border-border/70 bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.95),rgba(7,12,20,0.99))]"
-        style={{ position: 'sticky', bottom: 0, zIndex: 900 }}
-      >
+      <form onSubmit={handleSend} className="shrink-0 border-t border-border/70 bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.95),rgba(7,12,20,0.99))]">
               {replyTo && (
                 <div className="mb-3 flex items-start justify-between gap-3 rounded-[1rem] border border-primary/15 bg-primary/5 px-4 py-3">
                   <div className="min-w-0">
@@ -325,10 +300,7 @@ const ChatRoom = () => {
                         ta.style.height = 'auto';
                         ta.style.height = `${ta.scrollHeight}px`;
                       }
-                      // while typing, keep the latest messages visible
-                      scrollToBottom({ behavior: 'auto' });
                     }}
-                    onFocus={handleInputFocus}
                     placeholder="Write a message..."
                     autoComplete="off"
                     spellCheck={false}
