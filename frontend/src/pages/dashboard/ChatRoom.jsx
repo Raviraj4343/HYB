@@ -272,7 +272,7 @@ const ChatRoom = () => {
         </div>
       </div>
 
-      <div ref={messagesContainerRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_20%)] px-4 pt-5 pb-32 sm:pb-6 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.07),transparent_22%),linear-gradient(180deg,rgba(8,15,28,0.28),rgba(5,10,20,0.08))] sm:px-6">
+      <div ref={messagesContainerRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_20%)] px-4 pb-32 sm:pb-6 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.07),transparent_22%),linear-gradient(180deg,rgba(8,15,28,0.28),rgba(5,10,20,0.08))] sm:px-6">
         {isLoading && messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

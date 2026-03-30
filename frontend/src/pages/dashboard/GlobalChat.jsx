@@ -122,6 +122,13 @@ const GlobalChat = () => {
       if (!container) return;
       const h = inputEl?.offsetHeight || 80;
       container.style.paddingBottom = `${h + 24}px`;
+      // ensure view remains at bottom after input size change
+      setTimeout(() => {
+        try {
+          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+          setShowScrollBtn(false);
+        } catch (e) {}
+      }, 60);
     };
 
     setPadding();
@@ -244,7 +251,7 @@ const GlobalChat = () => {
             </div>
           </div>
 
-          <div ref={messagesContainerRef} className="relative flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] px-4 pt-5 pb-32 sm:pb-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_28%),linear-gradient(180deg,rgba(7,12,20,0.3),rgba(7,12,20,0.06))] sm:px-5">
+          <div ref={messagesContainerRef} className="relative flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] px-4 pt-0 pb-32 sm:pb-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_28%),linear-gradient(180deg,rgba(7,12,20,0.3),rgba(7,12,20,0.06))] sm:px-5">
             {isLoading && messages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
