@@ -581,6 +581,7 @@ const Register = () => {
                         <ShieldCheck className="h-5 w-5 text-muted-foreground" />
                       </span>
                       <Input
+                        data-left-icon
                         id="verificationCode"
                         value={verificationCode}
                         onChange={(e) => {
