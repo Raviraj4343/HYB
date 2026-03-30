@@ -1,8 +1,12 @@
 import { useState } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import api from '../api/axios';
 import { useToast } from '../hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import useSmartBackNavigation from '@/hooks/useSmartBackNavigation';
 
 const Contact = () => {
+  const goBack = useSmartBackNavigation('/');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
@@ -32,6 +36,12 @@ const Contact = () => {
   return (
     <div className="min-h-screen bg-background py-20 px-4">
       <div className="max-w-3xl mx-auto rounded-3xl bg-card border border-border p-8 shadow-lg">
+        <div className="mb-6">
+          <Button type="button" variant="ghost" size="sm" className="rounded-full px-3" onClick={goBack}>
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back
+          </Button>
+        </div>
         <h1 className="text-2xl font-display font-bold mb-4">Contact</h1>
         <p className="text-muted-foreground mb-6">Send a message and I'll reply to your email. Messages are delivered to the site owner.</p>
 

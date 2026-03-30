@@ -1,9 +1,20 @@
 import { Link } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import useSmartBackNavigation from '@/hooks/useSmartBackNavigation';
 
 const About = () => {
+  const goBack = useSmartBackNavigation('/');
+
   return (
     <div className="min-h-screen bg-background py-20 px-4">
       <div className="max-w-4xl mx-auto rounded-3xl bg-card border border-border p-8 shadow-lg">
+        <div className="mb-6">
+          <Button type="button" variant="ghost" size="sm" className="rounded-full px-3" onClick={goBack}>
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            Back
+          </Button>
+        </div>
         <div className="flex flex-col md:flex-row items-center gap-6">
           <div className="shrink-0">
             <img src="/Ravi%20Raj.jpeg" alt="Ravi Raj" className="w-44 h-44 object-cover rounded-2xl shadow-md" />

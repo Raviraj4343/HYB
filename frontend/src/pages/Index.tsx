@@ -116,8 +116,8 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-4">
-            <a href="/about" className="text-muted-foreground hover:text-foreground">About</a>
-            <a href="/contact" className="text-muted-foreground hover:text-foreground">Contact</a>
+            <Link to="/about" className="text-muted-foreground hover:text-foreground">About</Link>
+            <Link to="/contact" className="text-muted-foreground hover:text-foreground">Contact</Link>
             <p className="hidden sm:block">Built for students</p>
           </div>
 

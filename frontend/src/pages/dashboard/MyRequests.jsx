@@ -88,7 +88,8 @@ const MyRequests = () => {
       case 'expired': return 'badge-expired';
       case 'cancelled': return 'badge-cancelled';
       case 'pending': return 'bg-warning/15 text-warning border border-warning/25';
-      case 'accepted': return 'badge-fulfilled';
+      case 'accepted': return 'bg-primary/15 text-primary border border-primary/25';
+      case 'completed': return 'badge-fulfilled';
       case 'rejected': return 'badge-cancelled';
       default: return '';
     }

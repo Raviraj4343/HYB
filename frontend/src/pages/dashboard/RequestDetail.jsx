@@ -58,12 +58,18 @@ const RequestDetail = () => {
   const hasAlreadyResponded = responses.some(
     (response) => response.responder?._id === user?._id || response.responder === user?._id
   );
+  const acceptedResponses = responses.filter((response) => response.status === 'accepted');
 
   const helperOptions = (() => {
     const seen = new Set();
     const options = [];
 
-    responses.forEach((response) => {
+    [...responses]
+      .sort((a, b) => {
+        const priority = { completed: 0, accepted: 1, pending: 2, rejected: 3 };
+        return (priority[a.status] ?? 99) - (priority[b.status] ?? 99);
+      })
+      .forEach((response) => {
       const responder = response.responder;
       if (!responder?._id || seen.has(responder._id)) return;
 
@@ -77,7 +83,7 @@ const RequestDetail = () => {
         responseStatus: response.status,
         responseMessage: response.message,
       });
-    });
+      });
 
     if (request?.acceptedHelper?._id && !seen.has(request.acceptedHelper._id)) {
       options.unshift({
@@ -86,7 +92,7 @@ const RequestDetail = () => {
         userName: request.acceptedHelper.userName,
         avatar: request.acceptedHelper.avatar,
         helpCount: request.acceptedHelper.helpCount || 0,
-        responseStatus: 'accepted',
+        responseStatus: request.status === 'fulfilled' ? 'completed' : 'accepted',
         responseMessage: '',
       });
     }
@@ -142,20 +148,10 @@ const RequestDetail = () => {
     }
   };
 
-  const handleAcceptRequest = async () => {
-    try {
-      await api.put(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/accept-req/${id}`);
-      toast.success('You are now helping with this request!');
-      fetchRequestDetails();
-    } catch (err) {
-      toast.error(err.message || 'Failed to accept request');
-    }
-  };
-
   const handleAcceptResponse = async (responseId) => {
     try {
       await api.patch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/res/${responseId}/accept`);
-      toast.success('Response accepted!');
+      toast.success('Helper accepted. Chat is ready now.');
       fetchRequestDetails();
     } catch (err) {
       toast.error(err.message || 'Failed to accept response');
@@ -165,7 +161,7 @@ const RequestDetail = () => {
   const handleOpenFulfillDialog = () => {
     const defaultHelperId =
       request?.acceptedHelper?._id ||
-      responses.find((response) => response.status === 'accepted')?.responder?._id ||
+      responses.find((response) => ['completed', 'accepted'].includes(response.status))?.responder?._id ||
       helperOptions[0]?._id ||
       '';
 
@@ -238,7 +234,8 @@ const RequestDetail = () => {
   };
 
   const getResponseBadgeClass = (status) => {
-    if (status === 'accepted') return 'badge-fulfilled';
+    if (status === 'completed') return 'badge-fulfilled';
+    if (status === 'accepted') return 'bg-primary/15 text-primary border border-primary/25';
     if (status === 'rejected') return 'badge-cancelled';
     return 'bg-warning/15 text-warning border border-warning/25';
   };
@@ -334,30 +331,12 @@ const RequestDetail = () => {
                 </div>
               )}
 
-              {isOwner && request.status === 'in-progress' && (
+              {isOwner && !['fulfilled', 'cancelled', 'expired'].includes(request.status) && helperOptions.length > 0 && (
                 <div className="flex gap-2 border-t pt-4">
                   <Button className="btn-gradient-primary" onClick={handleOpenFulfillDialog}>
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Mark as Fulfilled
                   </Button>
-                </div>
-              )}
-
-              {!isOwner && request.status === 'open' && (
-                <div className="border-t pt-4">
-                  <Button
-                    className="btn-gradient-primary w-full"
-                    onClick={handleAcceptRequest}
-                    disabled={hasAlreadyResponded}
-                  >
-                    <HandHeart className="w-4 h-4 mr-2" />
-                    {hasAlreadyResponded ? 'Response Already Sent' : 'I Can Help!'}
-                  </Button>
-                  {hasAlreadyResponded && (
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      You have already responded to this request.
-                    </p>
-                  )}
                 </div>
               )}
             </CardContent>
@@ -384,13 +363,13 @@ const RequestDetail = () => {
                           <p className="text-xs text-muted-foreground">@{response.responder?.userName}</p>
                         </div>
                       </div>
-                      {isOwner && response.status === 'pending' && (
+                      {isOwner && !['accepted', 'completed'].includes(response.status) && !['fulfilled', 'cancelled', 'expired'].includes(request.status) && (
                         <Button size="sm" onClick={() => handleAcceptResponse(response._id)}>
-                          Accept
+                          Accept & Chat
                         </Button>
                       )}
                       {response.status !== 'pending' && (
-                        <Badge className={response.status === 'accepted' ? 'badge-fulfilled' : 'badge-cancelled'}>
+                        <Badge className={getResponseBadgeClass(response.status)}>
                           {response.status}
                         </Badge>
                       )}
@@ -451,6 +430,39 @@ const RequestDetail = () => {
               </div>
             </CardContent>
           </Card>
+
+          {acceptedResponses.length > 0 && !request.acceptedHelper && (
+            <Card
+              className="glass-card border-primary/20"
+              style={{ background: 'linear-gradient(135deg, hsl(var(--primary) / 0.1) 0%, hsl(var(--primary) / 0.04) 100%)' }}
+            >
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-primary flex items-center gap-2">
+                  <HandHeart className="w-4 h-4" />
+                  People Helping
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {acceptedResponses.map((response) => (
+                  <div key={response._id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={response.responder?.avatar} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                        {getInitials(response.responder?.fullName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{response.responder?.fullName}</p>
+                      <p className="truncate text-sm text-muted-foreground">@{response.responder?.userName}</p>
+                    </div>
+                    <Badge className={getResponseBadgeClass(response.status)}>
+                      {response.status}
+                    </Badge>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           {request.acceptedHelper && (
             <Card
