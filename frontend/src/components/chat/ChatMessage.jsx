@@ -4,7 +4,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 const ChatMessage = ({ message, isOwn, showAvatar = true, onReply, onDelete }) => {
-  const bubbleBg = isOwn ? 'bg-emerald-500 text-white' : 'bg-white text-slate-900 dark:bg-[#0b1220] dark:text-slate-200';
+  const bubbleBg = isOwn
+    ? 'bg-emerald-500 text-white'
+    : 'bg-slate-800 text-slate-200 dark:bg-[#0b1220] dark:text-slate-200';
   const bubbleBorder = isOwn ? 'border-emerald-600' : 'border-border/70 dark:border-white/10';
 
   return (
@@ -41,7 +43,9 @@ const ChatMessage = ({ message, isOwn, showAvatar = true, onReply, onDelete }) =
           aria-hidden
           className={cn(
             'absolute -bottom-1 w-3 h-3 rotate-45',
-            isOwn ? 'right-2 bg-emerald-500 border-emerald-600' : 'left-3 bg-white border-border/70 dark:bg-[#0b1220] dark:border-white/10'
+            isOwn
+              ? 'right-2 bg-emerald-500 border-emerald-600'
+              : 'left-3 bg-slate-800 border-border/70 dark:bg-[#0b1220] dark:border-white/10'
           )}
           style={{ boxShadow: '0 0 0 1px rgba(0,0,0,0.02) inset' }}
         />

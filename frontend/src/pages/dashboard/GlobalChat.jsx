@@ -39,14 +39,19 @@ const GlobalChat = () => {
 
         if (containerRef.current) containerRef.current.style.height = `${viewportH - headerH}px`;
         if (messagesContainerRef.current) {
-          messagesContainerRef.current.style.paddingTop = `${headerH + 12}px`;
+          // add larger buffer to avoid header overlap (tails/shadow)
+          const topBuffer = headerH + 44;
+          messagesContainerRef.current.style.paddingTop = `${topBuffer}px`;
           messagesContainerRef.current.style.paddingBottom = `${inputH + 24}px`;
+          messagesContainerRef.current.style.scrollPaddingTop = `${topBuffer}px`;
         }
         document.documentElement.style.setProperty('--app-height', `${viewportH}px`);
       } catch (e) {}
     };
 
     adjustLayout();
+    // recalc shortly after to account for avatar/image load and font rendering
+    setTimeout(adjustLayout, 120);
     const onResize = () => adjustLayout();
     const onVVResize = () => adjustLayout();
     window.addEventListener('resize', onResize);
@@ -211,7 +216,7 @@ const GlobalChat = () => {
       <Card className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.8rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.84))] shadow-[0_24px_54px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(7,12,20,0.96),rgba(12,18,32,0.96))] dark:shadow-[0_24px_54px_rgba(0,0,0,0.28)]">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.1),transparent_18%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent_30%)]" />
         <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-          <div ref={headerRef} className="absolute left-0 right-0 top-0 z-30 border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.84))] px-4 py-3 backdrop-blur-md shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(12,18,32,0.96))] sm:px-5">
+          <div ref={headerRef} className="absolute left-0 right-0 top-0 z-50 border-b border-border/70 bg-background/100 px-4 py-3 backdrop-blur-md shadow-sm dark:border-white/10 dark:bg-[#071018] sm:px-5">
             <div className="flex items-center gap-3">
               <div className="flex -space-x-3 shrink-0">
                 {activeParticipants.length > 0 ? (
