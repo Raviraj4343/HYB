@@ -6,7 +6,7 @@
 
 ## 🌐 Live Links
 - 🔗 Frontend: https://hyb-theta.vercel.app/
-- 🔗 Backend: (add your backend URL here)
+- 🔗 Backend: https://hyb-nlut.onrender.com
 
 ---
 
