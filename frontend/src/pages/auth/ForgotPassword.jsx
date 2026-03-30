@@ -275,7 +275,9 @@ const ForgotPassword = () => {
                 <div className="space-y-2">
                   <Label htmlFor="code">Verification Code</Label>
                   <div className="relative">
-                    <KeyRound className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <span className="pointer-events-none absolute left-0 top-0 bottom-0 flex items-center pl-3">
+                      <KeyRound className="h-5 w-5 text-muted-foreground" />
+                    </span>
                     <Input
                       id="code"
                       value={code}
@@ -285,6 +287,7 @@ const ForgotPassword = () => {
                       disabled={isLoading}
                       autoComplete="one-time-code"
                       style={inputStyle}
+                      data-left-icon
                     />
                   </div>
                 </div>
@@ -302,6 +305,7 @@ const ForgotPassword = () => {
                       disabled={isLoading}
                       autoComplete="new-password"
                       style={inputStyle}
+                      data-right-icon
                     />
                     <button
                       type="button"
@@ -327,6 +331,7 @@ const ForgotPassword = () => {
                       disabled={isLoading}
                       autoComplete="new-password"
                       style={inputStyle}
+                      data-right-icon
                     />
                     <button
                       type="button"

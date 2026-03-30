@@ -218,13 +218,16 @@ const Login = () => {
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <span className="pointer-events-none absolute left-0 top-0 bottom-0 flex items-center pl-3">
+                      <Mail className="h-5 w-5 text-muted-foreground" />
+                    </span>
                     <Input
                       id="email"
                       name="email"
                       type="email"
                       placeholder="you@example.com"
-                      className="pl-10 h-11"
+                      className="h-11"
+                      data-left-icon
                       value={formData.email}
                       onChange={handleChange}
                       disabled={isLoading}
@@ -237,26 +240,30 @@ const Login = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      className="pl-10 pr-10 h-11"
-                      value={formData.password}
-                      onChange={handleChange}
-                      disabled={isLoading}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                    </button>
-                  </div>
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-0 top-0 bottom-0 flex items-center pl-3">
+                        <Lock className="h-5 w-5 text-muted-foreground" />
+                      </span>
+                      <Input
+                        id="password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        className="h-11"
+                        data-left-icon
+                        data-right-icon
+                        value={formData.password}
+                        onChange={handleChange}
+                        disabled={isLoading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   {errors.password && (
                     <p className="text-sm text-destructive">{errors.password}</p>
                   )}

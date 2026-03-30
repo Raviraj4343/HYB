@@ -180,12 +180,14 @@ const RequestsList = () => {
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <span className="pointer-events-none absolute left-0 top-0 bottom-0 flex items-center pl-3">
+                <Search className="w-4 h-4 text-muted-foreground" />
+              </span>
               <Input
                 placeholder="Search requests..."
-                className="pl-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                data-left-icon
               />
             </div>
             <div className="flex gap-2">

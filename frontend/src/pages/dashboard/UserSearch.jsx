@@ -131,12 +131,15 @@ const UserSearch = () => {
 
       {/* Search Input */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        <span className="pointer-events-none absolute left-0 top-0 bottom-0 flex items-center pl-3">
+          <Search className="w-5 h-5 text-muted-foreground" />
+        </span>
         <Input
           value={query}
           onChange={handleQueryChange}
           placeholder="Search by name or username..."
-          className="pl-10 h-12 text-lg"
+          className="h-12 text-lg"
+          data-left-icon
         />
         {isLoading && (
           <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 animate-spin text-muted-foreground" />

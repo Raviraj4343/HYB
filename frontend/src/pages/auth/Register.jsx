@@ -333,7 +333,9 @@ const Register = () => {
                     <div className="space-y-1.5">
                       <Label htmlFor="fullName">Full Name</Label>
                       <div className="relative">
-                        <User className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <span className="pointer-events-none absolute left-0 top-0 bottom-0 flex items-center pl-3">
+                          <User className="h-5 w-5 text-muted-foreground" />
+                        </span>
                         <Input
                           id="fullName"
                           name="fullName"
@@ -343,6 +345,7 @@ const Register = () => {
                           value={formData.fullName}
                           onChange={handleChange}
                           disabled={isLoading}
+                          data-left-icon
                         />
                       </div>
                       {errors.fullName && <p className="text-xs text-destructive">{errors.fullName}</p>}
@@ -367,7 +370,9 @@ const Register = () => {
                   <div className="space-y-1.5">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">
-                      <Mail className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <span className="pointer-events-none absolute left-0 top-0 bottom-0 flex items-center pl-3">
+                        <Mail className="h-5 w-5 text-muted-foreground" />
+                      </span>
                       <Input
                         id="email"
                         name="email"
@@ -378,6 +383,7 @@ const Register = () => {
                         value={formData.email}
                         onChange={handleChange}
                         disabled={isLoading}
+                        data-left-icon
                       />
                     </div>
                     {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
@@ -387,7 +393,9 @@ const Register = () => {
                     <div className="space-y-1.5">
                       <Label htmlFor="password">Password</Label>
                       <div className="relative">
-                        <Lock className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <span className="pointer-events-none absolute left-0 top-0 bottom-0 flex items-center pl-3">
+                          <Lock className="h-5 w-5 text-muted-foreground" />
+                        </span>
                         <Input
                           id="password"
                           name="password"
@@ -398,6 +406,8 @@ const Register = () => {
                           value={formData.password}
                           onChange={handleChange}
                           disabled={isLoading}
+                          data-left-icon
+                          data-right-icon
                         />
                         <button
                           type="button"
@@ -423,6 +433,7 @@ const Register = () => {
                           value={formData.confirmPassword}
                           onChange={handleChange}
                           disabled={isLoading}
+                          data-right-icon
                         />
                         <button
                           type="button"
@@ -440,16 +451,27 @@ const Register = () => {
                     <div className="grid grid-cols-3 gap-2">
                       <div className="space-y-1.5">
                         <Label htmlFor="branch" className="text-xs">Branch</Label>
-                        <Input
-                          id="branch"
-                          name="branch"
-                          className={compactInputClassName}
-                          style={inputStyle}
-                          placeholder="Branch"
-                          value={formData.branch}
-                          onChange={handleChange}
-                          disabled={isLoading}
-                        />
+                        <Select value={formData.branch} onValueChange={(value) => handleSelectChange('branch', value)} disabled={isLoading}>
+                          <SelectTrigger className={compactInputClassName} style={inputStyle}>
+                            <SelectValue placeholder="Branch" />
+                          </SelectTrigger>
+                          <SelectContent className="border-border/70 bg-[#151b24] text-foreground">
+                            {[
+                              { value: 'CSE', label: 'BTech - CSE' },
+                              { value: 'IT', label: 'BTech - IT' },
+                              { value: 'ECE', label: 'BTech - ECE' },
+                              { value: 'EE', label: 'BTech - EE' },
+                              { value: 'ME', label: 'BTech - ME' },
+                              { value: 'CE', label: 'BTech - CE' },
+                              { value: 'MTech', label: 'MTech' },
+                              { value: 'BBA', label: 'BBA' },
+                            ].map((opt) => (
+                              <SelectItem key={opt.value} value={opt.value} className="text-foreground focus:bg-white/10 focus:text-foreground">
+                                {opt.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="space-y-1.5">
@@ -538,7 +560,9 @@ const Register = () => {
                   <div className="space-y-1.5">
                     <Label htmlFor="verificationCode">Verification Code</Label>
                     <div className="relative">
-                      <ShieldCheck className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <span className="pointer-events-none absolute left-0 top-0 bottom-0 flex items-center pl-3">
+                        <ShieldCheck className="h-5 w-5 text-muted-foreground" />
+                      </span>
                       <Input
                         id="verificationCode"
                         value={verificationCode}

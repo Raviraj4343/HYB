@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -185,13 +186,27 @@ const Settings = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="branch">Branch</Label>
-                    <Input
-                      id="branch"
-                      name="branch"
-                      value={profileData.branch}
-                      onChange={handleProfileChange}
-                      placeholder="e.g., CSE, ECE"
-                    />
+                    <Select value={profileData.branch} onValueChange={(v) => setProfileData(prev => ({ ...prev, branch: v }))}>
+                      <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground">
+                        <SelectValue placeholder="Branch" />
+                      </SelectTrigger>
+                      <SelectContent className="border-border/70 bg-[#151b24] text-foreground">
+                        {[
+                          { value: 'CSE', label: 'BTech - CSE' },
+                          { value: 'IT', label: 'BTech - IT' },
+                          { value: 'ECE', label: 'BTech - ECE' },
+                          { value: 'EE', label: 'BTech - EE' },
+                          { value: 'ME', label: 'BTech - ME' },
+                          { value: 'CE', label: 'BTech - CE' },
+                          { value: 'MTech', label: 'MTech' },
+                          { value: 'BBA', label: 'BBA' },
+                        ].map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value} className="text-foreground focus:bg-white/10 focus:text-foreground">
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-2">
@@ -261,6 +276,7 @@ const Settings = () => {
                       onChange={handlePasswordChange}
                       placeholder="Enter current password"
                       className="pr-10"
+                      data-right-icon
                     />
                     <button
                       type="button"
@@ -283,6 +299,7 @@ const Settings = () => {
                       onChange={handlePasswordChange}
                       placeholder="Enter new password"
                       className="pr-10"
+                      data-right-icon
                     />
                     <button
                       type="button"
