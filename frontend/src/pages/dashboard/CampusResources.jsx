@@ -173,6 +173,8 @@ const CampusResources = () => {
   const [editingResource, setEditingResource] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [imageFile, setImageFile] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]); // for multiple news images
+  const [wardens, setWardens] = useState([]);
   const [removeImage, setRemoveImage] = useState(false);
   const isSuperAdmin = user?.role === 'super_admin';
   const fieldRules = CATEGORY_FIELD_RULES[form.category] || CATEGORY_FIELD_RULES.faculty_contacts;
@@ -204,6 +206,8 @@ const CampusResources = () => {
     setEditingResource(null);
     setForm({ ...EMPTY_FORM, category: category || EMPTY_FORM.category });
     setImageFile(null);
+    setImageFiles([]);
+    setWardens([]);
     setRemoveImage(false);
     setIsDialogOpen(true);
     // reset scroll of dialog body on next paint
@@ -236,6 +240,8 @@ const CampusResources = () => {
       messMenuNote: resource.messMenuNote || '',
     });
     setImageFile(null);
+    setImageFiles(resource.images || []);
+    setWardens(resource.wardens || []);
     setRemoveImage(false);
     setIsDialogOpen(true);
   };
@@ -257,6 +263,51 @@ const CampusResources = () => {
     setIsSaving(true);
 
     try {
+      // Client-side validation per category
+      if (form.category === 'campus_news') {
+        if (!form.title?.trim() || !form.description?.trim()) {
+          toast.error('News requires a title and description');
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      if (form.category === 'faculty_contacts') {
+        if (!form.professorName?.trim() || !form.designation?.trim() || !form.department?.trim()) {
+          toast.error('Please provide professor name, designation and department');
+          setIsSaving(false);
+          return;
+        }
+        if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+          toast.error('Please provide a valid email');
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      if (form.category === 'hostel_updates') {
+        if (!form.hostelName?.trim()) {
+          toast.error('Please provide hostel name');
+          setIsSaving(false);
+          return;
+        }
+        // at least one warden required either in wardens list or single fields
+        if ((wardens.length === 0 || wardens.every(w => !w.name.trim())) && !form.wardenName?.trim()) {
+          toast.error('Please add at least one warden');
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      if (SINGLE_IMAGE_CATEGORIES.has(form.category) && !editingResource) {
+        // require an uploaded file when creating a single notice resource
+        if (!imageFile && imageFiles.length === 0) {
+          toast.error('Please upload the required image or PDF for this section');
+          setIsSaving(false);
+          return;
+        }
+      }
+
       const payload = new FormData();
       const normalizedForm = {
         ...form,
@@ -282,8 +333,34 @@ const CampusResources = () => {
         payload.append(key, value ?? '');
       });
 
+      // attach files according to category
+      if (fieldRules.attachmentAccept && (form.category === 'bus_timing' || form.category === 'holiday_notice')) {
+        // require a file for single-notice categories on create
+        if (!editingResource && !imageFile && imageFiles.length === 0) {
+          throw new Error('Please upload the required image or PDF for this section.');
+        }
+      }
+
       if (imageFile) {
         payload.append('image', imageFile);
+      }
+
+      // multiple images (news)
+      if (form.category === 'campus_news' && imageFiles && imageFiles.length > 0) {
+        imageFiles.forEach((f) => {
+          if (f instanceof File) payload.append('images', f);
+        });
+      }
+
+      // mess menu for hostel
+      if (form.category === 'hostel_updates' && imageFile) {
+        // allow imageFile to be messMenu if user selected
+        payload.append('messMenu', imageFile);
+      }
+
+      // wardens
+      if (form.category === 'hostel_updates') {
+        payload.append('wardens', JSON.stringify(wardens || []));
       }
 
       if (removeImage) {
@@ -448,31 +525,26 @@ const CampusResources = () => {
       <Dialog open={isDialogOpen} onOpenChange={(open) => (!open ? closeDialog() : setIsDialogOpen(true))}>
             <DialogContent id="campus-resource-dialog" className="ds-dialog max-h-[92vh] overflow-hidden rounded-[1.8rem] p-0 sm:max-w-4xl" role="dialog" aria-modal="true">
           <form onSubmit={handleSubmit}>
-            <DialogHeader className="sticky top-0 z-10 border-b border-border/70 bg-background/92 px-6 py-5 backdrop-blur-xl dark:bg-[rgba(8,15,28,0.94)]">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <DialogHeader className="sticky top-0 z-10 border-b bg-background/95 px-5 py-4">
+              <div className="flex items-center justify-between gap-4">
                 <div>
-                  <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Super Admin Editor
+                  <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                    <Sparkles className="h-3 w-3" />
+                    Super Admin
                   </div>
-                  <DialogTitle className="text-2xl font-display">
-                    {editingResource ? 'Edit campus resource' : 'Add campus resource'}
+                  <DialogTitle className="text-lg font-semibold">
+                    {editingResource ? 'Edit resource' : 'Add resource'}
                   </DialogTitle>
-                  <DialogDescription className="mt-2 max-w-2xl">
-                    Publish structured college information that every student can access, while keeping moderation locked to super admin only.
-                  </DialogDescription>
                 </div>
-                <div className="rounded-2xl border border-primary/15 bg-primary/8 px-4 py-3 text-sm text-muted-foreground">
-                  Keep details crisp and verified so students can trust this hub.
-                </div>
+                <div className="text-sm text-muted-foreground">Only show required fields for selected category</div>
               </div>
             </DialogHeader>
 
-            <div id="campus-resource-dialog-body" className="dialog-body custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_22%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent)]">
-              <div className="rounded-[1.7rem] border border-border/70 bg-background/55 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-md dark:bg-white/[0.02]">
-                <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
-                <div className="custom-scrollbar box-scroll space-y-6 pr-2">
-                        <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.52),rgba(8,15,28,0.42))] box-scroll">
+            <div id="campus-resource-dialog-body" className="dialog-body custom-scrollbar">
+              <div className="rounded-lg border border-border/60 bg-background/90 p-2">
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_260px]">
+                <div className="custom-scrollbar box-scroll space-y-4 pr-2">
+                        <div className="rounded-lg border border-border/60 bg-background p-4 shadow-sm">
                     <div className="mb-4">
                       <h3 className="text-lg font-display font-semibold text-foreground">Core details</h3>
                       <p className="mt-1 text-sm text-muted-foreground">
@@ -482,10 +554,7 @@ const CampusResources = () => {
                       </p>
                     </div>
 
-                    <div className={cn(
-                      'grid gap-5',
-                      fieldRules.showTitle ? 'md:grid-cols-2' : 'md:grid-cols-1'
-                    )}>
+                    <div className={cn('grid gap-4', fieldRules.showTitle ? 'md:grid-cols-2' : 'md:grid-cols-1')}>
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-foreground">Category</label>
                         <Select value={form.category} onValueChange={(value) => handleChange('category', value)}>
@@ -505,61 +574,61 @@ const CampusResources = () => {
                       {fieldRules.showTitle && (
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-foreground">Title</label>
-                        <Input className="h-12 rounded-2xl" value={form.title} onChange={(e) => handleChange('title', e.target.value)} placeholder="e.g. Prof. Sharma - CSE Office" required />
+                        <Input className="h-10 rounded-lg" value={form.title} onChange={(e) => handleChange('title', e.target.value)} placeholder="e.g. Prof. Sharma - CSE Office" required />
                       </div>
                       )}
                     </div>
 
                     {fieldRules.showProfessorFields && (
-                      <div className="mt-5 grid gap-5 md:grid-cols-2">
+                      <div className="mt-4 grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-foreground">Professor Name</label>
-                          <Input className="h-12 rounded-2xl" value={form.professorName} onChange={(e) => handleChange('professorName', e.target.value)} placeholder="Prof. Sharma" required />
+                          <Input className="h-10 rounded-lg" value={form.professorName} onChange={(e) => handleChange('professorName', e.target.value)} placeholder="Prof. Sharma" required />
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-foreground">Designation</label>
-                          <Input className="h-12 rounded-2xl" value={form.designation} onChange={(e) => handleChange('designation', e.target.value)} placeholder="Assistant Professor" required />
+                          <Input className="h-10 rounded-lg" value={form.designation} onChange={(e) => handleChange('designation', e.target.value)} placeholder="Assistant Professor" required />
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-foreground">Department</label>
-                          <Input className="h-12 rounded-2xl" value={form.department} onChange={(e) => handleChange('department', e.target.value)} placeholder="Computer Science" required />
+                          <Input className="h-10 rounded-lg" value={form.department} onChange={(e) => handleChange('department', e.target.value)} placeholder="Computer Science" required />
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-foreground">Email</label>
-                          <Input type="email" className="h-12 rounded-2xl" value={form.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="faculty@college.edu" required />
+                          <Input type="email" className="h-10 rounded-lg" value={form.email} onChange={(e) => handleChange('email', e.target.value)} placeholder="faculty@college.edu" required />
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-foreground">Phone</label>
-                          <Input className="h-12 rounded-2xl" value={form.phone} onChange={(e) => handleChange('phone', e.target.value)} placeholder="+91 ..." required />
+                          <Input className="h-10 rounded-lg" value={form.phone} onChange={(e) => handleChange('phone', e.target.value)} placeholder="+91 ..." required />
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-foreground">Office / Location</label>
-                          <Input className="h-12 rounded-2xl" value={form.location} onChange={(e) => handleChange('location', e.target.value)} placeholder="CSE block, room 214" />
+                          <Input className="h-10 rounded-lg" value={form.location} onChange={(e) => handleChange('location', e.target.value)} placeholder="CSE block, room 214" />
                         </div>
                       </div>
                     )}
 
                     {fieldRules.showHostelFields && (
-                      <div className="mt-5 grid gap-5 md:grid-cols-2">
+                      <div className="mt-4 grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-foreground">Hostel Name</label>
-                          <Input className="h-12 rounded-2xl" value={form.hostelName} onChange={(e) => handleChange('hostelName', e.target.value)} placeholder="Hostel H-9" required />
+                          <Input className="h-10 rounded-lg" value={form.hostelName} onChange={(e) => handleChange('hostelName', e.target.value)} placeholder="Hostel H-9" required />
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-foreground">Warden Name</label>
-                          <Input className="h-12 rounded-2xl" value={form.wardenName} onChange={(e) => handleChange('wardenName', e.target.value)} placeholder="Dr. Verma" required />
+                          <Input className="h-10 rounded-lg" value={form.wardenName} onChange={(e) => handleChange('wardenName', e.target.value)} placeholder="Dr. Verma" required />
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-foreground">Warden Phone</label>
-                          <Input className="h-12 rounded-2xl" value={form.wardenPhone} onChange={(e) => handleChange('wardenPhone', e.target.value)} placeholder="+91 ..." required />
+                          <Input className="h-10 rounded-lg" value={form.wardenPhone} onChange={(e) => handleChange('wardenPhone', e.target.value)} placeholder="+91 ..." required />
                         </div>
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-foreground">Hostel Location</label>
-                          <Input className="h-12 rounded-2xl" value={form.location} onChange={(e) => handleChange('location', e.target.value)} placeholder="North campus hostel wing" />
+                          <Input className="h-10 rounded-lg" value={form.location} onChange={(e) => handleChange('location', e.target.value)} placeholder="North campus hostel wing" />
                         </div>
                         <div className="space-y-2 md:col-span-2">
                           <label className="text-sm font-medium text-foreground">Mess Menu / Notice Note</label>
-                          <Textarea className="min-h-[120px] rounded-[1.4rem]" value={form.messMenuNote} onChange={(e) => handleChange('messMenuNote', e.target.value)} placeholder="Add a short note about menu changes, notices, or hostel updates..." />
+                          <Textarea className="min-h-[100px] rounded-lg" value={form.messMenuNote} onChange={(e) => handleChange('messMenuNote', e.target.value)} placeholder="Add a short note about menu changes, notices, or hostel updates..." />
                         </div>
                       </div>
                     )}
@@ -627,32 +696,88 @@ const CampusResources = () => {
                     <div className="space-y-3 rounded-[1.35rem] border border-border/70 bg-background/75 p-4 dark:bg-white/[0.03]">
                       <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-primary/20 bg-primary/10 px-4 py-3 text-sm font-medium text-primary transition hover:bg-primary/15">
                         <Upload className="h-4 w-4" />
-                        Upload file
-                        <input type="file" accept={fieldRules.attachmentAccept} className="hidden" onChange={(e) => setImageFile(e.target.files?.[0] || null)} />
+                        {form.category === 'campus_news' ? 'Upload images (optional, multiple)' : 'Upload file'}
+                        <input
+                          type="file"
+                          accept={fieldRules.attachmentAccept}
+                          className="hidden"
+                          onChange={(e) => {
+                            if (form.category === 'campus_news') {
+                              const list = Array.from(e.target.files || []);
+                              setImageFiles(list);
+                              // clear single image field
+                              setImageFile(null);
+                            } else if (form.category === 'hostel_updates') {
+                              // mess menu or image: treat as messMenu
+                              setImageFile(e.target.files?.[0] || null);
+                            } else {
+                              setImageFile(e.target.files?.[0] || null);
+                            }
+                          }}
+                          multiple={form.category === 'campus_news'}
+                        />
                       </label>
 
-                      {(editingResource?.image || imageFile) && (
-                        <div className="space-y-3 text-sm">
-                          <span className="block rounded-2xl border border-border/70 bg-background/80 px-3 py-2.5 text-foreground">
-                            {imageFile ? imageFile.name : 'Current image attached'}
-                          </span>
-                          {editingResource?.image && !imageFile && (
-                            <button
-                              type="button"
-                              className={cn(
-                                'w-full rounded-2xl border px-3 py-2.5 transition',
-                                removeImage
-                                  ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                                  : 'border-border/70 bg-background/80 text-muted-foreground'
-                              )}
-                              onClick={() => setRemoveImage((prev) => !prev)}
-                            >
-                              {removeImage ? 'Image will be removed on save' : 'Remove current image'}
-                            </button>
-                          )}
-                        </div>
-                      )}
+                      {/* show previews / names */}
+                      <div className="space-y-2 text-sm">
+                        {form.category === 'campus_news' && imageFiles && imageFiles.length > 0 && (
+                          <div className="grid grid-cols-2 gap-2">
+                            {imageFiles.map((f, i) => (
+                              <span key={i} className="block truncate rounded-2xl border border-border/70 bg-background/80 px-3 py-2.5 text-foreground">{f.name}</span>
+                            ))}
+                          </div>
+                        )}
+
+                        {form.category !== 'campus_news' && (editingResource?.image || imageFile) && (
+                          <div>
+                            <span className="block rounded-2xl border border-border/70 bg-background/80 px-3 py-2.5 text-foreground">
+                              {imageFile ? imageFile.name : (editingResource?.image ? 'Current image attached' : '')}
+                            </span>
+                            {editingResource?.image && !imageFile && (
+                              <button
+                                type="button"
+                                className={cn(
+                                  'mt-2 w-full rounded-2xl border px-3 py-2.5 transition',
+                                  removeImage
+                                    ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                                    : 'border-border/70 bg-background/80 text-muted-foreground'
+                                )}
+                                onClick={() => setRemoveImage((prev) => !prev)}
+                              >
+                                {removeImage ? 'Image will be removed on save' : 'Remove current image'}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Hostel-specific: wardens and mess menu preview */}
+                    {form.category === 'hostel_updates' && (
+                      <div className="mt-4 space-y-3 rounded-[1.35rem] border border-border/70 bg-background/75 p-4 dark:bg-white/[0.03]">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-medium text-foreground">Wardens</h4>
+                          <Button size="sm" type="button" onClick={() => setWardens((w) => [...w, { name: '', phone: '', email: '', designation: '' }])}>Add</Button>
+                        </div>
+
+                        <div className="space-y-2">
+                          {wardens.length === 0 && <div className="text-sm text-muted-foreground">No wardens added</div>}
+                          {wardens.map((w, idx) => (
+                            <div key={idx} className="grid grid-cols-1 gap-2 sm:grid-cols-4">
+                              <Input placeholder="Name" value={w.name} onChange={(e) => setWardens((prev) => { const copy = [...prev]; copy[idx].name = e.target.value; return copy; })} />
+                              <Input placeholder="Phone" value={w.phone} onChange={(e) => setWardens((prev) => { const copy = [...prev]; copy[idx].phone = e.target.value; return copy; })} />
+                              <Input placeholder="Email" value={w.email} onChange={(e) => setWardens((prev) => { const copy = [...prev]; copy[idx].email = e.target.value; return copy; })} />
+                              <div className="flex items-center gap-2">
+                                <Input placeholder="Designation" value={w.designation} onChange={(e) => setWardens((prev) => { const copy = [...prev]; copy[idx].designation = e.target.value; return copy; })} />
+                                <Button type="button" variant="ghost" size="icon" onClick={() => setWardens((prev) => prev.filter((_, i) => i !== idx))}>✕</Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-3 text-sm text-muted-foreground">You can upload a mess menu (image or PDF) using the attachment above — it will be saved as the mess menu for this hostel.</div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.52),rgba(8,15,28,0.42))]">

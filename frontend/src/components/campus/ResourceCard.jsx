@@ -19,7 +19,16 @@ const ResourceCard = ({
         'group overflow-hidden rounded-2xl border border-border/70 bg-card/90 shadow-md transition-transform duration-300 hover:-translate-y-2 hover:shadow-xl',
       )}
     >
-      {resource.image && resource.attachmentType !== 'pdf' && (
+      {resource.images && resource.images.length > 0 ? (
+        <div className="relative overflow-hidden h-44 sm:h-52">
+          <img
+            src={resource.images[0]}
+            alt={resource.professorName || resource.hostelName || resource.title}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+        </div>
+      ) : resource.image && resource.attachmentType !== 'pdf' && (
         <div className="relative overflow-hidden h-44 sm:h-52">
           <img
             src={resource.image}
@@ -100,6 +109,36 @@ const ResourceCard = ({
               <div className="mt-1 text-sm font-medium text-foreground dark:text-white">{item.value}</div>
             </div>
           ))}
+
+          {/* show warden list for hostel */}
+          {resource.wardens && resource.wardens.length > 0 && (
+            <div className="rounded-lg border border-border/70 bg-background/80 px-4 py-3 sm:col-span-2">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Wardens</div>
+              <div className="mt-2 space-y-2">
+                {resource.wardens.map((w, i) => (
+                  <div key={i} className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium text-foreground dark:text-white">{w.name}</div>
+                      <div className="text-sm text-muted-foreground">{w.designation} · {w.phone} {w.email && <>· {w.email}</>}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* mess menu link */}
+          {resource.messMenuUrl && (
+            <div className="rounded-lg border border-border/70 bg-background/80 px-4 py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Mess Menu</div>
+              <div className="mt-2 text-sm font-medium text-foreground dark:text-white">{resource.messMenuName || 'View menu'}</div>
+              <div className="mt-2">
+                <Button asChild variant="outline" className="rounded-xl">
+                  <a href={resource.messMenuUrl} target="_blank" rel="noreferrer">Open</a>
+                </Button>
+              </div>
+            </div>
+          )}
 
           {resource.externalLink && (
             <a
