@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useChat } from '../../hooks/useChat';
 import { useAuth } from '../../context/AuthContext';
@@ -32,8 +31,6 @@ const ChatRoom = () => {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
-  const containerRef = useRef(null);
-  const headerRef = useRef(null);
   const inputRef = useRef(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const fileInputRef = useRef(null);
@@ -50,49 +47,6 @@ const ChatRoom = () => {
     };
     if (chatId) fetchChatInfo();
   }, [chatId]);
-
-  useEffect(() => {
-    const adjustLayout = () => {
-      try {
-        const headerH = headerRef.current?.offsetHeight || 0;
-        const inputH = inputRef.current?.offsetHeight || 80;
-        const vv = window.visualViewport;
-        const viewportH = vv ? vv.height : window.innerHeight;
-
-        if (containerRef.current) {
-          // make outer container equal to viewport minus header so header stays visible
-          containerRef.current.style.height = `${viewportH - headerH}px`;
-        }
-
-        if (messagesContainerRef.current) {
-          // add larger buffer to avoid header overlap (tails/shadow)
-          const topBuffer = headerH + 44;
-          messagesContainerRef.current.style.paddingTop = `${topBuffer}px`;
-          messagesContainerRef.current.style.paddingBottom = `${inputH + 24}px`;
-          messagesContainerRef.current.style.scrollPaddingTop = `${topBuffer}px`;
-        }
-
-        document.documentElement.style.setProperty('--app-height', `${viewportH}px`);
-      } catch (e) {
-        // ignore
-      }
-    };
-
-    adjustLayout();
-    const onResize = () => adjustLayout();
-    const onVVResize = () => adjustLayout();
-
-    window.addEventListener('resize', onResize);
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', onVVResize);
-
-    // recalc shortly after mount to avoid header overlap caused by avatar/image/font rendering
-    setTimeout(adjustLayout, 120);
-
-    return () => {
-      window.removeEventListener('resize', onResize);
-      if (window.visualViewport) window.visualViewport.removeEventListener('resize', onVVResize);
-    };
-  }, []);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -117,59 +71,6 @@ const ChatRoom = () => {
     container?.addEventListener('scroll', onScroll);
     return () => container?.removeEventListener('scroll', onScroll);
   }, []);
-
-  // Adjust layout when mobile keyboard appears so input stays visible
-  useEffect(() => {
-    const adjustForKeyboard = () => {
-      try {
-        const headerH = headerRef.current?.offsetHeight || 0;
-        const vv = window.visualViewport;
-        const viewportH = vv ? vv.height : window.innerHeight;
-        if (containerRef.current) containerRef.current.style.height = `${viewportH - headerH}px`;
-        document.documentElement.style.setProperty('--app-height', `${viewportH}px`);
-
-        setTimeout(() => {
-          const container = messagesContainerRef.current;
-          if (container) {
-            container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-            setShowScrollBtn(false);
-          }
-        }, 120);
-      } catch (e) {}
-    };
-
-    const onFocusIn = (e) => {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) adjustForKeyboard();
-    };
-
-    const onVVResize = () => {
-      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) adjustForKeyboard();
-    };
-
-    document.addEventListener('focusin', onFocusIn);
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', onVVResize);
-
-    return () => {
-      document.removeEventListener('focusin', onFocusIn);
-      if (window.visualViewport) window.visualViewport.removeEventListener('resize', onVVResize);
-    };
-  }, []);
-
-  // Ensure messages container has bottom padding equal to input height so messages aren't hidden
-  useEffect(() => {
-    const setContainerPadding = () => {
-      const inputEl = inputRef.current;
-      const container = messagesContainerRef.current;
-      if (!container) return;
-      const inputH = inputEl?.offsetHeight || 80;
-      // add small buffer
-      container.style.paddingBottom = `${inputH + 24}px`;
-    };
-
-    setContainerPadding();
-    window.addEventListener('resize', setContainerPadding);
-    return () => window.removeEventListener('resize', setContainerPadding);
-  }, [replyTo, imageFile]);
 
   const getOtherParticipant = () => {
     return chatInfo?.participants?.find((p) => p._id !== user?._id);
@@ -228,8 +129,8 @@ const ChatRoom = () => {
   const otherUser = getOtherParticipant();
 
   return (
-    <div ref={containerRef} className="mx-auto flex max-w-7xl flex-col overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.98))] shadow-[0_24px_60px_rgba(15,23,42,0.10)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(6,11,21,0.995),rgba(3,7,18,0.995))] dark:shadow-[0_30px_80px_rgba(0,0,0,0.28)]" style={{height: 'calc(var(--app-height, 100vh) - 24px)'}}>
-      <div ref={headerRef} className="absolute left-0 right-0 top-0 z-50 border-b border-border/70 bg-background/100 px-4 py-3 backdrop-blur-xl dark:border-white/10 dark:bg-[#071018] sm:px-5 shadow-sm">
+    <div className="mx-auto flex h-[calc(100dvh-24px)] max-w-7xl flex-col overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.98))] shadow-[0_24px_60px_rgba(15,23,42,0.10)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(6,11,21,0.995),rgba(3,7,18,0.995))] dark:shadow-[0_30px_80px_rgba(0,0,0,0.28)]">
+      <div className="sticky top-0 z-30 border-b border-border/70 bg-background/100 px-4 py-3 backdrop-blur-xl shadow-sm dark:border-white/10 dark:bg-[#071018] sm:px-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <Button
@@ -297,7 +198,7 @@ const ChatRoom = () => {
         </div>
       </div>
 
-      <div ref={messagesContainerRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_20%)] px-4 pb-32 sm:pb-6 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.07),transparent_22%),linear-gradient(180deg,rgba(8,15,28,0.28),rgba(5,10,20,0.08))] sm:px-6">
+      <div ref={messagesContainerRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_20%)] px-4 py-4 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.07),transparent_22%),linear-gradient(180deg,rgba(8,15,28,0.28),rgba(5,10,20,0.08))] sm:px-6">
         {isLoading && messages.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -343,10 +244,7 @@ const ChatRoom = () => {
         </button>
       )}
 
-      {typeof document !== 'undefined' && createPortal(
-        <div className="sm:static fixed left-0 right-0 bottom-0 z-50 sm:z-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <form onSubmit={handleSend} className="border-t border-border/70 bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.95),rgba(7,12,20,0.99))] rounded-t-xl sm:rounded-none">
+      <form onSubmit={handleSend} className="shrink-0 border-t border-border/70 bg-background/95 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.95),rgba(7,12,20,0.99))]">
               {replyTo && (
                 <div className="mb-3 flex items-start justify-between gap-3 rounded-[1rem] border border-primary/15 bg-primary/5 px-4 py-3">
                   <div className="min-w-0">
@@ -401,8 +299,6 @@ const ChatRoom = () => {
                       if (ta) {
                         ta.style.height = 'auto';
                         ta.style.height = `${ta.scrollHeight}px`;
-                        const container = messagesContainerRef.current;
-                        if (container) container.style.paddingBottom = `${ta.offsetHeight + 24}px`;
                       }
                     }}
                     placeholder="Write a message..."
@@ -426,31 +322,13 @@ const ChatRoom = () => {
                         if (form) form.requestSubmit();
                       }
                     }}
-                    onFocus={() => {
-                      const ta = inputRef.current;
-                      const container = messagesContainerRef.current;
-                      if (container && ta) {
-                        ta.style.height = 'auto';
-                        ta.style.height = `${ta.scrollHeight}px`;
-                        container.style.paddingBottom = `${ta.offsetHeight + 24}px`;
-                        setTimeout(() => container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' }), 120);
-                        setShowScrollBtn(false);
-                      }
-                    }}
-                    onBlur={() => {
-                      const ta = inputRef.current;
-                      const container = messagesContainerRef.current;
-                      if (container && ta) {
-                        container.style.paddingBottom = `${ta.offsetHeight + 24}px`;
-                      }
-                    }}
                   />
                 </div>
 
                 <button
                   type="submit"
                   className={cn(
-                    'h-11 w-11 rounded-full p-0 btn-gradient-primary shadow-[0_12px_28px_rgba(20,184,166,0.24)] flex items-center justify-center',
+                    'flex h-11 w-11 items-center justify-center rounded-full p-0 btn-gradient-primary shadow-[0_12px_28px_rgba(20,184,166,0.24)]',
                     isSending && 'opacity-80'
                   )}
                   disabled={isSending || (!messageText.trim() && !imageFile)}
@@ -458,10 +336,7 @@ const ChatRoom = () => {
                   {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </button>
               </div>
-            </form>
-          </div>
-        </div>, document.body)
-      }
+      </form>
     </div>
   );
 };

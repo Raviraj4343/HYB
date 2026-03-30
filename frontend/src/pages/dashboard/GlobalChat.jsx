@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { Loader2, MessagesSquare, Reply, Send, ShieldBan, Trash2, Users, X, Plus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGlobalChat } from '../../hooks/useChat';
@@ -21,46 +20,11 @@ const GlobalChat = () => {
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
-  const containerRef = useRef(null);
-  const headerRef = useRef(null);
   const inputRef = useRef(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const GLOBAL_CHAT_LAST_SEEN_KEY = 'globalChatLastSeenAt';
 
   const canBlockUsers = user?.role === 'super_admin' || user?.role === 'admin';
-
-  useEffect(() => {
-    const adjustLayout = () => {
-      try {
-        const headerH = headerRef.current?.offsetHeight || 0;
-        const inputH = inputRef.current?.offsetHeight || 80;
-        const vv = window.visualViewport;
-        const viewportH = vv ? vv.height : window.innerHeight;
-
-        if (containerRef.current) containerRef.current.style.height = `${viewportH - headerH}px`;
-        if (messagesContainerRef.current) {
-          // add larger buffer to avoid header overlap (tails/shadow)
-          const topBuffer = headerH + 44;
-          messagesContainerRef.current.style.paddingTop = `${topBuffer}px`;
-          messagesContainerRef.current.style.paddingBottom = `${inputH + 24}px`;
-          messagesContainerRef.current.style.scrollPaddingTop = `${topBuffer}px`;
-        }
-        document.documentElement.style.setProperty('--app-height', `${viewportH}px`);
-      } catch (e) {}
-    };
-
-    adjustLayout();
-    // recalc shortly after to account for avatar/image load and font rendering
-    setTimeout(adjustLayout, 120);
-    const onResize = () => adjustLayout();
-    const onVVResize = () => adjustLayout();
-    window.addEventListener('resize', onResize);
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', onVVResize);
-    return () => {
-      window.removeEventListener('resize', onResize);
-      if (window.visualViewport) window.visualViewport.removeEventListener('resize', onVVResize);
-    };
-  }, []);
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -85,61 +49,6 @@ const GlobalChat = () => {
     container?.addEventListener('scroll', onScroll);
     return () => container?.removeEventListener('scroll', onScroll);
   }, []);
-
-  // Ensure input stays visible when mobile keyboard opens (Android/iOS adjustments)
-  useEffect(() => {
-    const adjustForKeyboard = () => {
-      try {
-        const headerH = headerRef.current?.offsetHeight || 0;
-        const vv = window.visualViewport;
-        const viewportH = vv ? vv.height : window.innerHeight;
-        if (containerRef.current) containerRef.current.style.height = `${viewportH - headerH}px`;
-        document.documentElement.style.setProperty('--app-height', `${viewportH}px`);
-        setTimeout(() => {
-          messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' });
-          setShowScrollBtn(false);
-        }, 120);
-      } catch (e) {}
-    };
-
-    const onFocusIn = (e) => {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) adjustForKeyboard();
-    };
-
-    const onVVResize = () => {
-      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) adjustForKeyboard();
-    };
-
-    document.addEventListener('focusin', onFocusIn);
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', onVVResize);
-
-    return () => {
-      document.removeEventListener('focusin', onFocusIn);
-      if (window.visualViewport) window.visualViewport.removeEventListener('resize', onVVResize);
-    };
-  }, []);
-
-  // Keep messages container padded so input doesn't overlap messages
-  useEffect(() => {
-    const setPadding = () => {
-      const inputEl = inputRef.current;
-      const container = messagesContainerRef.current;
-      if (!container) return;
-      const h = inputEl?.offsetHeight || 80;
-      container.style.paddingBottom = `${h + 24}px`;
-      // ensure view remains at bottom after input size change
-      setTimeout(() => {
-        try {
-          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-          setShowScrollBtn(false);
-        } catch (e) {}
-      }, 60);
-    };
-
-    setPadding();
-    window.addEventListener('resize', setPadding);
-    return () => window.removeEventListener('resize', setPadding);
-  }, [replyTo, messageText]);
 
   const activeParticipants = useMemo(() => {
     const seen = new Map();
@@ -209,14 +118,14 @@ const GlobalChat = () => {
   };
 
   return (
-    <div ref={containerRef} className="relative mx-auto flex max-w-7xl flex-col overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,rgba(255,255,255,0.68),rgba(255,255,255,0.24))] p-2 shadow-[0_18px_42px_rgba(15,23,42,0.08)] dark:bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.08),transparent_24%),linear-gradient(180deg,rgba(7,12,20,0.98),rgba(11,18,32,0.98))] dark:shadow-[0_24px_56px_rgba(0,0,0,0.22)] sm:p-3" style={{height: 'calc(var(--app-height, 100vh) - 32px)'}}>
+    <div className="relative mx-auto flex h-[calc(100dvh-32px)] max-w-7xl flex-col overflow-hidden rounded-[2rem] bg-[linear-gradient(135deg,rgba(255,255,255,0.68),rgba(255,255,255,0.24))] p-2 shadow-[0_18px_42px_rgba(15,23,42,0.08)] dark:bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.08),transparent_24%),linear-gradient(180deg,rgba(7,12,20,0.98),rgba(11,18,32,0.98))] dark:shadow-[0_24px_56px_rgba(0,0,0,0.22)] sm:p-3">
       <div className="pointer-events-none absolute left-0 top-0 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-0 h-56 w-56 rounded-full bg-sky-500/10 blur-3xl" />
 
       <Card className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.8rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.84))] shadow-[0_24px_54px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(7,12,20,0.96),rgba(12,18,32,0.96))] dark:shadow-[0_24px_54px_rgba(0,0,0,0.28)]">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.1),transparent_18%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent_30%)]" />
         <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-          <div ref={headerRef} className="absolute left-0 right-0 top-0 z-50 border-b border-border/70 bg-background/100 px-4 py-3 backdrop-blur-md shadow-sm dark:border-white/10 dark:bg-[#071018] sm:px-5">
+          <div className="sticky top-0 z-30 border-b border-border/70 bg-background/100 px-4 py-3 backdrop-blur-md shadow-sm dark:border-white/10 dark:bg-[#071018] sm:px-5">
             <div className="flex items-center gap-3">
               <div className="flex -space-x-3 shrink-0">
                 {activeParticipants.length > 0 ? (
@@ -256,7 +165,7 @@ const GlobalChat = () => {
             </div>
           </div>
 
-          <div ref={messagesContainerRef} className="relative flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] px-4 pt-0 pb-32 sm:pb-5 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_28%),linear-gradient(180deg,rgba(7,12,20,0.3),rgba(7,12,20,0.06))] sm:px-5">
+          <div ref={messagesContainerRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.05),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))] px-4 py-4 custom-scrollbar dark:bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.06),transparent_28%),linear-gradient(180deg,rgba(7,12,20,0.3),rgba(7,12,20,0.06))] sm:px-5">
             {isLoading && messages.length === 0 ? (
               <div className="flex h-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -297,10 +206,7 @@ const GlobalChat = () => {
             </button>
           )}
 
-          {typeof document !== 'undefined' && createPortal(
-            <div className="sm:static fixed left-0 right-0 bottom-0 z-50 sm:z-auto">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6">
-                <div className="border-t border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.86),rgba(248,250,252,0.92))] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.88),rgba(7,12,20,0.98))] sm:p-4">
+          <div className="shrink-0 border-t border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.86),rgba(248,250,252,0.92))] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(9,15,27,0.88),rgba(7,12,20,0.98))] sm:p-4">
                   {replyTo && (
                     <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
                       <div className="min-w-0">
@@ -325,7 +231,7 @@ const GlobalChat = () => {
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm text-muted-foreground flex items-center justify-center"
+                        className="flex h-10 w-10 items-center justify-center rounded-full border border-border/70 bg-background/80 text-muted-foreground shadow-sm"
                         onClick={() => {
                           // reserved for future quick actions (emoji/attachments)
                         }}
@@ -342,13 +248,10 @@ const GlobalChat = () => {
                         value={messageText}
                         onChange={(e) => {
                           setMessageText(e.target.value);
-                          // auto grow
                           const ta = inputRef.current;
                           if (ta) {
                             ta.style.height = 'auto';
                             ta.style.height = `${ta.scrollHeight}px`;
-                            const container = messagesContainerRef.current;
-                            if (container) container.style.paddingBottom = `${ta.offsetHeight + 24}px`;
                           }
                         }}
                         placeholder="Message the whole community..."
@@ -359,27 +262,8 @@ const GlobalChat = () => {
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey) {
                             e.preventDefault();
-                            // submit
                             const form = e.target.form;
                             if (form) form.requestSubmit();
-                          }
-                        }}
-                        onFocus={() => {
-                          const ta = inputRef.current;
-                          const container = messagesContainerRef.current;
-                          if (container && ta) {
-                            ta.style.height = 'auto';
-                            ta.style.height = `${ta.scrollHeight}px`;
-                            container.style.paddingBottom = `${ta.offsetHeight + 24}px`;
-                            setTimeout(() => container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' }), 120);
-                            setShowScrollBtn(false);
-                          }
-                        }}
-                        onBlur={() => {
-                          const ta = inputRef.current;
-                          const container = messagesContainerRef.current;
-                          if (container && ta) {
-                            container.style.paddingBottom = `${ta.offsetHeight + 24}px`;
                           }
                         }}
                       />
@@ -387,16 +271,13 @@ const GlobalChat = () => {
 
                     <button
                       type="submit"
-                      className={cn("h-10 w-10 rounded-full p-0 btn-gradient-primary shadow-[0_12px_28px_rgba(20,184,166,0.24)] flex items-center justify-center", isSending && "opacity-80")}
+                      className={cn("flex h-10 w-10 items-center justify-center rounded-full p-0 btn-gradient-primary shadow-[0_12px_28px_rgba(20,184,166,0.24)]", isSending && "opacity-80")}
                       disabled={isSending || !messageText.trim()}
                     >
                       {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </button>
                   </form>
-                </div>
-              </div>
-            </div>, document.body)
-          }
+          </div>
         </CardContent>
       </Card>
     </div>
