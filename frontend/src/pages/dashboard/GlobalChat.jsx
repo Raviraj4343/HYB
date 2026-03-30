@@ -31,11 +31,19 @@ const GlobalChat = () => {
   useEffect(() => {
     const handleResize = () => {
       if (containerRef.current && headerRef.current) {
-        const h = window.innerHeight - headerRef.current.offsetHeight;
+        const headerH = headerRef.current.offsetHeight || 0;
+        // Set outer container height to viewport minus header so header remains visible
+        const h = window.innerHeight - headerH;
         containerRef.current.style.height = `${h}px`;
+
+        // Keep messages container padded below the absolute header
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.style.paddingTop = `${headerH + 12}px`;
+        }
       }
       document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
     };
+
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -196,8 +204,7 @@ const GlobalChat = () => {
       <Card className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.8rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.84))] shadow-[0_24px_54px_rgba(15,23,42,0.08)] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(7,12,20,0.96),rgba(12,18,32,0.96))] dark:shadow-[0_24px_54px_rgba(0,0,0,0.28)]">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(20,184,166,0.08),transparent_22%),radial-gradient(circle_at_80%_20%,rgba(59,130,246,0.1),transparent_18%),linear-gradient(180deg,rgba(255,255,255,0.015),transparent_30%)]" />
         <CardContent className="flex min-h-0 flex-1 flex-col p-0">
-          <div ref={headerRef} className="border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.84))] px-4 py-4 backdrop-blur-md dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(12,18,32,0.96))] sm:px-5">
-          <div ref={headerRef} className="sticky top-0 z-30 border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.84))] px-4 py-3 backdrop-blur-md shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(12,18,32,0.96))] sm:px-5">
+          <div ref={headerRef} className="absolute left-0 right-0 top-0 z-30 border-b border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.84))] px-4 py-3 backdrop-blur-md shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(12,18,32,0.96))] sm:px-5">
             <div className="flex items-center gap-3">
               <div className="flex -space-x-3 shrink-0">
                 {activeParticipants.length > 0 ? (
@@ -255,7 +262,7 @@ const GlobalChat = () => {
 
                 return (
                   <div key={message._id} className="group mb-5 flex gap-3 last:mb-0">
-                    <Avatar className="mt-1 h-10 w-10 shrink-0 border border-border/70 shadow-sm sm:h-11 sm:w-11">
+                    <Avatar className="mt-1 h-11 w-11 shrink-0 border border-border/70 shadow-sm">
                       <AvatarImage src={message.sender?.avatar} alt={message.sender?.fullName} />
                       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                         {getInitials(message.sender?.fullName)}
@@ -272,10 +279,10 @@ const GlobalChat = () => {
                       </div>
 
                       <div className={cn(
-                        "mt-2 max-w-[min(720px,100%)] rounded-[1.35rem] border px-4 py-3 shadow-[0_14px_28px_rgba(0,0,0,0.16)] backdrop-blur-md",
+                        'mt-2 max-w-[min(720px,100%)] rounded-2xl px-4 py-3 shadow-sm',
                         isOwn
-                          ? "border-primary/20 bg-[linear-gradient(135deg,rgba(20,184,166,0.16),rgba(59,130,246,0.12))]"
-                          : "border-border/70 bg-background/85 dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(17,24,39,0.94),rgba(10,15,28,0.92))]"
+                          ? 'border-emerald-600 bg-emerald-600 text-white'
+                          : 'border-border/70 bg-slate-800 text-slate-200 dark:border-white/10 dark:bg-[#0b1220]'
                       )}>
                         {message.replyTo && (
                           <div className="mb-3 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-sm">
@@ -348,7 +355,7 @@ const GlobalChat = () => {
                 messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' });
                 setShowScrollBtn(false);
               }}
-              className="fixed right-4 bottom-28 z-40 rounded-full bg-primary p-3 text-white shadow-lg"
+              className="fixed bottom-[calc(env(safe-area-inset-bottom)+5.25rem)] right-20 z-40 rounded-full bg-primary p-3 text-white shadow-lg sm:bottom-28 sm:right-4"
               aria-label="Scroll to latest"
             >
               <Send className="transform rotate-90 h-4 w-4" />
@@ -395,28 +402,49 @@ const GlobalChat = () => {
 
                     <div className="relative flex-1">
                       <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[linear-gradient(135deg,rgba(20,184,166,0.08),rgba(59,130,246,0.06))]" />
-                      <input
+                      <textarea
                         ref={inputRef}
                         value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
+                        onChange={(e) => {
+                          setMessageText(e.target.value);
+                          // auto grow
+                          const ta = inputRef.current;
+                          if (ta) {
+                            ta.style.height = 'auto';
+                            ta.style.height = `${ta.scrollHeight}px`;
+                            const container = messagesContainerRef.current;
+                            if (container) container.style.paddingBottom = `${ta.offsetHeight + 24}px`;
+                          }
+                        }}
                         placeholder="Message the whole community..."
-                        className="relative z-10 h-12 w-full rounded-full border border-slate-800 bg-slate-950 px-4 text-[15px] font-medium text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.24)] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
-                        style={{ backgroundColor: '#020617', color: '#f8fafc', WebkitTextFillColor: '#f8fafc', caretColor: '#f8fafc' }}
+                        rows={1}
+                        className="relative z-10 min-h-[44px] max-h-44 w-full resize-none rounded-full border border-slate-800 bg-slate-950 px-4 py-3 text-[15px] font-medium text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.24)] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
+                        style={{ backgroundColor: '#020617', color: '#f8fafc', WebkitTextFillColor: '#f8fafc', caretColor: '#f8fafc', overflow: 'hidden' }}
                         disabled={isSending}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            // submit
+                            const form = e.target.form;
+                            if (form) form.requestSubmit();
+                          }
+                        }}
                         onFocus={() => {
-                          const inputEl = inputRef.current;
+                          const ta = inputRef.current;
                           const container = messagesContainerRef.current;
-                          if (container && inputEl) {
-                            container.style.paddingBottom = `${inputEl.offsetHeight + 24}px`;
+                          if (container && ta) {
+                            ta.style.height = 'auto';
+                            ta.style.height = `${ta.scrollHeight}px`;
+                            container.style.paddingBottom = `${ta.offsetHeight + 24}px`;
                             setTimeout(() => container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' }), 120);
                             setShowScrollBtn(false);
                           }
                         }}
                         onBlur={() => {
-                          const inputEl = inputRef.current;
+                          const ta = inputRef.current;
                           const container = messagesContainerRef.current;
-                          if (container && inputEl) {
-                            container.style.paddingBottom = `${inputEl.offsetHeight + 24}px`;
+                          if (container && ta) {
+                            container.style.paddingBottom = `${ta.offsetHeight + 24}px`;
                           }
                         }}
                       />

@@ -53,11 +53,17 @@ const ChatRoom = () => {
   useEffect(() => {
     const handleResize = () => {
       if (containerRef.current && headerRef.current) {
-        const h = window.innerHeight - headerRef.current.offsetHeight;
+        const headerH = headerRef.current.offsetHeight || 0;
+        const h = window.innerHeight - headerH;
         containerRef.current.style.height = `${h}px`;
+
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.style.paddingTop = `${headerH + 12}px`;
+        }
       }
       document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
     };
+
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -198,7 +204,7 @@ const ChatRoom = () => {
 
   return (
     <div ref={containerRef} className="mx-auto flex max-w-7xl flex-col overflow-hidden rounded-[2rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(248,250,252,0.98))] shadow-[0_24px_60px_rgba(15,23,42,0.10)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(6,11,21,0.995),rgba(3,7,18,0.995))] dark:shadow-[0_30px_80px_rgba(0,0,0,0.28)]" style={{height: 'calc(var(--app-height, 100vh) - 24px)'}}>
-      <div ref={headerRef} className="sticky top-0 z-30 border-b border-border/70 bg-background/90 px-4 py-3 backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(13,20,35,0.97),rgba(8,13,24,0.98))] sm:px-5 shadow-sm">
+      <div ref={headerRef} className="absolute left-0 right-0 top-0 z-30 border-b border-border/70 bg-background/90 px-4 py-3 backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(13,20,35,0.97),rgba(8,13,24,0.98))] sm:px-5 shadow-sm">
         <div className="flex items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <Button
@@ -289,7 +295,7 @@ const ChatRoom = () => {
               return (
                 <div key={message._id} className={cn('flex items-end gap-2', isOwn ? 'justify-end' : 'justify-start')}>
                   {!isOwn && (
-                    <Avatar className="mb-1 h-8 w-8 border border-border/70 shadow-sm dark:border-white/10">
+                    <Avatar className="mb-1 h-11 w-11 border border-border/70 shadow-sm dark:border-white/10">
                       <AvatarImage src={message.sender?.avatar || otherUser?.avatar} />
                       <AvatarFallback className="bg-primary/10 text-[10px] font-semibold text-primary">
                         {getInitials(message.sender?.fullName || otherUser?.fullName)}
@@ -298,14 +304,7 @@ const ChatRoom = () => {
                   )}
 
                   <div className={cn('group relative max-w-[min(78%,34rem)]', isOwn ? 'items-end' : 'items-start')}>
-                    <div
-                      className={cn(
-                        'rounded-[1.25rem] border px-4 py-2.5 shadow-[0_14px_28px_rgba(15,23,42,0.08)]',
-                        isOwn
-                          ? 'rounded-br-md border-primary/20 bg-[linear-gradient(135deg,rgba(37,211,102,0.26),rgba(20,184,166,0.2))] text-foreground dark:text-white'
-                          : 'rounded-bl-md border-border/70 bg-background/95 text-foreground dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(14,20,36,0.96),rgba(5,10,20,0.97))] dark:text-white'
-                      )}
-                    >
+                    <div className={cn('rounded-2xl px-4 py-3 shadow-sm', isOwn ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-border/70 bg-slate-800 text-slate-200 dark:border-white/10 dark:bg-[#0b1220]')}>
                       {message.replyTo && (
                         <div className="mb-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-xs">
                           <div className="font-medium text-primary">
@@ -423,37 +422,56 @@ const ChatRoom = () => {
 
                 <div className="relative flex-1">
                   <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[linear-gradient(135deg,rgba(20,184,166,0.12),rgba(59,130,246,0.08))]" />
-                  <input
+                  <textarea
                     ref={inputRef}
-                    type="text"
                     value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
+                    onChange={(e) => {
+                      setMessageText(e.target.value);
+                      const ta = inputRef.current;
+                      if (ta) {
+                        ta.style.height = 'auto';
+                        ta.style.height = `${ta.scrollHeight}px`;
+                        const container = messagesContainerRef.current;
+                        if (container) container.style.paddingBottom = `${ta.offsetHeight + 24}px`;
+                      }
+                    }}
                     placeholder="Write a message..."
                     autoComplete="off"
                     spellCheck={false}
-                    className="h-11 w-full rounded-full border border-slate-900 !bg-slate-950 px-5 text-[15px] font-medium !text-slate-100 placeholder:!text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.26)] outline-none transition focus:border-primary/35 focus:ring-2 focus:ring-primary/20 dark:border-slate-900 dark:!bg-slate-950 dark:!text-slate-100 dark:placeholder:!text-slate-500"
+                    rows={1}
+                    className="min-h-[44px] max-h-44 w-full resize-none rounded-full border border-slate-900 !bg-slate-950 px-4 py-3 text-[15px] font-medium !text-slate-100 placeholder:!text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.26)] outline-none transition focus:border-primary/35 focus:ring-2 focus:ring-primary/20 dark:border-slate-900 dark:!bg-slate-950 dark:!text-slate-100 dark:placeholder:!text-slate-500"
                     style={{
                       background: '#020617',
                       color: '#f8fafc',
                       WebkitTextFillColor: '#f8fafc',
                       caretColor: '#f8fafc',
                       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 0 0 1px rgba(15,23,42,0.26)',
+                      overflow: 'hidden'
                     }}
                     disabled={isSending}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        const form = e.target.form;
+                        if (form) form.requestSubmit();
+                      }
+                    }}
                     onFocus={() => {
-                      const inputEl = inputRef.current;
+                      const ta = inputRef.current;
                       const container = messagesContainerRef.current;
-                      if (container && inputEl) {
-                        container.style.paddingBottom = `${inputEl.offsetHeight + 24}px`;
+                      if (container && ta) {
+                        ta.style.height = 'auto';
+                        ta.style.height = `${ta.scrollHeight}px`;
+                        container.style.paddingBottom = `${ta.offsetHeight + 24}px`;
                         setTimeout(() => container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' }), 120);
                         setShowScrollBtn(false);
                       }
                     }}
                     onBlur={() => {
-                      const inputEl = inputRef.current;
+                      const ta = inputRef.current;
                       const container = messagesContainerRef.current;
-                      if (container && inputEl) {
-                        container.style.paddingBottom = `${inputEl.offsetHeight + 24}px`;
+                      if (container && ta) {
+                        container.style.paddingBottom = `${ta.offsetHeight + 24}px`;
                       }
                     }}
                   />
