@@ -1,111 +1,127 @@
-# HYB — Help Your Buddy
+# 🚀 HYB — Help Your Buddy
 
-**HYB** (Help Your Buddy) is a collaborative Q&A platform where users can ask questions and help each other through shared knowledge and community support. It’s built with a modern frontend and backend architecture to enable seamless interaction and knowledge exchange within a community.
-
-## 🎯 Why HYB?
-Many students struggle to find timely help for doubts, especially in peer groups.
-HYB is built to encourage **buddy-based learning**, where anyone can ask questions
-and others can help — creating a supportive, community-driven learning environment.
-
-🔗 Live Demo: https://hyb-delta.vercel.app/ 
+> A community-driven platform where students can request help and support each other during critical situations.
 
 ---
 
-## 🚀 Features
-
-- 💬 Ask and answer questions
-- 📚 Community-driven knowledge sharing
-- 👥 User authentication and profiles
-- ⚡ Responsive frontend UI
-- 📦 Structured backend APIs
-- 🚀 Easily deployable
+## 🌐 Live Links
+- 🔗 Frontend: https://hyb-delta.vercel.app/
+- 🔗 Backend: (add your backend URL here)
 
 ---
 
-## 🧠 Tech Stack
+## 📌 Features
 
-| Part        | Technology                    |
-|-------------|-------------------------------|
-| Frontend    | React / Next.js (JavaScript/TypeScript) |
-| Backend     | Node.js / Express             |
-| Database    | MongoDB (or similar)          |
-| Deployment  | Vercel / Heroku / Render     |
-| Languages   | JavaScript, TypeScript, CSS   |
+- 🆘 Create and respond to help requests  
+- 💬 One-to-one real-time chat system  
+- 👤 User profiles with role-based access  
+- 🛡️ Admin moderation (block/unblock users)  
+- 🚨 Report system for misuse   
+- ⚡ Real-time updates using Socket.IO  
 
-*Languages shown based on GitHub stats.* :contentReference[oaicite:4]{index=4}
+---
+
+## 🛠️ Tech Stack
+
+### 🔹 Backend
+- Node.js
+- Express.js
+- MongoDB + Mongoose
+- Socket.IO
+
+### 🔹 Frontend
+- React (Vite)
+- Tailwind CSS
+- shadcn/ui + Radix UI
 
 ---
 
 ## 📁 Project Structure
-
-```bash
 HYB/
-├── frontend/        # React / Next.js application
-├── backend/         # Express API server
-├── .env.example     # Example environment variables
-├── package.json
-└── README.md
+│
+├── backend/
+│ ├── src/controllers
+│ ├── src/models
+│ ├── src/routes
+│ └── app.js
+│
+├── frontend/
+│ ├── src/pages
+│ ├── src/components
+│ ├── src/hooks
+│ └── axios.ts
+
+
+---
+
+## ⚙️ Environment Variables
+
+### Backend `.env`
+
+PORT=8000
+
+MONGO_URI=your_mongodb_uri
+
+ACCESS_TOKEN_SECRET=your_secret
+
+ACCESS_TOKEN_EXPIRY=1d
+
+REFRESH_TOKEN_SECRET=your_secret
+
+REFRESH_TOKEN_EXPIRY=7d
+
+CLOUDINARY_CLOUD_NAME=
+
+CLOUDINARY_API_KEY=
+
+CLOUDINARY_API_SECRET=
+
+
+### Frontend `.env`
+
+VITE_API_URL=http://localhost:8000/api/v1
 
 
 
 ---
 
-## 🛠 Setup — Development
+## 🚀 Run Locally
 
-### 🧾 Prerequisites
-
-Make sure you have installed:
-
-- Node.js (v16+)
-- npm or yarn
-- MongoDB (local or Atlas)
-
----
-
-### 🔧 Clone Repository
+### 🔹 Backend
 
 ```bash
-git clone https://github.com/vagabondraj/HYB.git
-cd HYB
-
-📌 Backend Setup
 cd backend
 npm install
-
-
-Create a .env file:
-
-PORT=5000
-MONGO_URI=your_mongo_connection_string
-JWT_SECRET=your_jwt_secret
-
-
-Start server:
-
 npm run dev
 
-📌 Frontend Setup
-cd ../frontend
+cd frontend
 npm install
-
-
-Create a .env file:
-
-NEXT_PUBLIC_API_URL=http://localhost:5000
-
-
-Start frontend:
-
 npm run dev
 
-## 📜 License
+response
+🛡️ Admin Features
+Block / Unblock users
+Moderate reported content
 
-This project is licensed under the MIT License.
+🧠 Key Highlights
+🔐 Role-based authentication system
+⚡ Optimized backend architecture
+🎯 Clean and responsive UI
 
-## 👤 Author
+🧪 Testing
+cd frontend
+npm run test
 
-**Ravi Raj**  
-GitHub: https://github.com/vagabondraj
+📄 License
 
+ISC License
 
+👨‍💻 Author
 
+Ravi Raj
+
+BTech CSE @ BIT Mesra
+Backend + Full Stack Developer
+⭐ Support
+
+If you like this project, give it a ⭐ on GitHub!
