@@ -27,6 +27,7 @@ import { useSocket } from '../../context/SocketContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useNotifications } from '../../hooks/useNotifications';
 import api from '../../api/axios';
+import useSmartBackNavigation from '../../hooks/useSmartBackNavigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +41,7 @@ const DashboardLayout = () => {
   const { unreadCount } = useNotifications(true);
   const location = useLocation();
   const navigate = useNavigate();
+  const goBack = useSmartBackNavigation('/dashboard');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [communityUnreadCount, setCommunityUnreadCount] = useState(0);
 
@@ -85,7 +87,7 @@ const DashboardLayout = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   useEffect(() => {
@@ -632,7 +634,7 @@ const DashboardLayout = () => {
                   variant="ghost"
                   size="sm"
                   className="h-10 rounded-full border border-border/70 bg-card/80 px-3 text-muted-foreground shadow-sm hover:border-primary/30 hover:bg-card hover:text-foreground"
-                  onClick={() => navigate(-1)}
+                  onClick={goBack}
                 >
                   <ArrowLeft className="mr-1.5 h-4 w-4" />
                   Back

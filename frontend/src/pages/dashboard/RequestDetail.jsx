@@ -25,10 +25,12 @@ import {
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
+import useSmartBackNavigation from '@/hooks/useSmartBackNavigation';
 
 const RequestDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const goBackToRequests = useSmartBackNavigation('/dashboard/requests');
   const { user } = useAuth();
   
   const [request, setRequest] = useState(null);
@@ -187,7 +189,7 @@ const RequestDetail = () => {
         <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
         <h3 className="font-semibold text-foreground mb-2">Request not found</h3>
         <p className="text-sm text-muted-foreground mb-4">{error}</p>
-        <Button onClick={() => navigate('/dashboard/requests')}>Back to Requests</Button>
+        <Button onClick={goBackToRequests}>Back to Requests</Button>
       </div>
     );
   }

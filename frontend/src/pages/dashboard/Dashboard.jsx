@@ -233,41 +233,59 @@ const Dashboard = () => {
       </motion.section>
 
       <section
-        className="gap-6"
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-          alignItems: 'stretch',
-        }}
+        className="grid gap-6 items-stretch"
+        style={{ gridTemplateColumns: 'repeat(2, 1fr)', gridTemplateRows: 'repeat(3, 1fr)', minHeight: 'calc(100vh - 360px)' }}
       >
-        {allTiles.map((tile, index) => (
-          <motion.div
-            key={tile.label || tile.title}
-            initial={tileMotion.initial}
-            animate={tileMotion.animate}
-            whileHover={tileMotion.whileHover}
-            transition={{ ...tileMotion.transition, delay: 0.06 * index }}
-            className="group min-w-0"
-            style={{ width: '100%' }}
-          >
-            <Card
-              className={`relative h-full min-h-[140px] cursor-pointer overflow-hidden rounded-[1.2rem] border border-border/70 bg-gradient-to-br ${tile.accent} shadow-[0_12px_30px_rgba(0,0,0,0.12)] transition-all duration-300 group-hover:border-primary/35 group-hover:shadow-[0_18px_40px_rgba(20,184,166,0.08)]`}
-              onClick={() => navigate(tile.path)}
+        {(() => {
+          const tiles = [...allTiles];
+          while (tiles.length < 6) tiles.push(null);
+          return tiles.map((tile, index) => (
+            <motion.div
+              key={index}
+              initial={tileMotion.initial}
+              animate={tileMotion.animate}
+              whileHover={tileMotion.whileHover}
+              transition={{ ...tileMotion.transition, delay: 0.06 * index }}
+              className="group min-w-0 h-full"
             >
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.10),transparent_34%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-80" />
-              <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-3xl opacity-70 transition-opacity duration-300 group-hover:opacity-100" />
-              <CardContent className="flex h-full flex-col p-4 items-center justify-center text-center">
-                <div className="flex flex-col items-center gap-3">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${tile.iconBg} ring-1 ring-white/8 transition-all duration-300 group-hover:scale-105`}>
-                    <tile.icon className="h-5 w-5" />
-                  </div>
-                  <div className="text-base font-display font-semibold text-foreground truncate">{tile.label || tile.title}</div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        ))}
+              {tile ? (
+                <Card
+                  className={`relative h-full min-h-[140px] cursor-pointer overflow-hidden rounded-[1.2rem] border border-border/70 bg-gradient-to-br ${tile.accent} shadow-[0_12px_30px_rgba(0,0,0,0.12)] transition-all duration-300 group-hover:border-primary/35 group-hover:shadow-[0_18px_40px_rgba(20,184,166,0.08)]`}
+                  onClick={() => navigate(tile.path)}
+                >
+                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.10),transparent_34%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                  <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-80" />
+                  <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-primary/10 blur-3xl opacity-70 transition-opacity duration-300 group-hover:opacity-100" />
+                  <CardContent className="flex h-full flex-col p-4 items-center justify-center text-center">
+                    <div className="flex flex-col items-center gap-3">
+                      {tile.kind === 'live' && typeof tile.value !== 'undefined' ? (
+                        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-white/6 text-foreground text-2xl font-semibold">
+                          {tile.value}
+                        </div>
+                      ) : (
+                        <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${tile.iconBg} ring-1 ring-white/8 transition-all duration-300 group-hover:scale-105`}>
+                          <tile.icon className="h-5 w-5" />
+                        </div>
+                      )}
+
+                      <div className="text-base font-display font-semibold text-foreground truncate">{tile.label || tile.title}</div>
+
+                      {tile.kind !== 'live' && typeof tile.value !== 'undefined' && (
+                        <div className="text-sm text-foreground/70 mt-1">{tile.value}</div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="relative h-full min-h-[140px] rounded-[1.2rem] border border-border/40 bg-card/80 opacity-30">
+                  <CardContent className="flex h-full items-center justify-center">
+                    <div className="text-sm text-muted-foreground">&nbsp;</div>
+                  </CardContent>
+                </Card>
+              )}
+            </motion.div>
+          ));
+        })()}
       </section>
     </div>
   );

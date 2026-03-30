@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import useSmartBackNavigation from '@/hooks/useSmartBackNavigation';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -21,6 +22,7 @@ import {
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
+  const goBackToLogin = useSmartBackNavigation('/login');
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [submittedEmail, setSubmittedEmail] = useState('');
@@ -101,7 +103,7 @@ const ForgotPassword = () => {
       if (accessToken) localStorage.setItem('accessToken', accessToken);
       if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
       if (user) localStorage.setItem('user', JSON.stringify(user));
-      navigate('/login');
+      navigate('/login', { replace: true });
     } catch (err) {
       toast.error(err.data?.message || err.response?.data?.message || err.message || 'Reset failed');
     } finally { setIsLoading(false); }
@@ -230,7 +232,7 @@ const ForgotPassword = () => {
                     </>
                   )}
                 </Button>
-                <Button type="button" variant="ghost" className="w-full" onClick={() => navigate('/login')}>
+                <Button type="button" variant="ghost" className="w-full" onClick={goBackToLogin}>
                   <ArrowLeft className="h-4 w-4" />
                   Back to sign in
                 </Button>

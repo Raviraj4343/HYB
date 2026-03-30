@@ -20,9 +20,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import useSmartBackNavigation from '@/hooks/useSmartBackNavigation';
 
 const Register = () => {
   const navigate = useNavigate();
+  const goBack = useSmartBackNavigation('/');
   const { register, verifyRegistration, resendVerificationCode } = useAuth();
 
   const [formData, setFormData] = useState({
@@ -32,6 +34,7 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     branch: '',
+    branchCustom: '',
     year: '',
     hostel: '',
   });
@@ -55,7 +58,7 @@ const Register = () => {
   };
 
   const handleSelectChange = (name, value) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value, ...(name === 'branch' && value !== 'Other' ? { branchCustom: '' } : {}) }));
   };
 
   const handleAvatarChange = (e) => {
@@ -126,7 +129,7 @@ const Register = () => {
       userName: formData.userName.trim().toLowerCase(),
       email: formData.email.trim().toLowerCase(),
       password: formData.password,
-      branch: formData.branch || undefined,
+      branch: formData.branch === 'Other' ? (formData.branchCustom || undefined) : (formData.branch || undefined),
       year: formData.year ? Number(formData.year) : undefined,
       hostel: formData.hostel || undefined,
       ...(avatarFile && { avatar: avatarFile }),
@@ -165,7 +168,7 @@ const Register = () => {
     setIsLoading(false);
 
     if (result.success) {
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
     }
   };
 
@@ -269,7 +272,7 @@ const Register = () => {
                   variant="secondary"
                   size="sm"
                   className="rounded-full px-3 text-muted-foreground hover:text-foreground"
-                  onClick={() => (stage === 'details' ? navigate(-1) : setStage('details'))}
+                  onClick={() => (stage === 'details' ? goBack() : setStage('details'))}
                 >
                   <ArrowLeft className="mr-1 h-4 w-4" />
                   Back
@@ -465,6 +468,7 @@ const Register = () => {
                               { value: 'CE', label: 'BTech - CE' },
                               { value: 'MTech', label: 'MTech' },
                               { value: 'BBA', label: 'BBA' },
+                              { value: 'Other', label: 'Other (enter manually)' },
                             ].map((opt) => (
                               <SelectItem key={opt.value} value={opt.value} className="text-foreground focus:bg-white/10 focus:text-foreground">
                                 {opt.label}
@@ -472,6 +476,19 @@ const Register = () => {
                             ))}
                           </SelectContent>
                         </Select>
+
+                        {formData.branch === 'Other' && (
+                          <Input
+                            id="branchCustom"
+                            name="branchCustom"
+                            className={compactInputClassName + ' mt-2'}
+                            style={inputStyle}
+                            placeholder="Enter your branch"
+                            value={formData.branchCustom}
+                            onChange={handleChange}
+                            disabled={isLoading}
+                          />
+                        )}
                       </div>
 
                       <div className="space-y-1.5">

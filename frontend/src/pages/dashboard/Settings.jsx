@@ -18,6 +18,7 @@ const Settings = () => {
   const [profileData, setProfileData] = useState({
     fullName: user?.fullName || '',
     branch: user?.branch || '',
+    customBranch: '',
     year: user?.year || '',
     hostel: user?.hostel || '',
   });
@@ -73,7 +74,8 @@ const Settings = () => {
   }
 
   // 2️⃣ Update profile fields ONLY
-  await updateProfile(profileData);
+  const finalBranch = profileData.branch === 'Other' ? (profileData.customBranch || '') : profileData.branch;
+  await updateProfile({ fullName: profileData.fullName, branch: finalBranch, year: profileData.year, hostel: profileData.hostel });
 
   setIsUpdatingProfile(false);
 };
@@ -186,7 +188,7 @@ const Settings = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="branch">Branch</Label>
-                    <Select value={profileData.branch} onValueChange={(v) => setProfileData(prev => ({ ...prev, branch: v }))}>
+                    <Select value={profileData.branch} onValueChange={(v) => setProfileData(prev => ({ ...prev, branch: v, ...(v !== 'Other' ? { customBranch: '' } : {}) }))}>
                       <SelectTrigger className="h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground">
                         <SelectValue placeholder="Branch" />
                       </SelectTrigger>
@@ -200,6 +202,7 @@ const Settings = () => {
                           { value: 'CE', label: 'BTech - CE' },
                           { value: 'MTech', label: 'MTech' },
                           { value: 'BBA', label: 'BBA' },
+                          { value: 'Other', label: 'Other (enter manually)' },
                         ].map((opt) => (
                           <SelectItem key={opt.value} value={opt.value} className="text-foreground focus:bg-white/10 focus:text-foreground">
                             {opt.label}
@@ -207,6 +210,16 @@ const Settings = () => {
                         ))}
                       </SelectContent>
                     </Select>
+
+                    {profileData.branch === 'Other' && (
+                      <Input
+                        id="customBranch"
+                        name="customBranch"
+                        value={profileData.customBranch}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, customBranch: e.target.value }))}
+                        placeholder="Enter your branch"
+                      />
+                    )}
                   </div>
 
                   <div className="space-y-2">

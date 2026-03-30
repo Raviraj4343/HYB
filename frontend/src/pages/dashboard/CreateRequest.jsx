@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { motion } from 'framer-motion';
+import useSmartBackNavigation from '@/hooks/useSmartBackNavigation';
 
 const CATEGORIES = [
   { value: 'medicine', label: '💊 Medicine', description: 'Medical supplies or health items' },
@@ -49,6 +50,7 @@ const EXPIRY_OPTIONS = [
 
 const CreateRequest = () => {
   const navigate = useNavigate();
+  const goBack = useSmartBackNavigation('/dashboard/requests');
   const [isLoading, setIsLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
   const [imageFile, setImageFile] = useState(null);
@@ -366,7 +368,7 @@ const CreateRequest = () => {
                   type="button" 
                   variant="outline" 
                   className="flex-1"
-                  onClick={() => navigate(-1)}
+                  onClick={goBack}
                   disabled={isLoading}
                 >
                   Cancel

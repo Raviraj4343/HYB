@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import useSmartBackNavigation from '@/hooks/useSmartBackNavigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Flag, Loader2 } from 'lucide-react';
@@ -21,6 +22,7 @@ const REPORT_REASONS = [
 
 const CreateReport = () => {
   const navigate = useNavigate();
+  const goBack = useSmartBackNavigation('/dashboard');
   const [searchParams] = useSearchParams();
   
   const userId = searchParams.get('userId') || '';
@@ -49,7 +51,7 @@ const CreateReport = () => {
     try {
       await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/report`, formData);
       toast.success('Report submitted successfully');
-      navigate(-1);
+      goBack();
     } catch (err) {
       toast.error(err.message || 'Failed to submit report');
     } finally {
