@@ -17,6 +17,7 @@ const Settings = () => {
   // Profile state
   const [profileData, setProfileData] = useState({
     fullName: user?.fullName || '',
+    phone: user?.phone || '',
     branch: user?.branch || '',
     customBranch: '',
     year: user?.year || '',
@@ -62,7 +63,7 @@ const Settings = () => {
     setProfileData(prev => ({ ...prev, [name]: value }));
   };
 
- const handleProfileSubmit = async (e) => {
+  const handleProfileSubmit = async (e) => {
   e.preventDefault();
   setIsUpdatingProfile(true);
 
@@ -75,7 +76,7 @@ const Settings = () => {
 
   // 2️⃣ Update profile fields ONLY
   const finalBranch = profileData.branch === 'Other' ? (profileData.customBranch || '') : profileData.branch;
-  await updateProfile({ fullName: profileData.fullName, branch: finalBranch, year: profileData.year, hostel: profileData.hostel });
+  await updateProfile({ fullName: profileData.fullName, branch: finalBranch, year: profileData.year, hostel: profileData.hostel, phone: profileData.phone });
 
   setIsUpdatingProfile(false);
 };
@@ -183,6 +184,18 @@ const Settings = () => {
                       value={profileData.fullName}
                       onChange={handleProfileChange}
                       placeholder="Your full name"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      value={profileData.phone}
+                      onChange={handleProfileChange}
+                      placeholder="e.g., +1234567890"
                     />
                   </div>
 

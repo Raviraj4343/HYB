@@ -1,4 +1,5 @@
 import {Chat} from '../models/chat.models.js';
+import mongoose from 'mongoose';
 import {Message }from '../models/message.models.js';
 import { GlobalMessage } from '../models/globalMessage.models.js';
 import {User} from '../models/user.models.js';
@@ -68,12 +69,21 @@ const ensureChat = asyncHandler(async (req, res) => {
   }
 
   const ownerId = req.user._id;
-  const ownerObj = ownerId;
-  const otherObj = otherUserId;
+  const ownerObj = new mongoose.Types.ObjectId(ownerId);
+  const otherObj = new mongoose.Types.ObjectId(otherUserId);
 
   let chat = await Chat.findOne({ request: requestId, participants: { $all: [ownerObj, otherObj] } });
   if (!chat) {
-    chat = await Chat.create({ request: requestId, participants: [ownerObj, otherObj] });
+    try {
+      chat = await Chat.create({ request: requestId, participants: [ownerObj, otherObj] });
+    } catch (err) {
+      // Handle duplicate-key race: if another process created the chat concurrently, fetch existing
+      if (err && err.code === 11000) {
+        chat = await Chat.findOne({ request: requestId, participants: { $all: [ownerObj, otherObj] } });
+      } else {
+        throw err;
+      }
+    }
   }
 
   await chat.populate('participants', 'fullName userName avatar');

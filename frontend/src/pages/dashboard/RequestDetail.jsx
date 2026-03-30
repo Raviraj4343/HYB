@@ -146,6 +146,42 @@ const RequestDetail = () => {
     }
   };
 
+  const handleContactAction = async () => {
+    if (!request) return;
+    const viewerId = user?._id;
+    const acceptedHelperId = request?.acceptedHelper?._id || request?.acceptedHelper;
+    const isViewerAccepted = !!(acceptedHelperId && viewerId && (acceptedHelperId?.toString?.() || acceptedHelperId) === viewerId);
+    const isViewerOwner = viewerId && request?.requestedBy?._id && (request.requestedBy._id === viewerId);
+
+    // For chat contact, open chat between owner and accepted helper (or between owner and viewer if viewer is helper)
+    if (request.contact === 'chat') {
+      let target = acceptedHelperChatId || null;
+      if (!target) {
+        if (isViewerOwner && request.acceptedHelper?._id) {
+          target = await findChatIdForUsers(request._id, [request.requestedBy._id, request.acceptedHelper._id]);
+        } else if (isViewerAccepted) {
+          target = await findChatIdForUsers(request._id, [request.requestedBy._id, viewerId]);
+        }
+      }
+
+      handleOpenChat(target, isViewerAccepted ? viewerId : request.acceptedHelper?._id);
+      return;
+    }
+
+    // For call contact, resolve phone: owner -> acceptedHelper.phone, helper -> owner.phone
+    if (request.contact === 'call') {
+      const phoneToCall = isViewerOwner
+        ? request.acceptedHelper?.phone || responses.find((r) => (r.responder?._id || r.responder)?.toString?.() === request.acceptedHelper?._id)?.responder?.phone
+        : request.requestedBy?.phone;
+
+      if (phoneToCall) {
+        window.location.href = `tel:${phoneToCall}`;
+      } else {
+        toast.error('Phone number not available');
+      }
+    }
+  };
+
   const fetchRequestDetails = async () => {
     setIsLoading(true);
     setError(null);
@@ -267,9 +303,33 @@ const RequestDetail = () => {
 
   const handleOpenChat = async (chatId, responderId = null) => {
     let targetChatId = chatId;
+    // If we have a responderId try to ensure the chat exists first (create or fetch)
+    if (!targetChatId && responderId && request?._id) {
+      try {
+        const otherUserId = responderId?._id ? responderId._id : responderId;
+        console.debug('ensureChat: calling /chat/ensure', { requestId: request._id, otherUserId });
+        toast('Creating or finding chat...', { icon: '💬' });
+        const resp = await api.post('/chat/ensure', { requestId: request._id, otherUserId });
+        targetChatId = resp?.data?.data?.chat?._id || null;
+        if (targetChatId) {
+          toast.success('Chat ready — redirecting');
+        }
+      } catch (err) {
+        console.warn('ensure chat failed, falling back to local lookup', err?.message || err);
+        toast.error(err?.message || 'Chat creation failed, trying local lookup');
+      }
 
-    if (!targetChatId && responderId && request?._id && request?.requestedBy?._id) {
-      targetChatId = await findChatIdForUsers(request._id, [request.requestedBy._id, responderId]);
+      // If still not found, try client-side lookup of existing chats
+      if (!targetChatId && request?.requestedBy?._id) {
+        try {
+          targetChatId = await findChatIdForUsers(request._id, [request.requestedBy._id, responderId]);
+          if (targetChatId) {
+            toast.success('Found existing chat — redirecting');
+          }
+        } catch (err) {
+          console.error('findChatIdForUsers failed', err);
+        }
+      }
     }
 
     if (!targetChatId) {
@@ -419,6 +479,57 @@ const RequestDetail = () => {
               <CardDescription className="flex items-center gap-2 capitalize">
                 {request.category}
               </CardDescription>
+              <div className="flex items-center gap-3 mt-2">
+                <div className="flex items-center gap-1.5 cursor-pointer" onClick={handleContactAction} role="button">
+                  {request.contact === 'chat' ? <MessageSquare className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
+                  <span className="capitalize">{request.contact}</span>
+                </div>
+
+                {/* Chat/Call quick actions for owner <-> accepted helper */}
+                {(() => {
+                  const viewerId = user?._id;
+                  const acceptedHelperId = request?.acceptedHelper?._id || request?.acceptedHelper;
+                  const isViewerAccepted = !!(acceptedHelperId && viewerId && (acceptedHelperId?.toString?.() || acceptedHelperId) === viewerId);
+                  const isViewerOwner = viewerId && request?.requestedBy?._id && (request.requestedBy._id === viewerId);
+
+                  if (!isViewerAccepted && !isViewerOwner) return null;
+
+                  // determine chat id
+                  const chatIdForHeader = isViewerOwner
+                    ? acceptedHelperChatId || null
+                    : (acceptedHelperChatId || responses.find((r) => (r.responder?._id || r.responder)?.toString?.() === viewerId)?.chatId || null);
+
+                  // determine phone to call: owner -> call acceptedHelper, acceptedHelper -> call owner
+                  const phoneToCall = isViewerOwner
+                    ? request.acceptedHelper?.phone || responses.find((r) => (r.responder?._id || r.responder)?.toString?.() === request.acceptedHelper?._id)?.responder?.phone
+                    : request.requestedBy?.phone;
+
+                  return (
+                    <div className="ml-auto flex items-center gap-2">
+                      <Button size="sm" variant="outline" onClick={async () => {
+                        // resolve chat id if needed
+                        let target = chatIdForHeader;
+                        if (!target) {
+                          if (isViewerOwner && request.acceptedHelper?._id) {
+                            target = await findChatIdForUsers(request._id, [request.requestedBy._id, request.acceptedHelper._id]);
+                          } else if (isViewerAccepted) {
+                            target = await findChatIdForUsers(request._id, [request.requestedBy._id, viewerId]);
+                          }
+                        }
+                        handleOpenChat(target, isViewerAccepted ? viewerId : request.acceptedHelper?._id);
+                      }}>
+                        Chat
+                      </Button>
+
+                      {phoneToCall && (
+                        <Button size="sm" variant="ghost" onClick={() => { window.location.href = `tel:${phoneToCall}`; }}>
+                          Call
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <p className="whitespace-pre-wrap text-foreground">{request.description}</p>
@@ -496,13 +607,24 @@ const RequestDetail = () => {
                           </Button>
                         )}
                         {['accepted', 'completed'].includes(response.status) && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleOpenChat(response.chatId, response.responder?._id)}
-                          >
-                            Chat
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenChat(response.chatId, response.responder?._id)}
+                            >
+                              Chat
+                            </Button>
+                            {response.responder?.phone && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => { window.location.href = `tel:${response.responder.phone}`; }}
+                              >
+                                Call
+                              </Button>
+                            )}
+                          </div>
                         )}
                         {response.status !== 'pending' && (
                           <Badge className={getResponseBadgeClass(response.status)}>
@@ -596,13 +718,24 @@ const RequestDetail = () => {
                         <Link to={`/dashboard/users/${response.responder?.userName}`}>@{response.responder?.userName}</Link>
                       </p>
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleOpenChat(response.chatId, response.responder?._id)}
-                    >
-                      Chat
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenChat(response.chatId, response.responder?._id)}
+                      >
+                        Chat
+                      </Button>
+                      {response.responder?.phone && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => { window.location.href = `tel:${response.responder.phone}`; }}
+                        >
+                          Call
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </CardContent>
