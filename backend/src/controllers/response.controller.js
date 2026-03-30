@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Response } from "../models/response.models.js";
 import { Request } from "../models/request.models.js";
 import { Chat } from "../models/chat.models.js";
@@ -114,21 +115,40 @@ const getResponsesForRequest = asyncHandler(async (req, res) => {
     participants: { $in: participantIds }
   }).select("_id participants");
 
-  const chatByResponderId = new Map();
+  const chatByParticipantId = new Map();
   chats.forEach((chat) => {
-    const otherParticipant = chat.participants.find(
-      (participant) => participant.toString() !== req.user._id.toString()
-    );
-
-    if (otherParticipant) {
-      chatByResponderId.set(otherParticipant.toString(), chat._id.toString());
-    }
+    // Map chat id for each participant so lookups work for both owner and responder views
+    (chat.participants || []).forEach((participant) => {
+      chatByParticipantId.set(participant.toString(), chat._id.toString());
+    });
   });
 
   responses = responses.map((response) => ({
     ...response.toObject(),
-    chatId: chatByResponderId.get(response.responder?._id?.toString?.() || response.responder?.toString?.()) || null,
+    chatId:
+      chatByParticipantId.get(
+        response.responder?._id?.toString?.() || response.responder?.toString?.()
+      ) || null,
   }));
+
+  // Ensure any responses that missed chatId get checked individually (covers type/race edge cases)
+  for (let i = 0; i < responses.length; i++) {
+    if (!responses[i].chatId) {
+      try {
+        const possibleChat = await Chat.findOne({
+          request: request._id,
+          participants: { $all: [request.requestedBy, responses[i].responder?._id || responses[i].responder] }
+        }).select('_id');
+
+        if (possibleChat) {
+          responses[i].chatId = possibleChat._id.toString();
+        }
+      } catch (err) {
+        // ignore lookup errors and continue
+        console.error('chat lookup error', err.message);
+      }
+    }
+  }
 
   return res.status(200).json(
     new ApiResponse(200, { responses }, "Responses retrieved successfully")
@@ -212,16 +232,31 @@ const acceptResponse = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid chat participants");
   }
 
+  const ownerObj = new mongoose.Types.ObjectId(ownerId);
+  const helperObj = new mongoose.Types.ObjectId(helperId);
+
   let chat = await Chat.findOne({
     request: request._id,
-    participants: { $all: [ownerId, response.responder] }
+    participants: { $all: [ownerObj, helperObj] }
   });
 
   if (!chat) {
-    chat = await Chat.create({
-      request: request._id,
-      participants: [ownerId, response.responder]
-    });
+    try {
+      chat = await Chat.create({
+        request: request._id,
+        participants: [ownerObj, helperObj]
+      });
+    } catch (err) {
+      // Handle duplicate-key race: if chat was created concurrently, fetch existing chat
+      if (err && err.code === 11000) {
+        chat = await Chat.findOne({
+          request: request._id,
+          participants: { $all: [ownerObj, helperObj] }
+        });
+      } else {
+        throw err;
+      }
+    }
   }
 
   try {
