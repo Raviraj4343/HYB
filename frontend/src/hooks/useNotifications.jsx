@@ -64,6 +64,16 @@ export const useNotifications = (enabled = true) => {
     }
   }, []);
 
+  const deleteAllNotifications = useCallback(async () => {
+    try {
+      await api.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/notification/all`);
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Failed to delete all notifications:', err);
+    }
+  }, []);
+
   useEffect(() => {
     if (enabled) {
       fetchNotifications();
@@ -123,5 +133,6 @@ export const useNotifications = (enabled = true) => {
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    deleteAllNotifications,
   };
 };

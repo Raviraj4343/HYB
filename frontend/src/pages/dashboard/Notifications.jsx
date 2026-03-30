@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { useNotifications } from '../../hooks/useNotifications';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +19,7 @@ const Notifications = () => {
     markAsRead,
     markAllAsRead,
     deleteNotification,
+    deleteAllNotifications,
   } = useNotifications(true);
 
   const getNotificationIcon = (type) => {
@@ -35,6 +38,17 @@ const Notifications = () => {
   };
 
   const navigate = useNavigate();
+
+  // Auto-mark notifications as read when the notifications page is opened
+  // Wait until initial fetch completes (isLoading -> false) and then mark unread as read.
+  // This mimics modern SaaS behavior where opening the notifications panel marks them read.
+  useEffect(() => {
+    if (!isLoading && unreadCount > 0) {
+      // fire-and-forget
+      markAllAsRead().catch((err) => console.error('Auto mark-all-as-read failed', err));
+    }
+    // run when loading finishes
+  }, [isLoading, unreadCount, markAllAsRead]);
 
   const openNotification = async (notification) => {
     try {
@@ -94,6 +108,27 @@ const Notifications = () => {
             <Button variant="outline" size="sm" onClick={markAllAsRead} className="gap-2">
               <CheckCheck className="w-4 h-4" />
               Mark all read
+            </Button>
+          )}
+          {notifications.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                if (!window.confirm('Delete all notifications? This cannot be undone.')) return;
+                try {
+                  await deleteAllNotifications();
+                  toast.success('All notifications deleted');
+                  refetch();
+                } catch (err) {
+                  console.error('Failed to delete all notifications', err);
+                  toast.error(err?.response?.data?.message || 'Failed to delete notifications');
+                }
+              }}
+              className="gap-2 text-destructive"
+            >
+              <Trash2 className="w-4 h-4" />
+              Delete all
             </Button>
           )}
         </div>

@@ -873,6 +873,15 @@ const RequestDetail = () => {
                       )}
                     >
                       <div className="flex items-start gap-3">
+                        <div className="flex items-start">
+                          <div className={cn('mt-1.5 mr-2 flex h-9 w-9 items-center justify-center rounded-full border transition', isSelected ? 'bg-primary/10 border-primary/50' : 'border-white/10 bg-transparent')}>
+                            {isSelected ? (
+                              <CheckCircle className="h-5 w-5 text-primary" />
+                            ) : (
+                              <div className="h-3.5 w-3.5 rounded-full bg-transparent" />
+                            )}
+                          </div>
+                        </div>
                         <Avatar className="h-12 w-12 border border-white/10">
                           <AvatarImage src={helper.avatar} alt={helper.fullName} />
                           <AvatarFallback className="bg-primary/15 text-primary">
