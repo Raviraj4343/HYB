@@ -57,6 +57,8 @@ const DashboardLayout = () => {
     { path: '/dashboard/campus-resources', icon: BookOpenText, label: 'Campus Resources' },
     { path: '/dashboard/chats', icon: MessageSquare, label: 'Chats' },
     { path: '/dashboard/notifications', icon: Bell, label: 'Notifications', badge: unreadCount },
+    { path: '/about', icon: HelpCircle, label: 'About' },
+    { path: '/contact', icon: MessageSquare, label: 'Contact' },
   ];
 
   const pageTitle = useMemo(() => {

@@ -107,14 +107,19 @@ const Index = () => {
       <footer className="py-8 px-4 border-t border-border">
         <div className="max-w-7xl mx-auto flex items-center justify-between text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
-          <img
-            src="/logo.png"
-            alt="HYB Logo"
-            className="w-4 h-4 object-contain"
-          />
-          <span>HYB - Help Your Buddy</span>
-        </div>
-        <p>Built for students</p>
+            <img
+              src="/logo.png"
+              alt="HYB Logo"
+              className="w-4 h-4 object-contain"
+            />
+            <span>HYB - Help Your Buddy</span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <a href="/about" className="text-muted-foreground hover:text-foreground">About</a>
+            <a href="/contact" className="text-muted-foreground hover:text-foreground">Contact</a>
+            <p className="hidden sm:block">Built for students</p>
+          </div>
 
         </div>
       </footer>

@@ -21,6 +21,8 @@ import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import Profile from "./pages/dashboard/Profile";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
 
 // Dashboard
 import DashboardLayout from "./components/layout/DashboardLayout";
@@ -93,6 +95,8 @@ const App = () => (
 
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
               </Routes>
             </SocketProvider>
           </AuthProvider>

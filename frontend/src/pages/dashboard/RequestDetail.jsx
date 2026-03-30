@@ -1,19 +1,27 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
-import { 
-  ArrowLeft, Clock, MapPin, MessageSquare, Phone, 
-  Loader2, AlertCircle, User, Calendar, HandHeart,
-  CheckCircle, XCircle, Trash2, Edit, Send
+import {
+  Clock,
+  MapPin,
+  MessageSquare,
+  Phone,
+  Loader2,
+  AlertCircle,
+  HandHeart,
+  CheckCircle,
+  XCircle,
+  Trash2,
+  Send,
+  Sparkles,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
@@ -32,22 +40,59 @@ const RequestDetail = () => {
   const navigate = useNavigate();
   const goBackToRequests = useSmartBackNavigation('/dashboard/requests');
   const { user } = useAuth();
-  
+
   const [request, setRequest] = useState(null);
   const [responses, setResponses] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   const [responseText, setResponseText] = useState('');
   const [isSubmittingResponse, setIsSubmittingResponse] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showFulfillDialog, setShowFulfillDialog] = useState(false);
+  const [selectedFulfillHelperId, setSelectedFulfillHelperId] = useState('');
+  const [isFulfilling, setIsFulfilling] = useState(false);
 
   const isOwner = user?._id === request?.requestedBy?._id;
-  const isHelper = user?._id === request?.acceptedHelper?._id;
   const hasAlreadyResponded = responses.some(
     (response) => response.responder?._id === user?._id || response.responder === user?._id
   );
+
+  const helperOptions = (() => {
+    const seen = new Set();
+    const options = [];
+
+    responses.forEach((response) => {
+      const responder = response.responder;
+      if (!responder?._id || seen.has(responder._id)) return;
+
+      seen.add(responder._id);
+      options.push({
+        _id: responder._id,
+        fullName: responder.fullName,
+        userName: responder.userName,
+        avatar: responder.avatar,
+        helpCount: responder.helpCount || 0,
+        responseStatus: response.status,
+        responseMessage: response.message,
+      });
+    });
+
+    if (request?.acceptedHelper?._id && !seen.has(request.acceptedHelper._id)) {
+      options.unshift({
+        _id: request.acceptedHelper._id,
+        fullName: request.acceptedHelper.fullName,
+        userName: request.acceptedHelper.userName,
+        avatar: request.acceptedHelper.avatar,
+        helpCount: request.acceptedHelper.helpCount || 0,
+        responseStatus: 'accepted',
+        responseMessage: '',
+      });
+    }
+
+    return options;
+  })();
 
   useEffect(() => {
     fetchRequestDetails();
@@ -59,9 +104,9 @@ const RequestDetail = () => {
     try {
       const [reqResponse, resResponse] = await Promise.all([
         api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/get-req-ById/${id}`),
-        api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/res/get-req-for-res/${id}`).catch(() => ({ data: { data: { responses: [] } } }))
+        api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/res/get-req-for-res/${id}`).catch(() => ({ data: { data: { responses: [] } } })),
       ]);
-      
+
       setRequest(reqResponse.data.data.request);
       setResponses(resResponse.data.data?.responses || []);
     } catch (err) {
@@ -76,17 +121,17 @@ const RequestDetail = () => {
       toast.error('Please write a message');
       return;
     }
-    
+
     setIsSubmittingResponse(true);
     try {
       const formData = new FormData();
       formData.append('requestId', id);
       formData.append('message', responseText);
-      
+
       await api.post(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/res/create-response`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      
+
       toast.success('Response sent! The requester will be notified.');
       setResponseText('');
       fetchRequestDetails();
@@ -100,7 +145,7 @@ const RequestDetail = () => {
   const handleAcceptRequest = async () => {
     try {
       await api.put(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/accept-req/${id}`);
-      toast.success('You are now helping with this request! 🙌');
+      toast.success('You are now helping with this request!');
       fetchRequestDetails();
     } catch (err) {
       toast.error(err.message || 'Failed to accept request');
@@ -117,13 +162,35 @@ const RequestDetail = () => {
     }
   };
 
+  const handleOpenFulfillDialog = () => {
+    const defaultHelperId =
+      request?.acceptedHelper?._id ||
+      responses.find((response) => response.status === 'accepted')?.responder?._id ||
+      helperOptions[0]?._id ||
+      '';
+
+    setSelectedFulfillHelperId(defaultHelperId);
+    setShowFulfillDialog(true);
+  };
+
   const handleFulfillRequest = async () => {
+    if (!selectedFulfillHelperId) {
+      toast.error('Please select the user who helped you');
+      return;
+    }
+
+    setIsFulfilling(true);
     try {
-      await api.put(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/full-fill-req/${id}`);
-      toast.success('Request marked as fulfilled! Thank you! 🎉');
+      await api.put(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/req/full-fill-req/${id}`, {
+        helperId: selectedFulfillHelperId,
+      });
+      toast.success('Request marked as fulfilled! Thank you!');
+      setShowFulfillDialog(false);
       fetchRequestDetails();
     } catch (err) {
       toast.error(err.message || 'Failed to fulfill request');
+    } finally {
+      setIsFulfilling(false);
     }
   };
 
@@ -170,9 +237,15 @@ const RequestDetail = () => {
     }
   };
 
+  const getResponseBadgeClass = (status) => {
+    if (status === 'accepted') return 'badge-fulfilled';
+    if (status === 'rejected') return 'badge-cancelled';
+    return 'bg-warning/15 text-warning border border-warning/25';
+  };
+
   const getInitials = (name) => {
     if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    return name.split(' ').map((part) => part[0]).join('').toUpperCase().slice(0, 2);
   };
 
   if (isLoading) {
@@ -196,21 +269,19 @@ const RequestDetail = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="grid lg:grid-cols-3 gap-6"
+        className="grid gap-6 lg:grid-cols-3"
       >
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Request Card */}
+        <div className="space-y-6 lg:col-span-2">
           <Card className="glass-card-elevated overflow-hidden">
             {request.image && (
               <div className="h-48 overflow-hidden">
-                <img 
-                  src={request.image} 
+                <img
+                  src={request.image}
                   alt={request.title}
-                  className="w-full h-full object-cover"
+                  className="h-full w-full object-cover"
                 />
               </div>
             )}
@@ -231,7 +302,7 @@ const RequestDetail = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <p className="text-foreground whitespace-pre-wrap">{request.description}</p>
+              <p className="whitespace-pre-wrap text-foreground">{request.description}</p>
 
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 {request.locationHint && (
@@ -250,9 +321,8 @@ const RequestDetail = () => {
                 </div>
               </div>
 
-              {/* Owner Actions */}
               {isOwner && request.status === 'open' && (
-                <div className="flex gap-2 pt-4 border-t">
+                <div className="flex gap-2 border-t pt-4">
                   <Button variant="outline" size="sm" onClick={handleCancelRequest}>
                     <XCircle className="w-4 h-4 mr-2" />
                     Cancel
@@ -265,36 +335,34 @@ const RequestDetail = () => {
               )}
 
               {isOwner && request.status === 'in-progress' && (
-                <div className="flex gap-2 pt-4 border-t">
-                  <Button className="btn-gradient-primary" onClick={handleFulfillRequest}>
+                <div className="flex gap-2 border-t pt-4">
+                  <Button className="btn-gradient-primary" onClick={handleOpenFulfillDialog}>
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Mark as Fulfilled
                   </Button>
                 </div>
               )}
 
-              {/* Helper Actions */}
-                {!isOwner && request.status === 'open' && (
-                  <div className="pt-4 border-t">
-                    <Button
-                      className="btn-gradient-primary w-full"
-                      onClick={handleAcceptRequest}
-                      disabled={hasAlreadyResponded}
-                    >
-                      <HandHeart className="w-4 h-4 mr-2" />
-                      {hasAlreadyResponded ? 'Response Already Sent' : 'I Can Help!'}
-                    </Button>
-                    {hasAlreadyResponded && (
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        You have already responded to this request.
-                      </p>
-                    )}
-                  </div>
-                )}
+              {!isOwner && request.status === 'open' && (
+                <div className="border-t pt-4">
+                  <Button
+                    className="btn-gradient-primary w-full"
+                    onClick={handleAcceptRequest}
+                    disabled={hasAlreadyResponded}
+                  >
+                    <HandHeart className="w-4 h-4 mr-2" />
+                    {hasAlreadyResponded ? 'Response Already Sent' : 'I Can Help!'}
+                  </Button>
+                  {hasAlreadyResponded && (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      You have already responded to this request.
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Responses Section */}
           {(responses.length > 0 || (!isOwner && request.status === 'open')) && (
             <Card className="glass-card">
               <CardHeader>
@@ -302,8 +370,8 @@ const RequestDetail = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {responses.map((response) => (
-                  <div key={response._id} className="p-4 rounded-lg bg-muted/50">
-                    <div className="flex items-start justify-between gap-3 mb-2">
+                  <div key={response._id} className="rounded-lg bg-muted/50 p-4">
+                    <div className="mb-2 flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2">
                         <Avatar className="w-8 h-8">
                           <AvatarImage src={response.responder?.avatar} />
@@ -328,15 +396,14 @@ const RequestDetail = () => {
                       )}
                     </div>
                     <p className="text-sm text-foreground">{response.message}</p>
-                    <p className="text-xs text-muted-foreground mt-2">
+                    <p className="mt-2 text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(response.createdAt), { addSuffix: true })}
                     </p>
                   </div>
                 ))}
 
-                {/* Write Response */}
                 {!isOwner && request.status === 'open' && (
-                  <div className="pt-4 border-t">
+                  <div className="border-t pt-4">
                     <Textarea
                       placeholder={hasAlreadyResponded ? 'You have already responded to this request.' : 'Write your response...'}
                       value={responseText}
@@ -345,7 +412,7 @@ const RequestDetail = () => {
                       className="mb-3"
                       disabled={hasAlreadyResponded}
                     />
-                    <Button 
+                    <Button
                       onClick={handleSubmitResponse}
                       disabled={hasAlreadyResponded || isSubmittingResponse || !responseText.trim()}
                       className="gap-2"
@@ -364,9 +431,7 @@ const RequestDetail = () => {
           )}
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
-          {/* Requester Info */}
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="text-sm font-medium text-muted-foreground">Requested by</CardTitle>
@@ -387,9 +452,11 @@ const RequestDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Helper Info */}
           {request.acceptedHelper && (
-            <Card className="glass-card border-success/30" style={{ background: 'linear-gradient(135deg, hsl(var(--success) / 0.1) 0%, hsl(var(--success) / 0.05) 100%)' }}>
+            <Card
+              className="glass-card border-success/30"
+              style={{ background: 'linear-gradient(135deg, hsl(var(--success) / 0.1) 0%, hsl(var(--success) / 0.05) 100%)' }}
+            >
               <CardHeader>
                 <CardTitle className="text-sm font-medium text-success flex items-center gap-2">
                   <HandHeart className="w-4 h-4" />
@@ -413,7 +480,6 @@ const RequestDetail = () => {
             </Card>
           )}
 
-          {/* Request Meta */}
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="text-sm font-medium text-muted-foreground">Details</CardTitle>
@@ -436,7 +502,6 @@ const RequestDetail = () => {
         </div>
       </motion.div>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
@@ -454,6 +519,124 @@ const RequestDetail = () => {
               Delete
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={showFulfillDialog}
+        onOpenChange={(open) => {
+          if (isFulfilling) return;
+          setShowFulfillDialog(open);
+        }}
+      >
+        <DialogContent className="max-w-2xl overflow-hidden rounded-[1.75rem] border border-border/70 bg-[linear-gradient(180deg,rgba(14,20,32,0.98),rgba(18,27,43,0.98))] p-0 text-white shadow-[0_30px_90px_rgba(0,0,0,0.45)]">
+          <div className="relative overflow-hidden p-6 sm:p-7">
+            <div className="absolute inset-x-10 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.45),transparent)]" />
+            <div className="absolute -right-16 -top-16 h-40 w-40 rounded-full bg-primary/20 blur-3xl" />
+            <div className="absolute -left-10 bottom-0 h-32 w-32 rounded-full bg-sky-500/10 blur-3xl" />
+
+            <DialogHeader className="relative space-y-3 text-left">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                <Sparkles className="h-3.5 w-3.5" />
+                Confirm fulfillment
+              </div>
+              <DialogTitle className="text-2xl font-display text-white">
+                Who helped you complete this request?
+              </DialogTitle>
+              <DialogDescription className="max-w-xl text-sm leading-6 text-slate-300">
+                Choose the person who actually helped. We will credit their help count and mark this request as fulfilled.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="relative mt-6 space-y-3">
+              {helperOptions.length > 0 ? (
+                helperOptions.map((helper) => {
+                  const isSelected = selectedFulfillHelperId === helper._id;
+
+                  return (
+                    <button
+                      key={helper._id}
+                      type="button"
+                      onClick={() => setSelectedFulfillHelperId(helper._id)}
+                      className={cn(
+                        'w-full rounded-[1.35rem] border px-4 py-4 text-left transition-all duration-200',
+                        isSelected
+                          ? 'border-primary/60 bg-[linear-gradient(135deg,rgba(20,184,166,0.2),rgba(59,130,246,0.18))] shadow-[0_18px_36px_rgba(20,184,166,0.18)]'
+                          : 'border-white/10 bg-white/[0.04] hover:border-primary/30 hover:bg-white/[0.06]'
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Avatar className="h-12 w-12 border border-white/10">
+                          <AvatarImage src={helper.avatar} alt={helper.fullName} />
+                          <AvatarFallback className="bg-primary/15 text-primary">
+                            {getInitials(helper.fullName)}
+                          </AvatarFallback>
+                        </Avatar>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-base font-semibold text-white">{helper.fullName}</p>
+                              <p className="truncate text-sm text-slate-300">@{helper.userName}</p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Badge className="border border-white/10 bg-white/10 text-slate-100">
+                                {helper.helpCount || 0} helps
+                              </Badge>
+                              {helper.responseStatus && (
+                                <Badge className={getResponseBadgeClass(helper.responseStatus)}>
+                                  {helper.responseStatus}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          {helper.responseMessage && (
+                            <p className="mt-2 line-clamp-2 text-sm text-slate-300">
+                              {helper.responseMessage}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="rounded-[1.35rem] border border-amber-500/25 bg-amber-500/10 px-4 py-4 text-sm text-amber-100">
+                  No responses are available for this request yet, so there is nobody to credit right now.
+                </div>
+              )}
+            </div>
+
+            <DialogFooter className="relative mt-6 flex-col gap-3 border-t border-white/10 pt-5 sm:flex-row sm:justify-between sm:space-x-0">
+              <Button
+                type="button"
+                variant="ghost"
+                className="rounded-xl border border-white/10 bg-white/[0.03] text-slate-200 hover:bg-white/[0.08] hover:text-white"
+                onClick={() => setShowFulfillDialog(false)}
+                disabled={isFulfilling}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                className="rounded-xl btn-gradient-primary"
+                onClick={handleFulfillRequest}
+                disabled={isFulfilling || helperOptions.length === 0 || !selectedFulfillHelperId}
+              >
+                {isFulfilling ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Finishing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4" />
+                    Confirm and mark fulfilled
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
