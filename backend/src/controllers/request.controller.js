@@ -251,10 +251,10 @@ const fulfillRequest = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Not authorized to fulfill this request");
   }
 
-  if (request.status !== "in-progress") {
+  if (!["open", "in-progress"].includes(request.status)) {
     throw new ApiError(
       400,
-      "Only in-progress requests can be fulfilled"
+      "Only active requests can be fulfilled"
     );
   }
 
@@ -292,7 +292,7 @@ const fulfillRequest = asyncHandler(async (req, res) => {
     { request: request._id, responder: selectedHelperId },
     {
       $set: {
-        status: "accepted",
+        status: "completed",
       },
     }
   );

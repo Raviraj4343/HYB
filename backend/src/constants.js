@@ -54,7 +54,8 @@ export const REQUEST_STATUS = [
 export const RESPONSE_STATUS = [
     "pending",
     "accepted",
-    "rejected"
+    "rejected",
+    "completed"
 ];
 
 

@@ -1,12 +1,10 @@
 import { Response } from "../models/response.models.js";
 import { Request } from "../models/request.models.js";
 import { Chat } from "../models/chat.models.js";
-import { Notification } from "../models/notification.models.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { request } from "express";
 import { createAndEmitNotification, emitChatListRefresh, emitRequestChanged } from "../utils/realtime.js";
 
 
@@ -164,25 +162,22 @@ const acceptResponse = asyncHandler(async (req, res) => {
     throw new ApiError(403, "Not authorized to accept this response");
   }
 
-  if (request.acceptedHelper) {
-    throw new ApiError(400, "A helper has already been accepted");
+  if (["fulfilled", "cancelled", "expired"].includes(request.status)) {
+    throw new ApiError(400, "This request is no longer open for new helpers");
   }
 
-  if (request.status !== "open") {
-    throw new ApiError(400, "This request is no longer open");
+  if (response.status === "completed") {
+    throw new ApiError(400, "This response is already marked as completed");
+  }
+
+  if (response.status === "accepted") {
+    return res.status(200).json(
+      new ApiResponse(200, { response }, "Response already accepted")
+    );
   }
 
   response.status = "accepted";
   await response.save();
-
-  request.status = "in-progress";
-  request.acceptedHelper = response.responder;
-  await request.save();
-
-  await Response.updateMany(
-    { request: request._id, _id: { $ne: response._id } },
-    { status: "rejected" }
-  );
 
   const ownerId = request.requestedBy.toString();
   const helperId = response.responder.toString();
@@ -215,7 +210,7 @@ const acceptResponse = asyncHandler(async (req, res) => {
     console.error("Notification error:", error.message);
   }
 
-  emitRequestChanged("response_accepted", request.toObject());
+  emitRequestChanged("response_accepted", { _id: request._id });
   emitChatListRefresh([ownerId, response.responder]);
 
   res.status(200).json(
@@ -239,8 +234,8 @@ const rejectResponse = asyncHandler(async (req, res) => {
   }
 
 
-  if (response.status === "accepted") {
-    throw new ApiError(400, "Cannot reject an accepted response");
+  if (response.status === "completed") {
+    throw new ApiError(400, "Cannot reject a completed response");
   }
 
   if (response.status === "rejected") {
