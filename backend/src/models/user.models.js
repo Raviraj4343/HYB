@@ -52,6 +52,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  phone: {
+    type: String,
+    trim: true,
+    default: null
+  },
   helpCount: {
     type: Number,
     default: 0

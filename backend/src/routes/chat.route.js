@@ -3,12 +3,13 @@ import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { checkBlockedUser } from "../middlewares/blockUser.middleware.js";
 import { upload, handleMulterError } from "../middlewares/multer.middleware.js";
-import { deleteGlobalMessage, deleteMessage, getChatById, getGlobalMessages, getGlobalUnreadCount, getMessages, getMyChats, sendGlobalMessage, sendMessage } from "../controllers/chat.controller.js";
+import { deleteGlobalMessage, deleteMessage, getChatById, getGlobalMessages, getGlobalUnreadCount, getMessages, getMyChats, sendGlobalMessage, sendMessage, ensureChat } from "../controllers/chat.controller.js";
 
 const router = Router();
 router.use(verifyJWT);
 
 router.get("/", getMyChats);
+router.post("/ensure", ensureChat);
 router.get("/global/messages", getGlobalMessages);
 router.get("/global/unread-count", getGlobalUnreadCount);
 router.post("/global/messages", checkBlockedUser, sendGlobalMessage);

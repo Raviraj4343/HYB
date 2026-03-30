@@ -12,7 +12,7 @@ import {
   getRequestStats,
   adminDeleteRequest
 } from "../controllers/request.controller.js";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { verifyJWT, optionalAuth } from "../middlewares/auth.middleware.js";
 import { isSuperAdmin } from "../middlewares/admin.middleware.js";
 import { upload, handleMulterError } from "../middlewares/multer.middleware.js";
 
@@ -21,7 +21,7 @@ const router = Router();
 router.post("/create-req", verifyJWT, upload.single("image"), handleMulterError, createRequest);
 
 router.get("/get-all-req", getAllRequests);
-router.get("/get-req-ById/:id", getRequestById);
+router.get("/get-req-ById/:id", optionalAuth, getRequestById);
 
 
 router.get("/get-my-req", verifyJWT, getMyRequests);

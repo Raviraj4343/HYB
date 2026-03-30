@@ -29,9 +29,25 @@ app.use('/api/', apiLimiter);
 app.use(
   cors({
     origin: (origin, callback) => {
+      // allow non-browser requests (curl, server-to-server) which have no origin
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-      return callback(null, false);
+
+      // if CORS_ORIGIN configured, use it
+      if (allowedOrigins.length > 0) {
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error('Not allowed by CORS'));
+      }
+
+      // Developer-friendly default: allow common localhost origins when CORS_ORIGIN is not set
+      try {
+        const u = new URL(origin);
+        const isLocalhost = ['localhost', '127.0.0.1'].includes(u.hostname);
+        if (isLocalhost) return callback(null, true);
+      } catch (e) {
+        // fallthrough
+      }
+
+      return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
   })

@@ -21,9 +21,12 @@ const avatarUploadOptions = {
 const getUserProfile = asyncHandler(async (req, res, next) =>{
     const {userName} = req.params;
     
-    const user = await User.findOne({userName}).select(
-        "_id fullName userName avatar branch year hostel helpCount isBlocked blockedUntil blockReason"
-    );
+    let selectFields = "_id fullName userName avatar branch year hostel helpCount isBlocked blockedUntil blockReason";
+    if (req.user?.role === 'super_admin' || req.user?.userName === userName) {
+      selectFields += " phone";
+    }
+
+    const user = await User.findOne({ userName }).select(selectFields);
     if(!user){
         return next(new ApiError(404, "User not found"));
     }

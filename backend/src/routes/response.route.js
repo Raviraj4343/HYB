@@ -6,24 +6,25 @@ import {
     acceptResponse,
     rejectResponse
 } from "../controllers/response.controller.js";
-import {verifyJWT} from "../middlewares/auth.middleware.js";
+import {verifyJWT, optionalAuth} from "../middlewares/auth.middleware.js";
 import {upload, handleMulterError} from "../middlewares/multer.middleware.js";
 
 const router = Router();
-router.use(verifyJWT);
 
 router.post("/create-response",
+    verifyJWT,
     upload.single("image"),
     handleMulterError,
     createResponse
 );
 
-router.get("/get-my-res", getMyResponses);
+router.get("/get-my-res", verifyJWT, getMyResponses);
 
-router.get("/get-req-for-res/:requestId", getResponsesForRequest);
+// public-ish endpoint: allow optional auth so callers without tokens can still fetch responses
+router.get("/get-req-for-res/:requestId", optionalAuth, getResponsesForRequest);
 
-router.patch("/:id/accept", acceptResponse);
+router.patch("/:id/accept", verifyJWT, acceptResponse);
 
-router.patch("/:id/reject", rejectResponse);
+router.patch("/:id/reject", verifyJWT, rejectResponse);
 
 export default router;
