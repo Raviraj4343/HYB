@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Loader2, MessagesSquare, Reply, Send, ShieldBan, Trash2, Users, X } from 'lucide-react';
+import { Loader2, MessagesSquare, Reply, Send, ShieldBan, Trash2, Users, X, Plus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGlobalChat } from '../../hooks/useChat';
 import api from '../../api/axios';
@@ -378,19 +378,31 @@ const GlobalChat = () => {
                     </div>
                   )}
 
-                  <form onSubmit={handleSend} className="flex items-end gap-3">
+                  <form onSubmit={handleSend} className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="h-10 w-10 rounded-full border border-border/70 bg-background/80 shadow-sm text-muted-foreground flex items-center justify-center"
+                        onClick={() => {
+                          // reserved for future quick actions (emoji/attachments)
+                        }}
+                        aria-label="Actions"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+
                     <div className="relative flex-1">
-                      <div className="pointer-events-none absolute inset-0 -z-10 rounded-2xl bg-[linear-gradient(135deg,rgba(20,184,166,0.08),rgba(59,130,246,0.06))]" />
+                      <div className="pointer-events-none absolute inset-0 -z-10 rounded-full bg-[linear-gradient(135deg,rgba(20,184,166,0.08),rgba(59,130,246,0.06))]" />
                       <input
                         ref={inputRef}
                         value={messageText}
                         onChange={(e) => setMessageText(e.target.value)}
                         placeholder="Message the whole community..."
-                        className="relative z-10 h-[3.25rem] w-full rounded-2xl border border-slate-800 bg-slate-950 px-5 text-[15px] font-medium text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.24)] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
+                        className="relative z-10 h-12 w-full rounded-full border border-slate-800 bg-slate-950 px-4 text-[15px] font-medium text-slate-100 placeholder:text-slate-500 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(15,23,42,0.24)] outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/20"
                         style={{ backgroundColor: '#020617', color: '#f8fafc', WebkitTextFillColor: '#f8fafc', caretColor: '#f8fafc' }}
                         disabled={isSending}
                         onFocus={() => {
-                          // recalc padding and scroll
                           const inputEl = inputRef.current;
                           const container = messagesContainerRef.current;
                           if (container && inputEl) {
@@ -408,13 +420,14 @@ const GlobalChat = () => {
                         }}
                       />
                     </div>
-                    <Button
+
+                    <button
                       type="submit"
-                      className={cn("h-[3.25rem] min-w-[3.25rem] rounded-2xl px-5 btn-gradient-primary shadow-[0_12px_28px_rgba(20,184,166,0.24)]", isSending && "opacity-80")}
+                      className={cn("h-10 w-10 rounded-full p-0 btn-gradient-primary shadow-[0_12px_28px_rgba(20,184,166,0.24)] flex items-center justify-center", isSending && "opacity-80")}
                       disabled={isSending || !messageText.trim()}
                     >
                       {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    </Button>
+                    </button>
                   </form>
                 </div>
               </div>

@@ -150,12 +150,22 @@ const RequestDetail = () => {
 
   const handleAcceptResponse = async (responseId) => {
     try {
-      await api.patch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/res/${responseId}/accept`);
+      const acceptResponse = await api.patch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/res/${responseId}/accept`);
       toast.success('Helper accepted. Chat is ready now.');
+      const chatId = acceptResponse.data?.data?.chat?._id;
+      if (chatId) {
+        navigate(`/dashboard/chats/${chatId}`);
+        return;
+      }
       fetchRequestDetails();
     } catch (err) {
       toast.error(err.message || 'Failed to accept response');
     }
+  };
+
+  const handleOpenChat = (chatId) => {
+    if (!chatId) return;
+    navigate(`/dashboard/chats/${chatId}`);
   };
 
   const handleOpenFulfillDialog = () => {
@@ -350,29 +360,36 @@ const RequestDetail = () => {
               <CardContent className="space-y-4">
                 {responses.map((response) => (
                   <div key={response._id} className="rounded-lg bg-muted/50 p-4">
-                    <div className="mb-2 flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="w-8 h-8">
+                    <div className="mb-2 flex items-start justify-between gap-4">
+                      <div className="flex min-w-0 flex-1 items-start gap-2">
+                        <Avatar className="mt-0.5 w-8 h-8 shrink-0">
                           <AvatarImage src={response.responder?.avatar} />
                           <AvatarFallback className="text-xs bg-primary/10 text-primary">
                             {getInitials(response.responder?.fullName)}
                           </AvatarFallback>
                         </Avatar>
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-sm font-medium">{response.responder?.fullName}</p>
                           <p className="text-xs text-muted-foreground">@{response.responder?.userName}</p>
                         </div>
                       </div>
-                      {isOwner && !['accepted', 'completed'].includes(response.status) && !['fulfilled', 'cancelled', 'expired'].includes(request.status) && (
-                        <Button size="sm" onClick={() => handleAcceptResponse(response._id)}>
-                          Accept & Chat
-                        </Button>
-                      )}
-                      {response.status !== 'pending' && (
-                        <Badge className={getResponseBadgeClass(response.status)}>
-                          {response.status}
-                        </Badge>
-                      )}
+                      <div className="ml-auto flex shrink-0 items-center gap-2 self-start">
+                        {isOwner && !['accepted', 'completed'].includes(response.status) && !['fulfilled', 'cancelled', 'expired'].includes(request.status) && (
+                          <Button size="sm" onClick={() => handleAcceptResponse(response._id)}>
+                            Accept & Chat
+                          </Button>
+                        )}
+                        {['accepted', 'completed'].includes(response.status) && response.chatId && (
+                          <Button size="sm" variant="outline" onClick={() => handleOpenChat(response.chatId)}>
+                            Chat
+                          </Button>
+                        )}
+                        {response.status !== 'pending' && (
+                          <Badge className={getResponseBadgeClass(response.status)}>
+                            {response.status}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                     <p className="text-sm text-foreground">{response.message}</p>
                     <p className="mt-2 text-xs text-muted-foreground">
@@ -455,6 +472,11 @@ const RequestDetail = () => {
                       <p className="truncate font-medium">{response.responder?.fullName}</p>
                       <p className="truncate text-sm text-muted-foreground">@{response.responder?.userName}</p>
                     </div>
+                    {response.chatId && (
+                      <Button size="sm" variant="outline" onClick={() => handleOpenChat(response.chatId)}>
+                        Chat
+                      </Button>
+                    )}
                     <Badge className={getResponseBadgeClass(response.status)}>
                       {response.status}
                     </Badge>

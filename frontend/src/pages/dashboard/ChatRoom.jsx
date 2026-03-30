@@ -459,13 +459,16 @@ const ChatRoom = () => {
                   />
                 </div>
 
-                <Button
+                <button
                   type="submit"
-                  className="h-11 rounded-full px-4 btn-gradient-primary shadow-[0_12px_28px_rgba(20,184,166,0.24)]"
+                  className={cn(
+                    'h-11 w-11 rounded-full p-0 btn-gradient-primary shadow-[0_12px_28px_rgba(20,184,166,0.24)] flex items-center justify-center',
+                    isSending && 'opacity-80'
+                  )}
                   disabled={isSending || (!messageText.trim() && !imageFile)}
                 >
                   {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                </Button>
+                </button>
               </div>
             </form>
           </div>

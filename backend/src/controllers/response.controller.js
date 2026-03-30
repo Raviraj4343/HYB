@@ -104,6 +104,32 @@ const getResponsesForRequest = asyncHandler(async (req, res) => {
     select: "fullName userName avatar branch year helpCount"
   });
 
+  const responderIds = responses
+    .map((response) => response.responder?._id?.toString?.() || response.responder?.toString?.())
+    .filter(Boolean);
+
+  const participantIds = Array.from(new Set([req.user._id.toString(), ...responderIds]));
+  const chats = await Chat.find({
+    request: requestId,
+    participants: { $in: participantIds }
+  }).select("_id participants");
+
+  const chatByResponderId = new Map();
+  chats.forEach((chat) => {
+    const otherParticipant = chat.participants.find(
+      (participant) => participant.toString() !== req.user._id.toString()
+    );
+
+    if (otherParticipant) {
+      chatByResponderId.set(otherParticipant.toString(), chat._id.toString());
+    }
+  });
+
+  responses = responses.map((response) => ({
+    ...response.toObject(),
+    chatId: chatByResponderId.get(response.responder?._id?.toString?.() || response.responder?.toString?.()) || null,
+  }));
+
   return res.status(200).json(
     new ApiResponse(200, { responses }, "Responses retrieved successfully")
   );
@@ -186,13 +212,13 @@ const acceptResponse = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Invalid chat participants");
   }
 
-  const chatExists = await Chat.findOne({
+  let chat = await Chat.findOne({
     request: request._id,
     participants: { $all: [ownerId, response.responder] }
   });
 
-  if (!chatExists) {
-    await Chat.create({
+  if (!chat) {
+    chat = await Chat.create({
       request: request._id,
       participants: [ownerId, response.responder]
     });
@@ -214,7 +240,7 @@ const acceptResponse = asyncHandler(async (req, res) => {
   emitChatListRefresh([ownerId, response.responder]);
 
   res.status(200).json(
-    new ApiResponse(200, { response }, "Response accepted successfully")
+    new ApiResponse(200, { response, chat }, "Response accepted successfully")
   );
 });
 
