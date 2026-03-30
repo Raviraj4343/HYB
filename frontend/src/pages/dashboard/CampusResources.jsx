@@ -17,6 +17,7 @@ import {
   ,Maximize2, Minimize2, X
 } from 'lucide-react';
 import ResourceCard from '@/components/campus/ResourceCard';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import { toast } from 'sonner';
@@ -824,14 +825,7 @@ const CampusResources = () => {
                     )}
                   </div>
 
-                  <div className="rounded-[1.5rem] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.78))] p-5 shadow-[0_14px_34px_rgba(15,23,42,0.06)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.52),rgba(8,15,28,0.42))]">
-                    <div className="mb-3 text-sm font-medium text-foreground">Publishing tips</div>
-                    <ul className="space-y-2.5 text-sm leading-6 text-muted-foreground">
-                      <li>Use only the most relevant fields so the section stays clean and trustworthy.</li>
-                      <li>For bus timing and holiday list, replace the single notice instead of creating duplicates.</li>
-                      <li>Add contact numbers only after verifying them once.</li>
-                    </ul>
-                  </div>
+                  {/* Publishing tips removed as requested */}
                 </div>
               </div>
               </div>
@@ -925,7 +919,9 @@ const CampusResources = () => {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <DialogTitle className="text-lg font-semibold">{selectedResource ? (selectedResource.title || 'Resource') : 'Resource'}</DialogTitle>
-                <div className="text-sm text-muted-foreground">Published by {selectedResource?.createdBy?.fullName || 'admin'}</div>
+                <div className="text-sm text-muted-foreground">Published by {selectedResource?.createdBy?.fullName ? (
+                  <Link to={`/dashboard/users/${selectedResource?.createdBy?.userName}`}>{selectedResource?.createdBy?.fullName}</Link>
+                ) : 'admin'}</div>
               </div>
 
               <div className="flex items-center gap-2">

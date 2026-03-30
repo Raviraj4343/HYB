@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useChatList } from '../../hooks/useChat';
 import { useAuth } from '../../context/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
@@ -85,10 +85,10 @@ const Chats = () => {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="truncate text-[0.98rem] font-semibold tracking-tight text-foreground dark:text-white">
-                          {otherUser?.fullName}
+                          <Link to={`/dashboard/users/${otherUser?.userName}`}>{otherUser?.fullName}</Link>
                         </div>
                         <div className="mt-0.5 truncate text-sm text-muted-foreground">
-                          @{otherUser?.userName}
+                          <Link to={`/dashboard/users/${otherUser?.userName}`}>@{otherUser?.userName}</Link>
                         </div>
                       </div>
                       <div className="shrink-0 pt-0.5 text-xs text-muted-foreground">

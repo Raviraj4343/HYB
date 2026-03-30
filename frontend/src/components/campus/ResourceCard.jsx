@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { FileText, ExternalLink, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -172,7 +173,9 @@ const ResourceCard = ({
 
         <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground border-t border-border/60 pt-3">
           <span>Updated {formatDate(resource.updatedAt)}</span>
-          {resource.updatedBy?.fullName && <span>by {resource.updatedBy.fullName}</span>}
+          {resource.updatedBy?.fullName && (
+            <span>by <Link to={`/dashboard/users/${resource.updatedBy?.userName}`}>{resource.updatedBy.fullName}</Link></span>
+          )}
         </div>
       </div>
     </article>

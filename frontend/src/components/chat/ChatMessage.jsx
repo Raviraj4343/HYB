@@ -1,5 +1,6 @@
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +23,9 @@ const ChatMessage = ({ message, isOwn, showAvatar = true, onReply, onDelete }) =
         <div className={cn('rounded-2xl px-4 py-3 shadow-sm border', bubbleBorder, bubbleBg)}>
           {message.replyTo && (
             <div className="mb-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-xs">
-              <div className="font-medium text-primary">Replying to @{message.replyTo?.sender?.userName || 'user'}</div>
+              <div className="font-medium text-primary">Replying to @
+                <Link to={`/dashboard/users/${message.replyTo?.sender?.userName}`}>{message.replyTo?.sender?.userName || 'user'}</Link>
+              </div>
               <div className="mt-1 line-clamp-2 text-muted-foreground">{message.replyTo?.isDeleted ? 'Deleted message' : message.replyTo?.content}</div>
             </div>
           )}

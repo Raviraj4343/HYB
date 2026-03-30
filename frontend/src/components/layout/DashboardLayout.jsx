@@ -240,14 +240,14 @@ const DashboardLayout = () => {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className={cn(
+                <Link to={`/dashboard/users/${user?.userName || ''}`} className={cn(
                   'truncate text-[1rem] font-semibold tracking-tight',
                   isDarkTheme ? 'text-white' : 'text-slate-900'
-                )}>{user?.fullName || 'User'}</p>
-                <p className={cn(
+                )}>{user?.fullName || 'User'}</Link>
+                <Link to={`/dashboard/users/${user?.userName || ''}`} className={cn(
                   'mt-0.5 truncate text-[0.78rem]',
                   isDarkTheme ? 'text-slate-300' : 'text-slate-500'
-                )}>@{user?.userName || 'account'}</p>
+                )}>@{user?.userName || 'account'}</Link>
               </div>
               <div className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
                 {user?.role === 'super_admin' ? 'Super Admin' : user?.role || 'Member'}
@@ -372,8 +372,8 @@ const DashboardLayout = () => {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="truncate font-medium text-sidebar-foreground">{user?.fullName || 'User'}</p>
-                <p className="truncate text-sm text-muted-foreground">@{user?.userName || 'account'}</p>
+                <Link to={`/dashboard/users/${user?.userName || ''}`} className="truncate font-medium text-sidebar-foreground">{user?.fullName || 'User'}</Link>
+                <Link to={`/dashboard/users/${user?.userName || ''}`} className="truncate text-sm text-muted-foreground">@{user?.userName || 'account'}</Link>
               </div>
             </div>
           )}

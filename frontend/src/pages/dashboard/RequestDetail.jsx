@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
@@ -53,6 +53,7 @@ const RequestDetail = () => {
   const [showFulfillDialog, setShowFulfillDialog] = useState(false);
   const [selectedFulfillHelperId, setSelectedFulfillHelperId] = useState('');
   const [isFulfilling, setIsFulfilling] = useState(false);
+  const [acceptedHelperChatId, setAcceptedHelperChatId] = useState(null);
 
   const isOwner = user?._id === request?.requestedBy?._id;
   const hasAlreadyResponded = responses.some(
@@ -104,6 +105,47 @@ const RequestDetail = () => {
     fetchRequestDetails();
   }, [id]);
 
+  const findChatIdForUsers = async (requestId, participantIds = []) => {
+    const normalizedRequestId = requestId?.toString?.() || requestId;
+    const uniqueParticipantIds = [...new Set(participantIds.filter(Boolean).map((id) => id?.toString?.() || id))];
+    if (!requestId || uniqueParticipantIds.length < 2) return null;
+
+    try {
+      const chatResponse = await api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/chat`);
+      const chats = chatResponse.data?.data?.chats || [];
+
+      const matchedRequestChat = chats.find((chat) => {
+        const chatRequestId = chat.request?._id?.toString?.() || chat.request?.toString?.() || chat.request;
+        if (chatRequestId !== normalizedRequestId) return false;
+
+        const chatParticipantIds = (chat.participants || []).map(
+          (participant) => participant?._id?.toString?.() || participant?.toString?.() || participant
+        );
+        return uniqueParticipantIds.every((participantId) => chatParticipantIds.includes(participantId));
+      });
+
+      if (matchedRequestChat?._id) {
+        return matchedRequestChat._id;
+      }
+
+      const matchedPrivateChat = chats.find((chat) => {
+        const chatParticipantIds = (chat.participants || []).map(
+          (participant) => participant?._id?.toString?.() || participant?.toString?.() || participant
+        );
+
+        return (
+          chatParticipantIds.length === uniqueParticipantIds.length &&
+          uniqueParticipantIds.every((participantId) => chatParticipantIds.includes(participantId))
+        );
+      });
+
+      return matchedPrivateChat?._id || null;
+    } catch (chatError) {
+      console.error('Failed to resolve chat for request detail:', chatError);
+      return null;
+    }
+  };
+
   const fetchRequestDetails = async () => {
     setIsLoading(true);
     setError(null);
@@ -113,8 +155,55 @@ const RequestDetail = () => {
         api.get(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/res/get-req-for-res/${id}`).catch(() => ({ data: { data: { responses: [] } } })),
       ]);
 
-      setRequest(reqResponse.data.data.request);
-      setResponses(resResponse.data.data?.responses || []);
+      const requestData = reqResponse.data.data.request;
+      let responseData = resResponse.data.data?.responses || [];
+      let resolvedAcceptedHelperChatId = null;
+
+      const needsChatLookup =
+        responseData.some(
+          (response) => ['accepted', 'completed'].includes(response.status) && !response.chatId
+        ) ||
+        Boolean(requestData?.acceptedHelper?._id);
+
+      if (needsChatLookup) {
+        const ownerId = requestData?.requestedBy?._id;
+
+        const chatLookups = await Promise.all(
+          responseData.map(async (response) => {
+            if (
+              !['accepted', 'completed'].includes(response.status) ||
+              response.chatId ||
+              !ownerId ||
+              !response.responder?._id
+            ) {
+              return response;
+            }
+
+            const chatId = await findChatIdForUsers(requestData._id, [ownerId, response.responder._id]);
+            return {
+              ...response,
+              chatId,
+            };
+          })
+        );
+
+        responseData = chatLookups;
+
+        if (requestData?.acceptedHelper?._id && ownerId) {
+          resolvedAcceptedHelperChatId =
+            responseData.find(
+              (response) =>
+                ['accepted', 'completed'].includes(response.status) &&
+                (response.responder?._id?.toString?.() || response.responder?._id) ===
+                (requestData.acceptedHelper._id?.toString?.() || requestData.acceptedHelper._id)
+            )?.chatId ||
+            await findChatIdForUsers(requestData._id, [ownerId, requestData.acceptedHelper._id]);
+        }
+      }
+
+      setRequest(requestData);
+      setResponses(responseData);
+      setAcceptedHelperChatId(resolvedAcceptedHelperChatId);
     } catch (err) {
       setError(err.message || 'Failed to load request');
     } finally {
@@ -151,21 +240,44 @@ const RequestDetail = () => {
   const handleAcceptResponse = async (responseId) => {
     try {
       const acceptResponse = await api.patch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/v1/res/${responseId}/accept`);
-      toast.success('Helper accepted. Chat is ready now.');
-      const chatId = acceptResponse.data?.data?.chat?._id;
-      if (chatId) {
-        navigate(`/dashboard/chats/${chatId}`);
-        return;
-      }
+      toast.success('Response accepted!');
+
+      const returnedChatId = acceptResponse.data?.data?.chat?._id || null;
+
+      // Optimistically update local responses so Chat button appears immediately
+      setResponses((prev) =>
+        prev.map((r) => {
+          if (r._id === responseId) {
+            return {
+              ...r,
+              status: 'accepted',
+              chatId: returnedChatId || r.chatId || null,
+            };
+          }
+          return r;
+        })
+      );
+
+      // Refresh details to keep data consistent (will populate chatId if backend created it)
       fetchRequestDetails();
     } catch (err) {
       toast.error(err.message || 'Failed to accept response');
     }
   };
 
-  const handleOpenChat = (chatId) => {
-    if (!chatId) return;
-    navigate(`/dashboard/chats/${chatId}`);
+  const handleOpenChat = async (chatId, responderId = null) => {
+    let targetChatId = chatId;
+
+    if (!targetChatId && responderId && request?._id && request?.requestedBy?._id) {
+      targetChatId = await findChatIdForUsers(request._id, [request.requestedBy._id, responderId]);
+    }
+
+    if (!targetChatId) {
+      toast.error('Chat is not available yet');
+      return;
+    }
+
+    navigate(`/dashboard/chats/${targetChatId}`);
   };
 
   const handleOpenFulfillDialog = () => {
@@ -369,18 +481,26 @@ const RequestDetail = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
-                          <p className="text-sm font-medium">{response.responder?.fullName}</p>
-                          <p className="text-xs text-muted-foreground">@{response.responder?.userName}</p>
+                          <p className="text-sm font-medium">
+                            <Link to={`/dashboard/users/${response.responder?.userName}`}>{response.responder?.fullName}</Link>
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            <Link to={`/dashboard/users/${response.responder?.userName}`}>@{response.responder?.userName}</Link>
+                          </p>
                         </div>
                       </div>
                       <div className="ml-auto flex shrink-0 items-center gap-2 self-start">
                         {isOwner && !['accepted', 'completed'].includes(response.status) && !['fulfilled', 'cancelled', 'expired'].includes(request.status) && (
                           <Button size="sm" onClick={() => handleAcceptResponse(response._id)}>
-                            Accept & Chat
+                            Accept
                           </Button>
                         )}
-                        {['accepted', 'completed'].includes(response.status) && response.chatId && (
-                          <Button size="sm" variant="outline" onClick={() => handleOpenChat(response.chatId)}>
+                        {['accepted', 'completed'].includes(response.status) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleOpenChat(response.chatId, response.responder?._id)}
+                          >
                             Chat
                           </Button>
                         )}
@@ -433,7 +553,7 @@ const RequestDetail = () => {
               <CardTitle className="text-sm font-medium text-muted-foreground">Requested by</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3">
                 <Avatar className="w-12 h-12">
                   <AvatarImage src={request.requestedBy?.avatar} />
                   <AvatarFallback className="bg-primary/10 text-primary font-medium">
@@ -441,8 +561,8 @@ const RequestDetail = () => {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium">{request.requestedBy?.fullName}</p>
-                  <p className="text-sm text-muted-foreground">@{request.requestedBy?.userName}</p>
+                  <p className="font-medium"><Link to={`/dashboard/users/${request.requestedBy?.userName}`}>{request.requestedBy?.fullName}</Link></p>
+                  <p className="text-sm text-muted-foreground"><Link to={`/dashboard/users/${request.requestedBy?.userName}`}>@{request.requestedBy?.userName}</Link></p>
                 </div>
               </div>
             </CardContent>
@@ -469,17 +589,20 @@ const RequestDetail = () => {
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{response.responder?.fullName}</p>
-                      <p className="truncate text-sm text-muted-foreground">@{response.responder?.userName}</p>
+                      <p className="truncate font-medium">
+                        <Link to={`/dashboard/users/${response.responder?.userName}`}>{response.responder?.fullName}</Link>
+                      </p>
+                      <p className="truncate text-sm text-muted-foreground">
+                        <Link to={`/dashboard/users/${response.responder?.userName}`}>@{response.responder?.userName}</Link>
+                      </p>
                     </div>
-                    {response.chatId && (
-                      <Button size="sm" variant="outline" onClick={() => handleOpenChat(response.chatId)}>
-                        Chat
-                      </Button>
-                    )}
-                    <Badge className={getResponseBadgeClass(response.status)}>
-                      {response.status}
-                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleOpenChat(response.chatId, response.responder?._id)}
+                    >
+                      Chat
+                    </Button>
                   </div>
                 ))}
               </CardContent>
@@ -498,18 +621,28 @@ const RequestDetail = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={request.acceptedHelper?.avatar} />
-                    <AvatarFallback className="bg-success/10 text-success font-medium">
-                      {getInitials(request.acceptedHelper?.fullName)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{request.acceptedHelper?.fullName}</p>
-                    <p className="text-sm text-muted-foreground">@{request.acceptedHelper?.userName}</p>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={request.acceptedHelper?.avatar} />
+                      <AvatarFallback className="bg-success/10 text-success font-medium">
+                        {getInitials(request.acceptedHelper?.fullName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium"><Link to={`/dashboard/users/${request.acceptedHelper?.userName}`}>{request.acceptedHelper?.fullName}</Link></p>
+                      <p className="text-sm text-muted-foreground"><Link to={`/dashboard/users/${request.acceptedHelper?.userName}`}>@{request.acceptedHelper?.userName}</Link></p>
+                    </div>
+                    {acceptedHelperChatId && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="ml-auto"
+                        onClick={() => handleOpenChat(acceptedHelperChatId, request.acceptedHelper?._id)}
+                      >
+                        Chat
+                      </Button>
+                    )}
                   </div>
-                </div>
               </CardContent>
             </Card>
           )}
@@ -521,11 +654,18 @@ const RequestDetail = () => {
             <CardContent className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Created</span>
-                <span>{format(new Date(request.createdAt), 'MMM d, yyyy')}</span>
+                <span>{format(new Date(request.createdAt), 'MMM d, yyyy, h:mm a')}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Expires</span>
-                <span>{format(new Date(request.expiresAt), 'MMM d, h:mm a')}</span>
+                <div className="flex flex-col items-end">
+                  <span className="font-medium">{format(new Date(request.expiresAt), 'MMM d, yyyy, h:mm a')}</span>
+                  <span className="text-xs text-muted-foreground mt-1">
+                    {new Date(request.expiresAt) > new Date()
+                      ? `in ${formatDistanceToNow(new Date(request.expiresAt), { addSuffix: false })}`
+                      : 'Expired'}
+                  </span>
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Category</span>
@@ -610,8 +750,8 @@ const RequestDetail = () => {
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="truncate text-base font-semibold text-white">{helper.fullName}</p>
-                              <p className="truncate text-sm text-slate-300">@{helper.userName}</p>
+                              <p className="truncate text-base font-semibold text-white"><Link to={`/dashboard/users/${helper.userName}`}>{helper.fullName}</Link></p>
+                              <p className="truncate text-sm text-slate-300"><Link to={`/dashboard/users/${helper.userName}`}>@{helper.userName}</Link></p>
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
                               <Badge className="border border-white/10 bg-white/10 text-slate-100">

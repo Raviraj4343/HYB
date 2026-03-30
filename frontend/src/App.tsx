@@ -13,6 +13,7 @@ import { ThemeProvider } from "./context/ThemeContext";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import PublicRoute from "./routes/PublicRoute";
 import AdminRoute from "./routes/AdminRoute";
+import RouteHistoryTracker from "./components/navigation/RouteHistoryTracker";
 
 // Pages
 import Index from "./pages/Index";
@@ -51,6 +52,7 @@ const App = () => (
         <Toaster />
         <Sonner position="bottom-center" richColors />
         <BrowserRouter>
+          <RouteHistoryTracker />
           <AuthProvider>
             <SocketProvider>
               <Routes>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Loader2, MessagesSquare, Reply, Send, ShieldBan, Trash2, Users, X, Plus } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useGlobalChat } from '../../hooks/useChat';
@@ -210,7 +211,7 @@ const GlobalChat = () => {
                   {replyTo && (
                     <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
                       <div className="min-w-0">
-                        <div className="text-sm font-medium text-primary">Replying to @{replyTo.sender?.userName}</div>
+                        <div className="text-sm font-medium text-primary">Replying to @<Link to={`/dashboard/users/${replyTo.sender?.userName}`}>{replyTo.sender?.userName}</Link></div>
                         <div className="mt-1 line-clamp-2 text-sm text-muted-foreground">
                           {replyTo.isDeleted ? 'Deleted message' : replyTo.content}
                         </div>
