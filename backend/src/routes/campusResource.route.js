@@ -13,8 +13,31 @@ const router = Router();
 
 router.get("/", getCampusResources);
 
-router.post("/", verifyJWT, isSuperAdmin, uploadCampusResource.single("image"), handleMulterError, createCampusResource);
-router.put("/:id", verifyJWT, isSuperAdmin, uploadCampusResource.single("image"), handleMulterError, updateCampusResource);
+// accept multiple named fields: image (single), images (multiple for news), messMenu (single for hostel)
+router.post(
+  "/",
+  verifyJWT,
+  isSuperAdmin,
+  uploadCampusResource.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'images', maxCount: 8 },
+    { name: 'messMenu', maxCount: 1 },
+  ]),
+  handleMulterError,
+  createCampusResource
+);
+router.put(
+  "/:id",
+  verifyJWT,
+  isSuperAdmin,
+  uploadCampusResource.fields([
+    { name: 'image', maxCount: 1 },
+    { name: 'images', maxCount: 8 },
+    { name: 'messMenu', maxCount: 1 },
+  ]),
+  handleMulterError,
+  updateCampusResource
+);
 router.delete("/:id", verifyJWT, isSuperAdmin, deleteCampusResource);
 
 export default router;

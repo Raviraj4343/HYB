@@ -46,8 +46,10 @@ const buildCategoryFields = (category, payload = {}) => {
   if (category === "hostel_updates") {
     return {
       hostelName: normalizeOptionalString(payload.hostelName),
+      // legacy single warden fields kept for backward compatibility
       wardenName: normalizeOptionalString(payload.wardenName),
       wardenPhone: normalizeOptionalString(payload.wardenPhone),
+      wardens: Array.isArray(payload.wardens) ? payload.wardens : [],
       messMenuNote: normalizeOptionalString(payload.messMenuNote),
       professorName: "",
       designation: "",
@@ -196,14 +198,40 @@ const createCampusResource = asyncHandler(async (req, res) => {
     }
   }
 
+  // handle file uploads: support multiple 'images' for news, single 'image' for notices, and 'messMenu' for hostel
   let imageUrl = null;
+  let images = [];
   let attachmentType = null;
   let attachmentName = "";
-  if (req.file?.path) {
-    const uploaded = await uploadOnCloudinary(req.file.path, resourceUploadOptions);
+  let messMenuUrl = null;
+  let messMenuName = "";
+  let messMenuType = null;
+
+  const files = req.files || {};
+  // single image/file field (legacy)
+  const singleFile = files.image?.[0] || req.file;
+  if (singleFile?.path) {
+    const uploaded = await uploadOnCloudinary(singleFile.path, resourceUploadOptions);
     imageUrl = uploaded?.secure_url || null;
-    attachmentType = isPdfUpload(req.file) ? "pdf" : "image";
-    attachmentName = req.file.originalname || "";
+    attachmentType = isPdfUpload(singleFile) ? "pdf" : "image";
+    attachmentName = singleFile.originalname || "";
+  }
+
+  // multiple images for news
+  if (files.images && files.images.length > 0) {
+    for (const f of files.images) {
+      const up = await uploadOnCloudinary(f.path, resourceUploadOptions);
+      if (up?.secure_url) images.push(up.secure_url);
+    }
+  }
+
+  // mess menu upload (hostel)
+  if (files.messMenu && files.messMenu[0]) {
+    const fm = files.messMenu[0];
+    const up = await uploadOnCloudinary(fm.path, resourceUploadOptions);
+    messMenuUrl = up?.secure_url || null;
+    messMenuType = isPdfUpload(fm) ? 'pdf' : 'image';
+    messMenuName = fm.originalname || '';
   }
 
   const displayFields = buildDisplayFields(category, {
@@ -235,6 +263,7 @@ const createCampusResource = asyncHandler(async (req, res) => {
     externalLink: displayFields.externalLink,
     effectiveDate: displayFields.effectiveDate,
     image: imageUrl,
+    images,
     attachmentType,
     attachmentName,
     professorName: displayFields.professorName,
@@ -246,6 +275,10 @@ const createCampusResource = asyncHandler(async (req, res) => {
     wardenName: displayFields.wardenName,
     wardenPhone: displayFields.wardenPhone,
     messMenuNote: displayFields.messMenuNote,
+    messMenuUrl,
+    messMenuName,
+    messMenuType,
+    wardens: Array.isArray(req.body.wardens) ? req.body.wardens : (req.body.wardens ? JSON.parse(req.body.wardens) : []),
     sortOrder: Number(sortOrder) || 0,
     createdBy: req.user._id,
     updatedBy: req.user._id,
@@ -354,21 +387,48 @@ const updateCampusResource = asyncHandler(async (req, res) => {
     resource.attachmentName = "";
   }
 
-  if (req.file?.path) {
-    const uploaded = await uploadOnCloudinary(req.file.path, resourceUploadOptions);
+  // handle updated files: single image/file or multiple images (news) and messMenu
+  const files = req.files || {};
+  const singleFile = files.image?.[0] || req.file;
+  if (singleFile?.path) {
+    const uploaded = await uploadOnCloudinary(singleFile.path, resourceUploadOptions);
     if (uploaded?.secure_url) {
       if (resource.image) {
         await deleteFromCloudinary(resource.image);
       }
       resource.image = uploaded.secure_url;
-      resource.attachmentType = isPdfUpload(req.file) ? "pdf" : "image";
-      resource.attachmentName = req.file.originalname || "";
+      resource.attachmentType = isPdfUpload(singleFile) ? "pdf" : "image";
+      resource.attachmentName = singleFile.originalname || "";
+    }
+  }
+
+  if (files.images && files.images.length > 0) {
+    // replace images array
+    resource.images = [];
+    for (const f of files.images) {
+      const up = await uploadOnCloudinary(f.path, resourceUploadOptions);
+      if (up?.secure_url) resource.images.push(up.secure_url);
+    }
+  }
+
+  if (files.messMenu && files.messMenu[0]) {
+    const fm = files.messMenu[0];
+    const up = await uploadOnCloudinary(fm.path, resourceUploadOptions);
+    if (up?.secure_url) {
+      resource.messMenuUrl = up.secure_url;
+      resource.messMenuType = isPdfUpload(fm) ? 'pdf' : 'image';
+      resource.messMenuName = fm.originalname || '';
     }
   }
 
   if (SINGLE_IMAGE_CATEGORIES.includes(resource.category)) {
     resource.title = normalizeOptionalString(resource.title) || CATEGORY_DEFAULT_TITLES[resource.category];
     resource.description = normalizeOptionalString(resource.description) || `${CATEGORY_DEFAULT_TITLES[resource.category]} uploaded for students.`;
+  }
+
+  // allow wardens to be updated via JSON string or array
+  if (req.body.wardens) {
+    resource.wardens = Array.isArray(req.body.wardens) ? req.body.wardens : JSON.parse(req.body.wardens || '[]');
   }
 
   resource.updatedBy = req.user._id;
