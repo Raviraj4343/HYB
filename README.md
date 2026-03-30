@@ -5,7 +5,7 @@
 ---
 
 ## 🌐 Live Links
-- 🔗 Frontend: https://hyb-delta.vercel.app/
+- 🔗 Frontend: https://hyb-theta.vercel.app/
 - 🔗 Backend: (add your backend URL here)
 
 ---
