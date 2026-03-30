@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { verifyJWT, optionalAuth } from "../middlewares/auth.middleware.js";
 import { isAdmin } from "../middlewares/admin.middleware.js";
 import { upload, handleMulterError } from "../middlewares/multer.middleware.js";
 import {
@@ -16,7 +16,7 @@ import {
 const router = Router();
 
 router.get("/search", searchUsers);
-router.get("/profile/:userName", getUserProfile);
+router.get("/profile/:userName", optionalAuth, getUserProfile);
 router.get("/me", verifyJWT, getCurrentUser);
 router.put("/avatar", verifyJWT, upload.single("avatar"), handleMulterError, uploadAvatar);
 

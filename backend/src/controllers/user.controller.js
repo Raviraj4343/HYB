@@ -20,13 +20,19 @@ const avatarUploadOptions = {
 
 const getUserProfile = asyncHandler(async (req, res, next) =>{
     const {userName} = req.params;
-    
-    let selectFields = "_id fullName userName avatar branch year hostel helpCount isBlocked blockedUntil blockReason";
-    if (req.user?.role === 'super_admin' || req.user?.userName === userName) {
-      selectFields += " phone";
-    }
 
-    const user = await User.findOne({ userName }).select(selectFields);
+    let user;
+    // Super admins should see the complete profile (but avoid returning sensitive tokens/codes)
+    if (req.user?.role === 'super_admin') {
+      user = await User.findOne({ userName }).select('-password -refreshToken -emailVerificationCode -emailVerificationExpires -resetPasswordCode -resetPasswordExpires');
+    } else {
+      let selectFields = "_id fullName userName avatar branch year hostel helpCount isBlocked blockedUntil blockReason";
+      // owner (profile owner) should at least see their phone as before
+      if (req.user?.userName === userName) {
+        selectFields += " phone email isEmailVerified warningCount reportHistory blockedBy blockedAt createdAt updatedAt lastLogin";
+      }
+      user = await User.findOne({ userName }).select(selectFields);
+    }
     if(!user){
         return next(new ApiError(404, "User not found"));
     }

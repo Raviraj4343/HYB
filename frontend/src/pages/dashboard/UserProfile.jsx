@@ -225,6 +225,60 @@ const UserProfile = () => {
               </div>
             </div>
           )}
+
+          {/* Super admin full details view */}
+          {currentUser?.role === 'super_admin' && (
+            <div className="mt-6 rounded-2xl border border-border/70 bg-card/70 p-4">
+              <h3 className="text-sm font-medium mb-3">Full Profile (Admin view)</h3>
+              <div className="grid grid-cols-1 gap-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Email</span>
+                  <span className="font-medium">{profile.email || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Phone</span>
+                  <span className="font-medium">{profile.phone || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Role</span>
+                  <span className="font-medium">{profile.role || 'user'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Email Verified</span>
+                  <span className="font-medium">{profile.isEmailVerified ? 'Yes' : 'No'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Warnings</span>
+                  <span className="font-medium">{profile.warningCount || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Last Login</span>
+                  <span className="font-medium">{profile.lastLogin ? new Date(profile.lastLogin).toLocaleString() : 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Account Created</span>
+                  <span className="font-medium">{profile.createdAt ? new Date(profile.createdAt).toLocaleString() : 'N/A'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Last Updated</span>
+                  <span className="font-medium">{profile.updatedAt ? new Date(profile.updatedAt).toLocaleString() : 'N/A'}</span>
+                </div>
+              </div>
+              {profile.reportHistory && profile.reportHistory.length > 0 && (
+                <div className="mt-4">
+                  <h4 className="text-sm font-medium mb-2">Report history</h4>
+                  <div className="space-y-2 text-sm">
+                    {profile.reportHistory.map((r, idx) => (
+                      <div key={idx} className="rounded border border-border/40 p-2 bg-background/60">
+                        <div className="text-muted-foreground text-xs">Reported at: {r.reportedAt ? new Date(r.reportedAt).toLocaleString() : 'N/A'}</div>
+                        <div className="font-medium">Report ID: {r.reportId?._id || r.reportId || 'N/A'}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
