@@ -17,6 +17,7 @@ import {
 import { ArrowLeft, Send, Image, Loader2, Trash2, Paperclip, Reply, MoreHorizontal, X, Flag, ShieldBan } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import ChatMessage from '@/components/chat/ChatMessage';
 
 const ChatRoom = () => {
   const { id: chatId } = useParams();
@@ -51,22 +52,41 @@ const ChatRoom = () => {
   }, [chatId]);
 
   useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current && headerRef.current) {
-        const headerH = headerRef.current.offsetHeight || 0;
-        const h = window.innerHeight - headerH;
-        containerRef.current.style.height = `${h}px`;
+    const adjustLayout = () => {
+      try {
+        const headerH = headerRef.current?.offsetHeight || 0;
+        const inputH = inputRef.current?.offsetHeight || 80;
+        const vv = window.visualViewport;
+        const viewportH = vv ? vv.height : window.innerHeight;
+
+        if (containerRef.current) {
+          // make outer container equal to viewport minus header so header stays visible
+          containerRef.current.style.height = `${viewportH - headerH}px`;
+        }
 
         if (messagesContainerRef.current) {
           messagesContainerRef.current.style.paddingTop = `${headerH + 12}px`;
+          messagesContainerRef.current.style.paddingBottom = `${inputH + 24}px`;
         }
+
+        document.documentElement.style.setProperty('--app-height', `${viewportH}px`);
+      } catch (e) {
+        // ignore
       }
-      document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
     };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    adjustLayout();
+
+    const onResize = () => adjustLayout();
+    const onVVResize = () => adjustLayout();
+
+    window.addEventListener('resize', onResize);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', onVVResize);
+
+    return () => {
+      window.removeEventListener('resize', onResize);
+      if (window.visualViewport) window.visualViewport.removeEventListener('resize', onVVResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -97,36 +117,36 @@ const ChatRoom = () => {
   useEffect(() => {
     const adjustForKeyboard = () => {
       try {
-        if (containerRef.current && headerRef.current) {
-          const h = window.innerHeight - headerRef.current.offsetHeight;
-          containerRef.current.style.height = `${h}px`;
-        }
-        document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+        const headerH = headerRef.current?.offsetHeight || 0;
+        const vv = window.visualViewport;
+        const viewportH = vv ? vv.height : window.innerHeight;
+        if (containerRef.current) containerRef.current.style.height = `${viewportH - headerH}px`;
+        document.documentElement.style.setProperty('--app-height', `${viewportH}px`);
+
         setTimeout(() => {
-          messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' });
-          setShowScrollBtn(false);
-        }, 100);
+          const container = messagesContainerRef.current;
+          if (container) {
+            container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+            setShowScrollBtn(false);
+          }
+        }, 120);
       } catch (e) {}
     };
 
     const onFocusIn = (e) => {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
-        adjustForKeyboard();
-      }
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) adjustForKeyboard();
     };
 
-    const onResize = () => {
-      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-        adjustForKeyboard();
-      }
+    const onVVResize = () => {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) adjustForKeyboard();
     };
 
-    window.addEventListener('resize', onResize);
     document.addEventListener('focusin', onFocusIn);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', onVVResize);
 
     return () => {
-      window.removeEventListener('resize', onResize);
       document.removeEventListener('focusin', onFocusIn);
+      if (window.visualViewport) window.visualViewport.removeEventListener('resize', onVVResize);
     };
   }, []);
 
@@ -288,70 +308,15 @@ const ChatRoom = () => {
           <div className="space-y-3">
             {messages.map((message) => {
               const isOwn = message.sender?._id === user?._id || message.sender === user?._id;
-              const replyPreview = message.replyTo?.isDeleted
-                ? 'Deleted message'
-                : message.replyTo?.content || 'Reply';
-
               return (
-                <div key={message._id} className={cn('flex items-end gap-2', isOwn ? 'justify-end' : 'justify-start')}>
-                  {!isOwn && (
-                    <Avatar className="mb-1 h-11 w-11 border border-border/70 shadow-sm dark:border-white/10">
-                      <AvatarImage src={message.sender?.avatar || otherUser?.avatar} />
-                      <AvatarFallback className="bg-primary/10 text-[10px] font-semibold text-primary">
-                        {getInitials(message.sender?.fullName || otherUser?.fullName)}
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
-
-                  <div className={cn('group relative max-w-[min(78%,34rem)]', isOwn ? 'items-end' : 'items-start')}>
-                    <div className={cn('rounded-2xl px-4 py-3 shadow-sm', isOwn ? 'border-emerald-600 bg-emerald-600 text-white' : 'border-border/70 bg-slate-800 text-slate-200 dark:border-white/10 dark:bg-[#0b1220]')}>
-                      {message.replyTo && (
-                        <div className="mb-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-xs">
-                          <div className="font-medium text-primary">
-                            Replying to @{message.replyTo?.sender?.userName || 'user'}
-                          </div>
-                          <div className="mt-1 line-clamp-2 text-muted-foreground">{replyPreview}</div>
-                        </div>
-                      )}
-
-                      {message.image && (
-                        <img
-                          src={message.image}
-                          alt="Shared"
-                          className="mb-3 max-h-60 w-full rounded-[0.9rem] object-cover"
-                        />
-                      )}
-
-                      {message.isDeleted ? (
-                        <p className="text-sm italic opacity-70">Message deleted</p>
-                      ) : message.content && (
-                        <p className="whitespace-pre-wrap text-sm leading-6">{message.content}</p>
-                      )}
-                    </div>
-
-                    <div className={cn('mt-1.5 flex items-center gap-2 px-1 text-[11px] text-muted-foreground', isOwn && 'justify-end')}>
-                      <span>{formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}</span>
-                      {!message.isDeleted && (
-                        <button
-                          onClick={() => setReplyTo(message)}
-                          className="opacity-0 transition-opacity group-hover:opacity-100 hover:text-primary"
-                          title="Reply"
-                        >
-                          <Reply className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                      {isOwn && !message.isDeleted && (
-                        <button
-                          onClick={() => deleteMessage(message._id)}
-                          className="opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
-                          title="Delete for everyone"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                <ChatMessage
+                  key={message._id}
+                  message={message}
+                  isOwn={isOwn}
+                  showAvatar={!isOwn}
+                  onReply={setReplyTo}
+                  onDelete={deleteMessage}
+                />
               );
             })}
           </div>

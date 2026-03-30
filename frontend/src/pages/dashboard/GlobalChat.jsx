@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import ChatMessage from '@/components/chat/ChatMessage';
 import { toast } from 'sonner';
 
 const GlobalChat = () => {
@@ -29,24 +30,31 @@ const GlobalChat = () => {
   const canBlockUsers = user?.role === 'super_admin' || user?.role === 'admin';
 
   useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current && headerRef.current) {
-        const headerH = headerRef.current.offsetHeight || 0;
-        // Set outer container height to viewport minus header so header remains visible
-        const h = window.innerHeight - headerH;
-        containerRef.current.style.height = `${h}px`;
+    const adjustLayout = () => {
+      try {
+        const headerH = headerRef.current?.offsetHeight || 0;
+        const inputH = inputRef.current?.offsetHeight || 80;
+        const vv = window.visualViewport;
+        const viewportH = vv ? vv.height : window.innerHeight;
 
-        // Keep messages container padded below the absolute header
+        if (containerRef.current) containerRef.current.style.height = `${viewportH - headerH}px`;
         if (messagesContainerRef.current) {
           messagesContainerRef.current.style.paddingTop = `${headerH + 12}px`;
+          messagesContainerRef.current.style.paddingBottom = `${inputH + 24}px`;
         }
-      }
-      document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
+        document.documentElement.style.setProperty('--app-height', `${viewportH}px`);
+      } catch (e) {}
     };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    adjustLayout();
+    const onResize = () => adjustLayout();
+    const onVVResize = () => adjustLayout();
+    window.addEventListener('resize', onResize);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', onVVResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      if (window.visualViewport) window.visualViewport.removeEventListener('resize', onVVResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -77,40 +85,32 @@ const GlobalChat = () => {
   useEffect(() => {
     const adjustForKeyboard = () => {
       try {
-        if (containerRef.current && headerRef.current) {
-          const h = window.innerHeight - headerRef.current.offsetHeight;
-          containerRef.current.style.height = `${h}px`;
-        }
-        document.documentElement.style.setProperty('--app-height', `${window.innerHeight}px`);
-        // keep view scrolled to bottom
+        const headerH = headerRef.current?.offsetHeight || 0;
+        const vv = window.visualViewport;
+        const viewportH = vv ? vv.height : window.innerHeight;
+        if (containerRef.current) containerRef.current.style.height = `${viewportH - headerH}px`;
+        document.documentElement.style.setProperty('--app-height', `${viewportH}px`);
         setTimeout(() => {
           messagesContainerRef.current?.scrollTo({ top: messagesContainerRef.current.scrollHeight, behavior: 'smooth' });
           setShowScrollBtn(false);
         }, 120);
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     };
 
     const onFocusIn = (e) => {
-      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
-        adjustForKeyboard();
-      }
+      if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) adjustForKeyboard();
     };
 
-    const onResize = () => {
-      // recalc height on resize (keyboard show/hide often triggers resize)
-      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) {
-        adjustForKeyboard();
-      }
+    const onVVResize = () => {
+      if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA')) adjustForKeyboard();
     };
 
-    window.addEventListener('resize', onResize);
     document.addEventListener('focusin', onFocusIn);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', onVVResize);
 
     return () => {
-      window.removeEventListener('resize', onResize);
       document.removeEventListener('focusin', onFocusIn);
+      if (window.visualViewport) window.visualViewport.removeEventListener('resize', onVVResize);
     };
   }, []);
 
@@ -260,95 +260,18 @@ const GlobalChat = () => {
               <div className="flex h-full items-center justify-center">
                 <p className="text-muted-foreground">No messages yet. Start the community conversation.</p>
               </div>
-            ) : (
+              ) : (
               messages.map((message) => {
                 const isOwn = message.sender?._id === user?._id;
-                const replyPreview = message.replyTo?.isDeleted
-                  ? 'Deleted message'
-                  : message.replyTo?.content || 'Reply';
-
                 return (
-                  <div key={message._id} className="group mb-5 flex gap-3 last:mb-0">
-                    <Avatar className="mt-1 h-11 w-11 shrink-0 border border-border/70 shadow-sm">
-                      <AvatarImage src={message.sender?.avatar} alt={message.sender?.fullName} />
-                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                        {getInitials(message.sender?.fullName)}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                        <span className="font-medium text-foreground">{message.sender?.fullName}</span>
-                        <span className="text-sm text-muted-foreground">@{message.sender?.userName}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
-                        </span>
-                      </div>
-
-                      <div className={cn(
-                        'mt-2 max-w-[min(720px,100%)] rounded-2xl px-4 py-3 shadow-sm',
-                        isOwn
-                          ? 'border-emerald-600 bg-emerald-600 text-white'
-                          : 'border-border/70 bg-slate-800 text-slate-200 dark:border-white/10 dark:bg-[#0b1220]'
-                      )}>
-                        {message.replyTo && (
-                          <div className="mb-3 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2 text-sm">
-                            <div className="font-medium text-primary">
-                              Replying to @{message.replyTo?.sender?.userName || 'user'}
-                            </div>
-                            <div className="mt-1 line-clamp-2 text-muted-foreground">{replyPreview}</div>
-                          </div>
-                        )}
-
-                        {message.isDeleted ? (
-                          <p className="text-sm italic text-muted-foreground">Message deleted</p>
-                        ) : (
-                          <p className="whitespace-pre-wrap text-sm text-foreground">{message.content}</p>
-                        )}
-                      </div>
-
-                      <div className="mt-2 flex flex-wrap items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                        {!message.isDeleted && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 rounded-full px-3 text-muted-foreground"
-                            onClick={() => setReplyTo(message)}
-                          >
-                            <Reply className="mr-1.5 h-4 w-4" />
-                            Reply
-                          </Button>
-                        )}
-
-                        {isOwn && !message.isDeleted && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 rounded-full px-3 text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(message._id)}
-                          >
-                            <Trash2 className="mr-1.5 h-4 w-4" />
-                            Delete
-                          </Button>
-                        )}
-
-                        {canBlockUsers && !isOwn && !message.isDeleted && (
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="h-8 rounded-full px-3 text-warning hover:text-warning"
-                            onClick={() => handleBlockUser(message.sender)}
-                          >
-                            <ShieldBan className="mr-1.5 h-4 w-4" />
-                            Block
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <ChatMessage
+                    key={message._id}
+                    message={message}
+                    isOwn={isOwn}
+                    showAvatar={!isOwn}
+                    onReply={setReplyTo}
+                    onDelete={handleDelete}
+                  />
                 );
               })
             )}
