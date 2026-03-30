@@ -266,24 +266,27 @@ const acceptResponse = asyncHandler(async (req, res) => {
   const ownerObj = new mongoose.Types.ObjectId(ownerId);
   const helperObj = new mongoose.Types.ObjectId(helperId);
 
-  let chat = await Chat.findOne({
-    request: request._id,
-    participants: { $all: [ownerObj, helperObj] }
-  });
-
-  if (!chat) {
+  // Find all chats for this request & participant pair and dedupe if necessary
+  let chats = await Chat.find({ request: request._id, participants: { $all: [ownerObj, helperObj] } }).sort({ updatedAt: -1 });
+  if (chats.length > 1) {
+    const [keep, ...others] = chats;
+    const otherIds = others.map((c) => c._id);
+    await Chat.deleteMany({ _id: { $in: otherIds } });
+    chat = keep;
+  } else if (chats.length === 1) {
+    chat = chats[0];
+  } else {
     try {
-      chat = await Chat.create({
-        request: request._id,
-        participants: [ownerObj, helperObj]
-      });
+      chat = await Chat.create({ request: request._id, participants: [ownerObj, helperObj] });
     } catch (err) {
-      // Handle duplicate-key race: if chat was created concurrently, fetch existing chat
       if (err && err.code === 11000) {
-        chat = await Chat.findOne({
-          request: request._id,
-          participants: { $all: [ownerObj, helperObj] }
-        });
+        chats = await Chat.find({ request: request._id, participants: { $all: [ownerObj, helperObj] } }).sort({ updatedAt: -1 });
+        if (chats.length > 0) {
+          const [keep, ...others] = chats;
+          const otherIds = others.map((c) => c._id);
+          if (otherIds.length) await Chat.deleteMany({ _id: { $in: otherIds } });
+          chat = keep;
+        }
       } else {
         throw err;
       }
