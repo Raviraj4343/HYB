@@ -90,7 +90,6 @@ import chatRouter from "./routes/chat.route.js";
 import notificationRouter from "./routes/notification.route.js";
 import reportRouter from "./routes/report.route.js";
 import userRouter from "./routes/user.route.js";
-import campusResourceRouter from "./routes/campusResource.route.js";
 import contactRouter from "./routes/contact.route.js";
 
 //route decleration
@@ -101,7 +100,6 @@ app.use("/api/v1/chat", chatRouter);
 app.use("/api/v1/notification", notificationRouter);
 app.use("/api/v1/report", reportRouter);
 app.use("/api/v1/user", userRouter);
-app.use("/api/v1/campus-resources", campusResourceRouter);
 app.use("/api/v1/contact", contactRouter);
 
 app.use((err, req, res, next) => {

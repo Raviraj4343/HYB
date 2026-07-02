@@ -9,17 +9,9 @@ import {
   TEMP_UPLOAD_DIR
 } from "../constants.js";
 
-const ALLOWED_CAMPUS_RESOURCE_TYPES = [
-  ...ALLOWED_IMAGE_TYPES,
-  "application/pdf",
-];
-
 if (!fs.existsSync(TEMP_UPLOAD_DIR)) {
   fs.mkdirSync(TEMP_UPLOAD_DIR, { recursive: true });
 }
-
-
-
 
 const storage = multer.diskStorage({
   destination(req, file, cb) {
@@ -35,9 +27,6 @@ const storage = multer.diskStorage({
   }
 });
 
-
-
-
 const fileFilter = (req, file, cb) => {
   if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
     return cb(
@@ -50,9 +39,6 @@ const fileFilter = (req, file, cb) => {
   cb(null, true);
 };
 
-
-
-
 export const upload = multer({
   storage,
   limits: {
@@ -60,27 +46,6 @@ export const upload = multer({
   },
   fileFilter
 });
-
-const campusResourceFileFilter = (req, file, cb) => {
-  if (!ALLOWED_CAMPUS_RESOURCE_TYPES.includes(file.mimetype)) {
-    return cb(
-      new ApiError(
-        400,
-        "Invalid file type. Only jpeg, jpg, png, webp, and pdf are allowed."
-      )
-    );
-  }
-  cb(null, true);
-};
-
-export const uploadCampusResource = multer({
-  storage,
-  limits: {
-    fileSize: MAX_FILE_SIZE
-  },
-  fileFilter: campusResourceFileFilter
-});
-
 
 export const handleMulterError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {

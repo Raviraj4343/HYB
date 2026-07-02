@@ -1,7 +1,6 @@
 import {
   ArrowLeft,
   Bell,
-  BookOpenText,
   ChevronRight,
   Flag,
   HandHeart,
@@ -54,7 +53,6 @@ const DashboardLayout = () => {
     { path: '/dashboard/requests', icon: HelpCircle, label: 'Requests' },
     { path: '/dashboard/my-requests', icon: HandHeart, label: 'My Requests' },
     { path: '/dashboard/users', icon: Users, label: 'People' },
-    { path: '/dashboard/campus-resources', icon: BookOpenText, label: 'Campus Resources' },
     { path: '/dashboard/chats', icon: MessageSquare, label: 'Chats' },
     { path: '/dashboard/notifications', icon: Bell, label: 'Notifications', badge: unreadCount },
     { path: '/about', icon: HelpCircle, label: 'About' },
@@ -305,7 +303,6 @@ const DashboardLayout = () => {
                 '/dashboard/chats',
                 '/dashboard/notifications',
                 '/dashboard/users',
-                '/dashboard/campus-resources',
               ]);
 
               return !hiddenMobilePaths.has(item.path);
