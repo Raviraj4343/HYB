@@ -19,14 +19,6 @@ export const REQUEST_CATEGORIES = [
     "other"
 ];
 
-export const QUESTION_CATEGORY = [
-   "academic",
-    "technical",
-    "general",
-    "campus",
-    "other"
-];
-
 
 // urcency level
 export const URGENCY_LEVELS = [
@@ -94,6 +86,10 @@ export const CONTACT_OPTION = [
     "chat",
     "call"
 ];
+
+export const DEFAULT_PAGE_SIZE = 20;
+
+export const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export const ALLOWED_IMAGE_TYPES = [
     "image/jpeg",
