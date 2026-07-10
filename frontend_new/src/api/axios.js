@@ -6,8 +6,12 @@ const normalizeApiPrefix = (value) => {
 };
 
 const resolveApiBaseUrl = () => {
-  const configuredUrl = import.meta.env.VITE_API_URL;
+  let configuredUrl = import.meta.env.VITE_API_URL;
   if (configuredUrl) {
+    // Automatically append /api/v1 if missing
+    if (!configuredUrl.endsWith('/api/v1') && !configuredUrl.endsWith('/api/v1/')) {
+      configuredUrl = configuredUrl.replace(/\/$/, '') + '/api/v1';
+    }
     return normalizeApiPrefix(configuredUrl);
   }
   if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
