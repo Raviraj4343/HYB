@@ -106,6 +106,7 @@ const ensureChat = asyncHandler(async (req, res) => {
         throw err;
       }
   }
+  }
 
   if (!chat) {
     throw new ApiError(500, "Could not create or find chat room");
