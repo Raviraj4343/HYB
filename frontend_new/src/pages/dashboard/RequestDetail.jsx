@@ -137,6 +137,28 @@ export default function RequestDetail() {
     },
     onError: (err) => toast.error(err.message || 'Failed to delete request'),
   });
+  const handleChatClick = async (resp) => {
+    if (resp.chatId) {
+      navigate(`/dashboard/chats/${resp.chatId}`);
+      return;
+    }
+    try {
+      const otherUserId = resp.responder?._id || resp.responder;
+      const apiResponse = await api.post('/chat/ensure', {
+        requestId: id,
+        otherUserId
+      });
+      const chat = apiResponse.data?.data?.chat;
+      if (chat?._id) {
+        navigate(`/dashboard/chats/${chat._id}`);
+      } else {
+        toast.error('Could not open chat');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.message || 'Failed to start chat');
+    }
+  };
 
   // ── Loading / error states ─────────────────────────────────────
   if (isLoading) {
@@ -311,11 +333,11 @@ export default function RequestDetail() {
                     {myResponse.status === 'rejected'  && '❌ Your offer was declined.'}
                     {myResponse.status === 'completed' && '🎉 You helped with this request!'}
                   </p>
-                  {myResponse.chatId && (myResponse.status === 'accepted' || myResponse.status === 'completed') && (
+                  {(myResponse.chatId || myResponse.status === 'accepted' || myResponse.status === 'completed') && (
                     <Button
                       className="mt-3"
                       size="sm"
-                      onClick={() => navigate(`/dashboard/chats/${myResponse.chatId}`)}
+                      onClick={() => handleChatClick(myResponse)}
                     >
                       <MessageCircle className="mr-2 h-4 w-4" /> Go to Chat
                     </Button>
@@ -442,15 +464,16 @@ export default function RequestDetail() {
                             {response.status}
                           </Badge>
 
-                          {/* Go to chat button (if chat exists) */}
-                          {response.chatId && (
+                          {/* Go to chat button (if response is accepted/completed, even if chatId isn't present immediately) */}
+                          {(response.chatId || response.status === 'accepted' || response.status === 'completed') && (
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-white/10"
-                              onClick={() => navigate(`/dashboard/chats/${response.chatId}`)}
+                              className="border-white/10 hover:border-primary/50 group"
+                              onClick={() => handleChatClick(response)}
+                              title="Message helper"
                             >
-                              <MessageCircle className="h-4 w-4" />
+                              <MessageCircle className="h-4 w-4 text-white group-hover:text-primary transition-colors" />
                             </Button>
                           )}
 
