@@ -34,6 +34,10 @@ const requestSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  images: {
+    type: [String],
+    default: []
+  },
   status: {
     type: String,
     enum: REQUEST_STATUS,

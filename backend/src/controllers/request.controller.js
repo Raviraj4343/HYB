@@ -22,14 +22,17 @@ const createRequest = asyncHandler(async (req, res) => {
     expiryDuration
   } = req.body;
 
-  let imageUrl = null;
+  let imageUrls = [];
 
-  if (req.file?.path) {
-    const uploadResult = await uploadOnCloudinary(req.file.path);
-    if (!uploadResult?.secure_url) {
-      throw new ApiError(500, "Image upload failed");
-    }
-    imageUrl = uploadResult.secure_url;
+  if (req.files && req.files.length > 0) {
+    const uploadPromises = req.files.map(async (file) => {
+      const uploadResult = await uploadOnCloudinary(file.path);
+      if (!uploadResult?.secure_url) {
+        throw new ApiError(500, `Image upload failed for ${file.originalname}`);
+      }
+      return uploadResult.secure_url;
+    });
+    imageUrls = await Promise.all(uploadPromises);
   }
 
   const expiresAt = new Date();
@@ -42,7 +45,8 @@ const createRequest = asyncHandler(async (req, res) => {
     description,
     category,
     urgency,
-    image: imageUrl,
+    image: imageUrls.length > 0 ? imageUrls[0] : null,
+    images: imageUrls,
     locationHint,
     contact,
     expiresAt,

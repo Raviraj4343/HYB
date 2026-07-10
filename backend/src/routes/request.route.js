@@ -18,7 +18,7 @@ import { upload, handleMulterError } from "../middlewares/multer.middleware.js";
 
 const router = Router();
 
-router.post("/create-req", verifyJWT, upload.single("image"), handleMulterError, createRequest);
+router.post("/create-req", verifyJWT, upload.array("images", 5), handleMulterError, createRequest);
 
 router.get("/get-all-req", getAllRequests);
 router.get("/get-req-ById/:id", optionalAuth, getRequestById);
