@@ -35,7 +35,7 @@ chatSchema.pre('validate', function (next) {
             this.participants = this.participants
                 .map((p) => (p && p._id ? p._id.toString() : p?.toString?.()))
                 .filter(Boolean)
-                .map((s) => mongoose.Types.ObjectId(s))
+                .map((s) => new mongoose.Types.ObjectId(s))
                 .sort((a, b) => (a.toString() > b.toString() ? 1 : -1));
         }
     } catch (err) {
@@ -45,8 +45,7 @@ chatSchema.pre('validate', function (next) {
 });
 
 chatSchema.index(
-  { request: 1, participants: 1 },
-  { unique: true }
+  { request: 1, participants: 1 }
 );
 
 chatSchema.index({request : 1});

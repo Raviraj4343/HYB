@@ -105,7 +105,10 @@ const ensureChat = asyncHandler(async (req, res) => {
       } else {
         throw err;
       }
-    }
+  }
+
+  if (!chat) {
+    throw new ApiError(500, "Could not create or find chat room");
   }
 
   await chat.populate('participants', 'fullName userName avatar');
