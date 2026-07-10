@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Loader2, Send } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/api/axios';
@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 export default function CreateRequest() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ title: '', description: '', category: '', urgency: 'urgent' });
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const createRequestMutation = useMutation({
     mutationFn: (newRequest) => api.post('/req/create-req', newRequest),
@@ -26,9 +27,37 @@ export default function CreateRequest() {
     },
   });
 
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length + selectedFiles.length > 5) {
+      toast.error('You can only upload up to 5 images.');
+      return;
+    }
+    const invalidFiles = files.filter(file => !file.type.startsWith('image/'));
+    if (invalidFiles.length > 0) {
+      toast.error('Only image files are allowed.');
+      return;
+    }
+    setSelectedFiles([...selectedFiles, ...files]);
+  };
+
+  const removeFile = (index) => {
+    setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    createRequestMutation.mutate(formData);
+    const data = new FormData();
+    data.append('title', formData.title);
+    data.append('description', formData.description);
+    data.append('category', formData.category);
+    data.append('urgency', formData.urgency);
+    
+    selectedFiles.forEach((file) => {
+      data.append('images', file);
+    });
+
+    createRequestMutation.mutate(data);
   };
 
   return (
@@ -78,40 +107,82 @@ export default function CreateRequest() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <select
-                  id="category"
-                  className="flex h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  required
-                >
-                  <option value="" disabled className="bg-background text-white">Select a category</option>
-                  <option value="medicine" className="bg-background text-white">💊 Medicine</option>
-                  <option value="notes" className="bg-background text-white">📝 Notes</option>
-                  <option value="sports" className="bg-background text-white">⚽ Sports</option>
-                  <option value="stationary" className="bg-background text-white">✏️ Stationary</option>
-                  <option value="electronics" className="bg-background text-white">💻 Electronics</option>
-                  <option value="books" className="bg-background text-white">📚 Books</option>
-                  <option value="food" className="bg-background text-white">🍕 Food</option>
-                  <option value="transport" className="bg-background text-white">🚗 Transport</option>
-                  <option value="other" className="bg-background text-white">📦 Other</option>
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="category">Category</Label>
+                  <select
+                    id="category"
+                    className="flex h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    required
+                  >
+                    <option value="" disabled className="bg-background text-white">Select a category</option>
+                    <option value="medicine" className="bg-background text-white">💊 Medicine</option>
+                    <option value="notes" className="bg-background text-white">📝 Notes</option>
+                    <option value="sports" className="bg-background text-white">⚽ Sports</option>
+                    <option value="stationary" className="bg-background text-white">✏️ Stationary</option>
+                    <option value="electronics" className="bg-background text-white">💻 Electronics</option>
+                    <option value="books" className="bg-background text-white">📚 Books</option>
+                    <option value="food" className="bg-background text-white">🍕 Food</option>
+                    <option value="transport" className="bg-background text-white">🚗 Transport</option>
+                    <option value="other" className="bg-background text-white">📦 Other</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="urgency">Urgency</Label>
+                  <select
+                    id="urgency"
+                    className="flex h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    value={formData.urgency}
+                    onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
+                  >
+                    <option value="normal" className="bg-background text-white">Low - No rush</option>
+                    <option value="urgent" className="bg-background text-white">Medium - Need it soon</option>
+                    <option value="critical" className="bg-background text-white">High - Urgent help needed</option>
+                  </select>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="urgency">Urgency</Label>
-                <select
-                  id="urgency"
-                  className="flex h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  value={formData.urgency}
-                  onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
-                >
-                  <option value="normal" className="bg-background text-white">Low - No rush</option>
-                  <option value="urgent" className="bg-background text-white">Medium - Need it soon</option>
-                  <option value="critical" className="bg-background text-white">High - Urgent help needed</option>
-                </select>
+              {/* Multiple Image Upload Area */}
+              <div className="space-y-3">
+                <Label>Attach Images (Max 5)</Label>
+                <div className="border-2 border-dashed border-white/10 hover:border-primary/50 transition-colors rounded-2xl p-6 flex flex-col items-center justify-center bg-white/[0.02] cursor-pointer relative group">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  />
+                  <div className="h-12 w-12 bg-white/5 rounded-2xl flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                    <Upload className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                  <p className="text-sm font-semibold text-white">Click or drag images to upload</p>
+                  <p className="text-xs text-muted-foreground mt-1">Supports JPG, PNG, WEBP (up to 5MB each)</p>
+                </div>
+
+                {/* Previews */}
+                {selectedFiles.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 pt-2">
+                    {selectedFiles.map((file, index) => {
+                      const url = URL.createObjectURL(file);
+                      return (
+                        <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-white/10 group">
+                          <img src={url} alt="upload preview" className="h-full w-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeFile(index)}
+                            className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-black/60 backdrop-blur-md flex items-center justify-center text-white hover:bg-black transition-colors"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="pt-4 flex justify-end gap-4">

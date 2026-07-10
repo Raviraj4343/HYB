@@ -4,7 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import {
   ArrowLeft, MessageCircle, Clock, CheckCircle2,
-  User, Loader2, MapPin, Hand, ThumbsUp, ThumbsDown, Send, Trash2
+  User, Loader2, MapPin, Hand, ThumbsUp, ThumbsDown, Send, Trash2,
+  ChevronLeft, ChevronRight, X
 } from 'lucide-react';
 import api from '@/api/axios';
 import { Button } from '@/components/ui/button';
@@ -58,6 +59,7 @@ export default function RequestDetail() {
   const [offerMessage, setOfferMessage] = useState('');
   const [showOfferInput, setShowOfferInput] = useState(false);
   const [selectedHelper, setSelectedHelper] = useState('');
+  const [activeImageIndex, setActiveImageIndex] = useState(null);
 
   // ── Fetch request ──────────────────────────────────────────────
   const { data: requestData, isLoading, isError } = useQuery({
@@ -166,6 +168,11 @@ export default function RequestDetail() {
   const isOwner    = currentUser?._id === requester?._id;
   const isOpen     = requestData.status === 'open';
   const isFulfilled = requestData.status === 'fulfilled';
+  const requestImages = requestData.images && requestData.images.length > 0
+    ? requestData.images
+    : requestData.image
+      ? [requestData.image]
+      : [];
 
   const myResponse = responses.find(
     (r) =>
@@ -258,6 +265,31 @@ export default function RequestDetail() {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <MapPin className="h-4 w-4 text-primary" />
               <span>{requestData.locationHint}</span>
+            </div>
+          )}
+
+          {/* Attached Images */}
+          {requestImages.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white">Attached Images ({requestImages.length})</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {requestImages.map((img, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 hover:border-primary/50 transition-all duration-300 cursor-pointer group"
+                  >
+                    <img
+                      src={img}
+                      alt={`Attached request item ${idx + 1}`}
+                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <span className="text-xs bg-black/60 text-white px-2.5 py-1 rounded-full backdrop-blur-sm">View</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -516,6 +548,53 @@ export default function RequestDetail() {
           )}
         </div>
       </div>
+
+      {/* Lightbox Modal */}
+      {activeImageIndex !== null && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-4">
+          <button
+            onClick={() => setActiveImageIndex(null)}
+            className="absolute top-4 right-4 p-2 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          {requestImages.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveImageIndex((prev) => (prev === 0 ? requestImages.length - 1 : prev - 1));
+                }}
+                className="absolute left-4 p-3 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveImageIndex((prev) => (prev === requestImages.length - 1 ? 0 : prev + 1));
+                }}
+                className="absolute right-4 p-3 rounded-full bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+
+          <img
+            src={requestImages[activeImageIndex]}
+            alt="Request attachment full size"
+            className="max-w-[90%] max-h-[80vh] object-contain rounded-lg shadow-2xl"
+          />
+
+          {requestImages.length > 1 && (
+            <p className="text-sm text-muted-foreground mt-4">
+              {activeImageIndex + 1} of {requestImages.length}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
