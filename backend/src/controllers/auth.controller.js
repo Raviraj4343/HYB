@@ -284,12 +284,28 @@ const loginUser = asyncHandler(async (req, res) => {
   await clearExpiredBlockIfNeeded(user);
 
   if (!user.isEmailVerified) {
+    const { code, expires } = generateVerificationPayload();
+    user.emailVerificationCode = code;
+    user.emailVerificationExpires = expires;
+    await user.save({ validateBeforeSave: false });
+
+    let emailSent = true;
+    try {
+      await sendVerificationCodeEmail(user.email, code, user.fullName);
+    } catch (err) {
+      emailSent = false;
+      console.error("Failed to send verification email during login", err);
+    }
+
     return res.status(403).json({
       success: false,
       code: "EMAIL_NOT_VERIFIED",
-      message: "Please verify your email before signing in",
+      message: emailSent
+        ? "Verification code sent to your email. Please verify your email before signing in."
+        : "Please verify your email, but we could not send the verification code. Please try resending.",
       data: {
         email: user.email,
+        emailSent,
       },
     });
   }

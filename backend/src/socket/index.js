@@ -3,6 +3,8 @@ import { createAdapter } from '@socket.io/redis-adapter';
 import { createClient } from 'redis';
 import jwt from "jsonwebtoken";
 import { User } from "../models/user.models.js";
+import { Chat } from "../models/chat.models.js";
+import { Message } from "../models/message.models.js";
 
 let ioInstance = null;
 
@@ -81,9 +83,33 @@ export const initializeSocket = async (server) => {
       socket.join("role:admin");
     }
 
-    socket.on("chat:join", (chatId) => {
+    // 1. Mark pending messages to this user as delivered
+    const markPendingAsDelivered = async () => {
+      const myChats = await Chat.find({ participants: userId }).select("_id");
+      const chatIds = myChats.map((c) => c._id);
+      
+      if (chatIds.length > 0) {
+        await Message.updateMany(
+          { chat: { $in: chatIds }, sender: { $ne: userId }, isDelivered: false },
+          { $set: { isDelivered: true } }
+        );
+        chatIds.forEach((cId) => {
+          ioInstance.to(`chat:${cId.toString()}`).emit("chat:messages:delivered", { chatId: cId.toString() });
+        });
+      }
+    };
+    markPendingAsDelivered().catch((err) => console.error("Delivered batch error:", err));
+
+    socket.on("chat:join", async (chatId) => {
       if (chatId) {
         socket.join(`chat:${chatId}`);
+
+        // 2. Mark messages in this room sent by other participant as read
+        await Message.updateMany(
+          { chat: chatId, sender: { $ne: userId }, isRead: false },
+          { $set: { isRead: true, isDelivered: true } }
+        );
+        ioInstance.to(`chat:${chatId}`).emit("chat:messages:read", { chatId });
       }
     });
 

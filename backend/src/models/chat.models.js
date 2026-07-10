@@ -4,7 +4,7 @@ const chatSchema = new mongoose.Schema({
     request: {
         type : mongoose.Schema.Types.ObjectId,
         ref : "Request",
-        required : true
+        required : false
     },
     participants : {
         type: [
@@ -41,7 +41,7 @@ chatSchema.pre('validate', function (next) {
     } catch (err) {
         // ignore and continue; validation will catch issues
     }
-    next();
+    if (typeof next === 'function') next();
 });
 
 chatSchema.index(

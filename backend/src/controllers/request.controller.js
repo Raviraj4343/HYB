@@ -405,7 +405,7 @@ const deleteRequest = asyncHandler(async(req, res) => {
 
 const getRequestStats = async (req, res) => {
  const activeRequests = await Request.countDocuments({
-  status: { $in: ["open"] }
+  status: { $in: ["open", "in-progress"] }
 });
 
   res.status(200).json({

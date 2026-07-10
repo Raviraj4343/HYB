@@ -16,6 +16,7 @@ import {
   emitGlobalChatMessageCreated,
   emitGlobalChatMessageDeleted,
 } from '../utils/realtime.js';
+import { getIO } from '../socket/index.js';
 
 
 const isParticipant = (chat, userId) => 
@@ -64,18 +65,24 @@ const getMyChats = asyncHandler(async (req, res) => {
 
 const ensureChat = asyncHandler(async (req, res) => {
   const { requestId, otherUserId } = req.body;
-  if (!requestId || !otherUserId) {
-    throw new ApiError(400, 'requestId and otherUserId are required');
+  if (!otherUserId) {
+    throw new ApiError(400, 'otherUserId is required');
+  }
+
+  // Normal users must provide a requestId, super admins can send without it (direct message)
+  if (req.user.role !== 'super_admin' && !requestId) {
+    throw new ApiError(400, 'requestId is required');
   }
 
   const ownerId = req.user._id;
   const ownerObj = new mongoose.Types.ObjectId(ownerId);
   const otherObj = new mongoose.Types.ObjectId(otherUserId);
+  const reqObj = requestId ? new mongoose.Types.ObjectId(requestId) : null;
 
-  // Find existing chats for this pair (unordered). If multiple exist, dedupe by keeping
-  // the most recently updated and removing the rest.
-  let chats = await Chat.find({ request: requestId, participants: { $all: [ownerObj, otherObj] } }).sort({ updatedAt: -1 });
+  // Find existing chats for this pair
+  let chats = await Chat.find({ request: reqObj, participants: { $all: [ownerObj, otherObj] } }).sort({ updatedAt: -1 });
 
+  let chat;
   if (chats.length > 1) {
     const [keep, ...others] = chats;
     const otherIds = others.map((c) => c._id);
@@ -85,11 +92,10 @@ const ensureChat = asyncHandler(async (req, res) => {
     chat = chats[0];
   } else {
     try {
-      chat = await Chat.create({ request: requestId, participants: [ownerObj, otherObj] });
+      chat = await Chat.create({ request: reqObj, participants: [ownerObj, otherObj] });
     } catch (err) {
       if (err && err.code === 11000) {
-        // Another process created it concurrently; fetch the existing one and dedupe if necessary
-        chats = await Chat.find({ request: requestId, participants: { $all: [ownerObj, otherObj] } }).sort({ updatedAt: -1 });
+        chats = await Chat.find({ request: reqObj, participants: { $all: [ownerObj, otherObj] } }).sort({ updatedAt: -1 });
         if (chats.length > 0) {
           const [keep, ...others] = chats;
           const otherIds = others.map((c) => c._id);
@@ -103,7 +109,9 @@ const ensureChat = asyncHandler(async (req, res) => {
   }
 
   await chat.populate('participants', 'fullName userName avatar');
-  await chat.populate('request', 'title status');
+  if (reqObj) {
+    await chat.populate('request', 'title status');
+  }
 
   return res.status(200).json(new ApiResponse(200, { chat }, 'Chat ensured'));
 });
@@ -157,12 +165,42 @@ const sendMessage = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Message content or image is required');
   }
 
+  const receiverDoc = chat.participants.find(p => (p._id ? p._id.toString() : p.toString()) !== req.user.id);
+  const receiverId = receiverDoc ? (receiverDoc._id ? receiverDoc._id.toString() : receiverDoc.toString()) : null;
+
+  let isDelivered = false;
+  let isRead = false;
+
+  if (receiverId) {
+    try {
+      const io = getIO();
+      if (io) {
+        const chatRoomSockets = await io.in(`chat:${chatId}`).fetchSockets();
+        const isReceiverInChat = chatRoomSockets.some(s => s.user?._id?.toString() === receiverId);
+
+        if (isReceiverInChat) {
+          isDelivered = true;
+          isRead = true;
+        } else {
+          const userSockets = await io.in(`user:${receiverId}`).fetchSockets();
+          if (userSockets.length > 0) {
+            isDelivered = true;
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Socket check error in sendMessage:", err.message);
+    }
+  }
+
   const message = await Message.create({
     chat: chatId,
     sender: req.user.id,
     content: trimmedContent || '',
     image,
-    replyTo: replyMessage?._id || null
+    replyTo: replyMessage?._id || null,
+    isDelivered,
+    isRead
   });
 
   await message.populate('sender', 'fullName userName avatar');
@@ -179,10 +217,7 @@ const sendMessage = asyncHandler(async (req, res) => {
   chat.updatedAt = Date.now();
   await chat.save();
 
- try {
-    const receiverDoc = chat.participants.find(p => (p._id ? p._id.toString() : p.toString()) !== req.user.id);
-    const receiverId = receiverDoc ? (receiverDoc._id ? receiverDoc._id : receiverDoc) : null;
-
+  try {
     if (receiverId) {
       await createAndEmitNotification({
         user: receiverId,
@@ -238,8 +273,12 @@ const getMessages = asyncHandler(async (req, res) => {
         sender: { $ne: req.user.id },
         isRead: false
       },
-      { $set: { isRead: true } }
+      { $set: { isRead: true, isDelivered: true } }
     );
+    const io = getIO();
+    if (io) {
+      io.to(`chat:${chatId}`).emit("chat:messages:read", { chatId });
+    }
   } catch (error) {
     console.log(error.message);
   }

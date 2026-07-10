@@ -230,6 +230,8 @@ const acceptResponse = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Response not found");
   }
 
+  let chat;
+
   const request = await Request.findById(response.request);
   if (!request) {
     throw new ApiError(404, "Request not found");

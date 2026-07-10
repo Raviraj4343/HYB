@@ -8,10 +8,12 @@ import connectToDatabase from "./db/index.js";
 import { DB_NAME } from "./constants.js";
 import { initializeSocket } from "./socket/index.js";
 import { getActiveMailProvider, getConfiguredSenderAddress, getMailConfigurationStatus } from "./utils/mailer.js";
+import { startDirectChatCleanupJob } from "./utils/chatCleanup.js";
 
 
 connectToDatabase()
 .then(() => {
+    startDirectChatCleanupJob();
     const server = http.createServer(app);
     initializeSocket(server);
 
