@@ -19,7 +19,8 @@ const createRequest = asyncHandler(async (req, res) => {
     urgency,
     locationHint,
     contact,
-    expiryDuration
+    expiryDuration,
+    phone
   } = req.body;
 
   let imageUrls = [];
@@ -39,6 +40,13 @@ const createRequest = asyncHandler(async (req, res) => {
   expiresAt.setHours(
     expiresAt.getHours() + (Number(expiryDuration) || 24)
   );
+
+  if (contact === "call" && phone) {
+    const trimmedPhone = phone.trim();
+    if (trimmedPhone) {
+      await User.findByIdAndUpdate(req.user._id, { phone: trimmedPhone });
+    }
+  }
 
   const request = await Request.create({
     title,
@@ -127,7 +135,7 @@ const getRequestById = asyncHandler(async (req, res) => {
 
     if (viewerId) {
       // owner viewing -> include acceptedHelper phone
-      if (viewerId === ownerId && acceptedHelperId) {
+      if (viewerId === ownerId && acceptedHelperId && request.contact === 'call') {
         const helper = await User.findById(acceptedHelperId).select('phone');
         if (helper && helper.phone) {
           // ensure acceptedHelper is an object
@@ -141,7 +149,7 @@ const getRequestById = asyncHandler(async (req, res) => {
       }
 
       // accepted helper viewing -> include owner phone
-      if (acceptedHelperId && viewerId === acceptedHelperId) {
+      if (acceptedHelperId && viewerId === acceptedHelperId && request.contact === 'call') {
         const owner = await User.findById(ownerId).select('phone');
         if (owner && owner.phone) {
           request.requestedBy = request.requestedBy.toObject ? request.requestedBy.toObject() : request.requestedBy;

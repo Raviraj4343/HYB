@@ -144,7 +144,7 @@ const getResponsesForRequest = asyncHandler(async (req, res) => {
       const canSeePhone = (
         req.user?.role === 'super_admin' ||
         viewerId === responderId ||
-        (ownerId === viewerId && ['accepted', 'completed'].includes(resp.status))
+        (ownerId === viewerId && ['accepted', 'completed'].includes(resp.status) && request.contact === 'call')
       );
 
       if (canSeePhone && responderId) {
@@ -268,29 +268,31 @@ const acceptResponse = asyncHandler(async (req, res) => {
   const ownerObj = new mongoose.Types.ObjectId(ownerId);
   const helperObj = new mongoose.Types.ObjectId(helperId);
 
-  // Find all chats for this request & participant pair and dedupe if necessary
-  let chats = await Chat.find({ request: request._id, participants: { $all: [ownerObj, helperObj] } }).sort({ updatedAt: -1 });
-  if (chats.length > 1) {
-    const [keep, ...others] = chats;
-    const otherIds = others.map((c) => c._id);
-    await Chat.deleteMany({ _id: { $in: otherIds } });
-    chat = keep;
-  } else if (chats.length === 1) {
-    chat = chats[0];
-  } else {
-    try {
-      chat = await Chat.create({ request: request._id, participants: [ownerObj, helperObj] });
-    } catch (err) {
-      if (err && err.code === 11000) {
-        chats = await Chat.find({ request: request._id, participants: { $all: [ownerObj, helperObj] } }).sort({ updatedAt: -1 });
-        if (chats.length > 0) {
-          const [keep, ...others] = chats;
-          const otherIds = others.map((c) => c._id);
-          if (otherIds.length) await Chat.deleteMany({ _id: { $in: otherIds } });
-          chat = keep;
+  if (request.contact === 'chat') {
+    // Find all chats for this request & participant pair and dedupe if necessary
+    let chats = await Chat.find({ request: request._id, participants: { $all: [ownerObj, helperObj] } }).sort({ updatedAt: -1 });
+    if (chats.length > 1) {
+      const [keep, ...others] = chats;
+      const otherIds = others.map((c) => c._id);
+      await Chat.deleteMany({ _id: { $in: otherIds } });
+      chat = keep;
+    } else if (chats.length === 1) {
+      chat = chats[0];
+    } else {
+      try {
+        chat = await Chat.create({ request: request._id, participants: [ownerObj, helperObj] });
+      } catch (err) {
+        if (err && err.code === 11000) {
+          chats = await Chat.find({ request: request._id, participants: { $all: [ownerObj, helperObj] } }).sort({ updatedAt: -1 });
+          if (chats.length > 0) {
+            const [keep, ...others] = chats;
+            const otherIds = others.map((c) => c._id);
+            if (otherIds.length) await Chat.deleteMany({ _id: { $in: otherIds } });
+            chat = keep;
+          }
+        } else {
+          throw err;
         }
-      } else {
-        throw err;
       }
     }
   }
@@ -308,7 +310,9 @@ const acceptResponse = asyncHandler(async (req, res) => {
   }
 
   emitRequestChanged("response_accepted", { _id: request._id });
-  emitChatListRefresh([ownerId, response.responder]);
+  if (chat) {
+    emitChatListRefresh([ownerId, response.responder]);
+  }
 
   res.status(200).json(
     new ApiResponse(200, { response, chat }, "Response accepted successfully")

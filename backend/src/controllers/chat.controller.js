@@ -4,6 +4,8 @@ import {Message }from '../models/message.models.js';
 import { GlobalMessage } from '../models/globalMessage.models.js';
 import {User} from '../models/user.models.js';
 import {Notification} from '../models/notification.models.js';
+import {Request} from '../models/request.models.js';
+import {Response} from '../models/response.models.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
@@ -78,6 +80,38 @@ const ensureChat = asyncHandler(async (req, res) => {
   const ownerObj = new mongoose.Types.ObjectId(ownerId);
   const otherObj = new mongoose.Types.ObjectId(otherUserId);
   const reqObj = requestId ? new mongoose.Types.ObjectId(requestId) : null;
+
+  if (req.user.role !== 'super_admin' && requestId) {
+    const request = await Request.findById(requestId);
+    if (!request) {
+      throw new ApiError(404, "Request not found");
+    }
+
+    if (request.contact !== 'chat') {
+      throw new ApiError(400, "Chat is not enabled for this request as the contact preference is set to Call");
+    }
+
+    // Identify helper (one who is not the request creator)
+    let helperId;
+    if (req.user._id.toString() === request.requestedBy.toString()) {
+      helperId = otherUserId;
+    } else if (otherUserId.toString() === request.requestedBy.toString()) {
+      helperId = req.user._id;
+    } else {
+      throw new ApiError(403, "You are not authorized to create or access a chat for this request");
+    }
+
+    // Check if there is an accepted/completed response for this helper
+    const acceptedResponse = await Response.findOne({
+      request: request._id,
+      responder: helperId,
+      status: { $in: ['accepted', 'completed'] }
+    });
+
+    if (!acceptedResponse) {
+      throw new ApiError(403, "Chat can only be accessed after the help offer has been accepted by the requester");
+    }
+  }
 
   // Find existing chats for this pair
   let chats = await Chat.find({ request: reqObj, participants: { $all: [ownerObj, otherObj] } }).sort({ updatedAt: -1 });
