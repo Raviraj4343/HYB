@@ -5,7 +5,7 @@ import { format } from 'date-fns';
 import {
   ArrowLeft, MessageCircle, Clock, CheckCircle2,
   User, Loader2, MapPin, Hand, ThumbsUp, ThumbsDown, Send, Trash2,
-  ChevronLeft, ChevronRight, X
+  ChevronLeft, ChevronRight, X, Phone
 } from 'lucide-react';
 import api from '@/api/axios';
 import { Button } from '@/components/ui/button';
@@ -94,12 +94,15 @@ export default function RequestDetail() {
   const acceptResponseMutation = useMutation({
     mutationFn: (responseId) => api.patch(`/res/${responseId}/accept`),
     onSuccess: (res) => {
-      toast.success('Helper accepted! Chat has been created.');
       queryClient.invalidateQueries(['responses', id]);
       queryClient.invalidateQueries(['request', id]);
       const chatId = res.data?.data?.chat?._id;
-      if (chatId) navigate(`/dashboard/chats/${chatId}`);
-      else navigate('/dashboard/chats');
+      if (chatId) {
+        toast.success('Helper accepted! Chat has been created.');
+        navigate(`/dashboard/chats/${chatId}`);
+      } else {
+        toast.success('Helper accepted! Contact information is now visible.');
+      }
     },
     onError: (err) => toast.error(err.message || 'Failed to accept helper'),
   });
@@ -333,14 +336,32 @@ export default function RequestDetail() {
                     {myResponse.status === 'rejected'  && '❌ Your offer was declined.'}
                     {myResponse.status === 'completed' && '🎉 You helped with this request!'}
                   </p>
-                  {(myResponse.chatId || myResponse.status === 'accepted' || myResponse.status === 'completed') && (
-                    <Button
-                      className="mt-3"
-                      size="sm"
-                      onClick={() => handleChatClick(myResponse)}
-                    >
-                      <MessageCircle className="mr-2 h-4 w-4" /> Go to Chat
-                    </Button>
+                  {(myResponse.status === 'accepted' || myResponse.status === 'completed') && (
+                    requestData.contact === 'call' ? (
+                      requester?.phone ? (
+                        <Button
+                          className="mt-3 bg-emerald-600 hover:bg-emerald-500 text-white"
+                          size="sm"
+                          asChild
+                        >
+                          <a href={`tel:${requester.phone}`}>
+                            <Phone className="mr-2 h-4 w-4" /> Call {requester.fullName} ({requester.phone})
+                          </a>
+                        </Button>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-2">Requester's phone number is loading...</p>
+                      )
+                    ) : (
+                      (myResponse.chatId || myResponse.status === 'accepted' || myResponse.status === 'completed') && (
+                        <Button
+                          className="mt-3"
+                          size="sm"
+                          onClick={() => handleChatClick(myResponse)}
+                        >
+                          <MessageCircle className="mr-2 h-4 w-4" /> Go to Chat
+                        </Button>
+                      )
+                    )
                   )}
                 </div>
               ) : isOpen ? (
@@ -464,17 +485,38 @@ export default function RequestDetail() {
                             {response.status}
                           </Badge>
 
-                          {/* Go to chat button (if response is accepted/completed, even if chatId isn't present immediately) */}
-                          {(response.chatId || response.status === 'accepted' || response.status === 'completed') && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-white/10 hover:border-primary/50 group"
-                              onClick={() => handleChatClick(response)}
-                              title="Message helper"
-                            >
-                              <MessageCircle className="h-4 w-4 text-white group-hover:text-primary transition-colors" />
-                            </Button>
+                          {/* Go to chat button or call button */}
+                          {(response.status === 'accepted' || response.status === 'completed') && (
+                            requestData.contact === 'call' ? (
+                              response.responder?.phone ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-white/10 hover:border-emerald-500/50 hover:bg-emerald-500/10 text-emerald-400 group flex items-center gap-2"
+                                  asChild
+                                  title="Call helper"
+                                >
+                                  <a href={`tel:${response.responder.phone}`}>
+                                    <Phone className="h-4 w-4 text-emerald-400" />
+                                    <span className="hidden sm:inline">Call helper ({response.responder.phone})</span>
+                                  </a>
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">Phone number loading...</span>
+                              )
+                            ) : (
+                              (response.chatId || response.status === 'accepted' || response.status === 'completed') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="border-white/10 hover:border-primary/50 group"
+                                  onClick={() => handleChatClick(response)}
+                                  title="Message helper"
+                                >
+                                  <MessageCircle className="h-4 w-4 text-white group-hover:text-primary transition-colors" />
+                                </Button>
+                              )
+                            )
                           )}
 
                           {/* Accept / Reject buttons (only for pending offers on open request) */}

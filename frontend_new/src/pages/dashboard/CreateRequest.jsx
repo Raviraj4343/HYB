@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Loader2, Send, Upload, X, Image as ImageIcon } from 'lucide-react';
@@ -10,11 +10,26 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useAuth } from '@/context/AuthContext';
 
 export default function CreateRequest() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ title: '', description: '', category: '', urgency: 'urgent' });
+  const { user: currentUser } = useAuth();
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    category: '',
+    urgency: 'urgent',
+    contact: 'chat',
+    phone: ''
+  });
   const [selectedFiles, setSelectedFiles] = useState([]);
+
+  useEffect(() => {
+    if (currentUser?.phone) {
+      setFormData(prev => ({ ...prev, phone: currentUser.phone }));
+    }
+  }, [currentUser]);
 
   const createRequestMutation = useMutation({
     mutationFn: (newRequest) => api.post('/req/create-req', newRequest),
@@ -47,11 +62,20 @@ export default function CreateRequest() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (formData.contact === 'call' && !formData.phone?.trim()) {
+      toast.error('Please enter a phone number for call preference.');
+      return;
+    }
+
     const data = new FormData();
     data.append('title', formData.title);
     data.append('description', formData.description);
     data.append('category', formData.category);
     data.append('urgency', formData.urgency);
+    data.append('contact', formData.contact);
+    if (formData.contact === 'call') {
+      data.append('phone', formData.phone);
+    }
     
     selectedFiles.forEach((file) => {
       data.append('images', file);
@@ -143,6 +167,35 @@ export default function CreateRequest() {
                     <option value="critical" className="bg-background text-white">High - Urgent help needed</option>
                   </select>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="contact">Contact Preference</Label>
+                  <select
+                    id="contact"
+                    className="flex h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    value={formData.contact}
+                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
+                  >
+                    <option value="chat" className="bg-background text-white">💬 Chat in App</option>
+                    <option value="call" className="bg-background text-white">📞 Phone Call</option>
+                  </select>
+                </div>
+
+                {formData.contact === 'call' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      placeholder="E.g., +91 98765 43210"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      required={formData.contact === 'call'}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Your phone number will only be visible to the helper you accept.</p>
+                  </div>
+                )}
               </div>
 
               {/* Multiple Image Upload Area */}
