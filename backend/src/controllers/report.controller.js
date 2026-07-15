@@ -1,5 +1,7 @@
 import {Report} from '../models/report.models.js';
 import {User} from '../models/user.models.js';
+import {Message} from '../models/message.models.js';
+import {Chat} from '../models/chat.models.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
@@ -71,7 +73,7 @@ const notifyReportedUser = async (userId, warningCount, isBlocked) => {
 };
 
 const createReport = asyncHandler(async (req, res) => {
-  const { reportedUserId, reason, description } = req.body;
+  const { reportedUserId, reason, description, chatId } = req.body;
 
   if (!reportedUserId || !reason) {
     throw new ApiError(400, "Reported user and reason are required");
@@ -88,20 +90,43 @@ const createReport = asyncHandler(async (req, res) => {
 
   const reporter = await User.findById(req.user._id);
   if (!reporter) {
-  throw new ApiError(401, "Reporter not found");
+    throw new ApiError(401, "Reporter not found");
   }
 
+  // Fetch last 15 chat messages for AI context (if chatId provided)
+  let recentMessages = [];
+  if (chatId) {
+    try {
+      // Verify the reporter is a participant of that chat
+      const chat = await Chat.findOne({
+        _id: chatId,
+        participants: req.user._id,
+      });
+      if (chat) {
+        recentMessages = await Message.find({ chat: chatId, isDeleted: false })
+          .populate('sender', 'fullName userName')
+          .sort({ createdAt: -1 })
+          .limit(15)
+          .lean();
+        // Reverse so oldest is first for readability in prompt
+        recentMessages = recentMessages.reverse();
+      }
+    } catch (err) {
+      console.error('[createReport] Failed to fetch chat messages for AI context:', err.message);
+    }
+  }
 
   let isValidReport = false;
-    try {
-      isValidReport = await validateReport({
-        reason,
-        description: description || "",
-      });
-    } catch (error) {
-      console.error("AI validation failed:", error.message);
-      isValidReport = false; // fallback to manual review
-    }
+  try {
+    isValidReport = await validateReport({
+      reason,
+      description: description || "",
+      recentMessages,
+    });
+  } catch (error) {
+    console.error("AI validation failed:", error.message);
+    isValidReport = false; // fallback to manual review
+  }
 
   const normalizedReason = reason
   .toLowerCase()
@@ -125,13 +150,14 @@ const createReport = asyncHandler(async (req, res) => {
     validatedAt: isValidReport ? new Date() : null,
   });
 
-  // 🔔 Notify admins ALWAYS
+  // 🔔 Notify admins ALWAYS (regular admin notification)
   await notifyAdmins(report, reporter, reportedUser);
 
   let warningCount = reportedUser.warningCount;
   let isBlocked = reportedUser.isBlocked;
 
   if (isValidReport) {
+    // ✅ AI validated — auto-apply warning / block
     reportedUser.warningCount = (reportedUser.warningCount || 0) + 1;
     warningCount = reportedUser.warningCount;
 
@@ -142,8 +168,59 @@ const createReport = asyncHandler(async (req, res) => {
     }
 
     await reportedUser.save();
-
     await notifyReportedUser(reportedUserId, warningCount, isBlocked);
+  } else {
+    // ❌ AI could NOT validate — escalate to super-admins for manual review
+    try {
+      const superAdmins = await User.find({ role: "super_admin" }).select("_id");
+
+      if (superAdmins.length > 0) {
+        // Build a compact transcript for the notification
+        const transcript = recentMessages.length > 0
+          ? recentMessages.map((m, i) => {
+              const sender = m.sender?.userName || m.sender?.fullName || 'User';
+              const text   = m.isDeleted ? '[deleted]' : (m.content || '[image]');
+              return `[${i + 1}] ${sender}: ${text}`;
+            }).join('\n')
+          : '(No chat messages available)';
+
+        const reviewNotifications = superAdmins.map(sa => ({
+          user: sa._id,
+          type: "report_review",
+          title: "⚠️ Manual Report Review Required",
+          message: `${reporter.userName} reported ${reportedUser.userName} for "${finalReason}". AI could not verify — please review the last ${recentMessages.length} chat message(s) below and approve or reject.`,
+          data: {
+            reportId:         report._id,
+            reportedUserId:   reportedUser._id,
+            reportedUserName: reportedUser.userName,
+            reporterName:     reporter.userName,
+            reason:           finalReason,
+            description:      description || '',
+            chatId:           chatId || null,
+            transcript,       // plain-text transcript for display
+            recentMessages: recentMessages.map(m => ({
+              senderName: m.sender?.userName || m.sender?.fullName || 'User',
+              content:    m.isDeleted ? '[deleted]' : (m.content || '[image]'),
+              createdAt:  m.createdAt,
+            })),
+          },
+          isRead: false,
+        }));
+
+        const created = await Notification.insertMany(reviewNotifications);
+
+        for (const n of created) {
+          const hydrated = await Notification.findById(n._id)
+            .populate("request", "title status")
+            .lean();
+          emitAdminNotificationCreated(hydrated);
+          await emitNotificationCount(n.user);
+        }
+      }
+    } catch (err) {
+      // Non-fatal — log and continue
+      console.error('[createReport] Failed to send super-admin review notification:', err.message);
+    }
   }
 
   return res.status(201).json(
@@ -162,11 +239,12 @@ const createReport = asyncHandler(async (req, res) => {
         },
       },
       isValidReport
-        ? "Report validated and warning issued"
-        : "Report submitted for manual review"
+        ? "Report validated — warning issued automatically"
+        : "AI could not verify report — sent to super-admin for manual review"
     )
   );
 });
+
 
 
 const getAllReports = asyncHandler(async (req, res) => {
@@ -369,6 +447,81 @@ const blockUserBySuperAdmin = asyncHandler(async (req, res) => {
   );
 });
 
+/**
+ * PATCH /api/v1/report/:reportId/review
+ * Body: { action: "approve" | "reject", notificationId }
+ * Super-admin manually approves or rejects a pending report_review.
+ * - approve → warn/block reported user (same as AI-valid path)
+ * - reject  → dismiss the report silently
+ */
+const reviewReport = asyncHandler(async (req, res) => {
+  const { reportId } = req.params;
+  const { action, notificationId } = req.body;
+
+  if (!['approve', 'reject'].includes(action)) {
+    throw new ApiError(400, 'action must be "approve" or "reject"');
+  }
+
+  const report = await Report.findById(reportId);
+  if (!report) throw new ApiError(404, 'Report not found');
+
+  if (report.status !== 'pending') {
+    throw new ApiError(400, 'Report has already been reviewed');
+  }
+
+  report.reviewedBy  = req.user._id;
+  report.reviewedAt  = new Date();
+  report.reviewNotes = `Manual review by super-admin: ${action}`;
+
+  if (action === 'approve') {
+    // Apply the same auto-action as the AI-valid path
+    const reportedUser = await User.findById(report.reportedUser);
+    if (!reportedUser) throw new ApiError(404, 'Reported user not found');
+
+    reportedUser.warningCount = (reportedUser.warningCount || 0) + 1;
+    const warningCount = reportedUser.warningCount;
+    let isBlocked = false;
+
+    if (warningCount >= BLOCK_THRESHOLD) {
+      reportedUser.isBlocked = true;
+      reportedUser.blockedAt = new Date();
+      isBlocked = true;
+    }
+
+    await reportedUser.save();
+
+    report.status      = 'resolved';
+    report.isValidated = true;
+    report.validatedAt = new Date();
+
+    await notifyReportedUser(report.reportedUser, warningCount, isBlocked);
+    await report.save();
+
+    // Delete the review notification so it no longer sits in the inbox
+    if (notificationId) {
+      await Notification.deleteOne({ _id: notificationId });
+      await emitNotificationCount(req.user._id);
+    }
+
+    return res.status(200).json(
+      new ApiResponse(200, { report, warningCount, isBlocked }, 'Report approved — warning issued to user')
+    );
+  }
+
+  // action === 'reject'
+  report.status = 'dismissed';
+  await report.save();
+
+  if (notificationId) {
+    await Notification.deleteOne({ _id: notificationId });
+    await emitNotificationCount(req.user._id);
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, { report }, 'Report rejected — no action taken')
+  );
+});
+
 export {
     createReport,
     getAllReports,
@@ -376,5 +529,6 @@ export {
     getReportById,
     getReportsByUser,
     unblockUser,
-    blockUserBySuperAdmin
+    blockUserBySuperAdmin,
+    reviewReport
 };
