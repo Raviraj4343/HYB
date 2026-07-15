@@ -1,13 +1,13 @@
 import { Request } from "../models/request.models.js";
 import { User } from "../models/user.models.js";
 import { Response } from "../models/response.models.js";
-import {Chat} from "../models/chat.models.js";
-import {Message} from "../models/message.models.js";
+import { Chat } from "../models/chat.models.js";
+import { Message } from "../models/message.models.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { DEFAULT_PAGE_SIZE, DELETE_WINDOW_MINUTES } from "../constants.js";
+import { DEFAULT_PAGE_SIZE, DELETE_WINDOW_MINUTES, REQUEST_DELETE_TIME } from "../constants.js";
 import { createAndEmitNotification, emitChatListRefresh, emitRequestChanged } from "../utils/realtime.js";
 
 
@@ -206,15 +206,15 @@ const acceptRequest = asyncHandler(async (req, res) => {
 
   let chat = await Chat.findOne({ request: request._id });
 
- if (!chat) {
-  chat = await Chat.create({
-    request: request._id,
-    participants: [
-      request.requestedBy,
-      req.user._id
-    ]
-  });
- }
+  if (!chat) {
+    chat = await Chat.create({
+      request: request._id,
+      participants: [
+        request.requestedBy,
+        req.user._id
+      ]
+    });
+  }
 
   emitRequestChanged("accepted", request.toObject());
   emitChatListRefresh([request.requestedBy, req.user._id]);
@@ -293,6 +293,13 @@ const cancelRequest = asyncHandler(async (req, res) => {
 
   if (request.status === "fulfilled") {
     throw new ApiError(400, "Cannot cancel fulfilled request");
+  }
+
+  const createdAt = new Date(request.createdAt);
+  const now = new Date();
+  const diffMinutes = (now - createdAt) / (1000 * 60);
+  if (diffMinutes > REQUEST_DELETE_TIME) {
+    throw new ApiError(400, `Requests can only be cancelled within ${REQUEST_DELETE_TIME} minutes of posting.`);
   }
 
   request.status = "cancelled";
@@ -380,45 +387,45 @@ const fulfillRequest = asyncHandler(async (req, res) => {
   );
 });
 
-const deleteRequest = asyncHandler(async(req, res) => {
+const deleteRequest = asyncHandler(async (req, res) => {
   const request = await Request.findById(req.params.id);
-  if(!request){
-    throw new ApiError(404,"Request not found");
-    }
+  if (!request) {
+    throw new ApiError(404, "Request not found");
+  }
 
-    if(request.requestedBy.toString() !== req.user._id.toString()){
-      throw new ApiError(403, "Not authorized to update this request");
-    }
+  if (request.requestedBy.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, "Not authorized to update this request");
+  }
 
-    if(request.status !== "open"){
-      throw new ApiError(400, "Only open request can be deleted");
-    }
+  if (request.status !== "open") {
+    throw new ApiError(400, "Only open request can be deleted");
+  }
 
-    const createdAt = new Date(request.createdAt);
-    const now = new Date();
-    const diffMinutes = (now-createdAt)/(1000*60);
-    if(diffMinutes > DELETE_WINDOW_MINUTES){
-      throw new ApiError(400, "request can only be deleted within 5 min of creation");
-    }
+  const createdAt = new Date(request.createdAt);
+  const now = new Date();
+  const diffMinutes = (now - createdAt) / (1000 * 60);
+  if (diffMinutes > DELETE_WINDOW_MINUTES) {
+    throw new ApiError(400, "request can only be deleted within 5 min of creation");
+  }
 
-    const chatExists = await Chat.exists({request:request._id});
+  const chatExists = await Chat.exists({ request: request._id });
 
-    if(chatExists){
-      throw new ApiError(400, "you can't delete chat has been created");
-    }
+  if (chatExists) {
+    throw new ApiError(400, "you can't delete chat has been created");
+  }
 
-    await Request.deleteOne({_id:request._id});
-    emitRequestChanged("deleted", { _id: request._id });
-    
-    return res
+  await Request.deleteOne({ _id: request._id });
+  emitRequestChanged("deleted", { _id: request._id });
+
+  return res
     .status(200)
     .json(new ApiResponse(200, {}, "Request deleted successfully"));
 });
 
 const getRequestStats = async (req, res) => {
- const activeRequests = await Request.countDocuments({
-  status: { $in: ["open", "in-progress"] }
-});
+  const activeRequests = await Request.countDocuments({
+    status: { $in: ["open", "in-progress"] }
+  });
 
   res.status(200).json({
     success: true,

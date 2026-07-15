@@ -21,7 +21,8 @@ export default function CreateRequest() {
     category: '',
     urgency: 'urgent',
     contact: 'chat',
-    phone: ''
+    phone: '',
+    expiryDuration: '24'
   });
   const [selectedFiles, setSelectedFiles] = useState([]);
 
@@ -32,7 +33,11 @@ export default function CreateRequest() {
   }, [currentUser]);
 
   const createRequestMutation = useMutation({
-    mutationFn: (newRequest) => api.post('/req/create-req', newRequest),
+    mutationFn: (newRequest) => api.post('/req/create-req', newRequest, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    }),
     onSuccess: () => {
       toast.success('Request created successfully');
       navigate('/dashboard/my-requests');
@@ -73,6 +78,7 @@ export default function CreateRequest() {
     data.append('category', formData.category);
     data.append('urgency', formData.urgency);
     data.append('contact', formData.contact);
+    data.append('expiryDuration', formData.expiryDuration);
     if (formData.contact === 'call') {
       data.append('phone', formData.phone);
     }
@@ -198,8 +204,29 @@ export default function CreateRequest() {
                 )}
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="expiryDuration">Expiry Duration</Label>
+                  <select
+                    id="expiryDuration"
+                    className="flex h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    value={formData.expiryDuration}
+                    onChange={(e) => setFormData({ ...formData, expiryDuration: e.target.value })}
+                  >
+                    <option value="1" className="bg-background text-white">1 Hour</option>
+                    <option value="3" className="bg-background text-white">3 Hours</option>
+                    <option value="6" className="bg-background text-white">6 Hours</option>
+                    <option value="12" className="bg-background text-white">12 Hours</option>
+                    <option value="24" className="bg-background text-white">24 Hours (1 Day)</option>
+                    <option value="48" className="bg-background text-white">48 Hours (2 Days)</option>
+                    <option value="72" className="bg-background text-white">72 Hours (3 Days)</option>
+                  </select>
+                </div>
+              </div>
+
               {/* Multiple Image Upload Area */}
               <div className="space-y-3">
+
                 <Label>Attach Images (Max 5)</Label>
                 <div className="border-2 border-dashed border-white/10 hover:border-primary/50 transition-colors rounded-2xl p-6 flex flex-col items-center justify-center bg-white/[0.02] cursor-pointer relative group">
                   <input

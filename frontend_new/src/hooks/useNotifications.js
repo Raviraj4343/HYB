@@ -115,5 +115,6 @@ export const useNotifications = (enabled = true) => {
     markAllAsRead,
     deleteNotification,
     deleteAllNotifications,
+    setNotifications,   // exposed so callers can optimistically update the list
   };
 };

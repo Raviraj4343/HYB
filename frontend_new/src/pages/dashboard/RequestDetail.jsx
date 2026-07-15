@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -60,6 +60,34 @@ export default function RequestDetail() {
   const [showOfferInput, setShowOfferInput] = useState(false);
   const [selectedHelper, setSelectedHelper] = useState('');
   const [activeImageIndex, setActiveImageIndex] = useState(null);
+  const [timeNow, setTimeNow] = useState(Date.now());
+  const [phone, setPhone] = useState(currentUser?.phone || '');
+
+  useEffect(() => {
+    if (currentUser?.phone) {
+      setPhone(currentUser.phone);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeNow(Date.now());
+    }, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const cancelRequestMutation = useMutation({
+    mutationFn: () => api.put(`/req/cancle-req/${id}`),
+    onSuccess: () => {
+      toast.success('Request cancelled successfully');
+      queryClient.invalidateQueries(['request', id]);
+      queryClient.invalidateQueries(['my-requests']);
+      queryClient.invalidateQueries(['my-requests-count']);
+    },
+    onError: (err) => toast.error(err.message || 'Failed to cancel request'),
+  });
+
+
 
   // ── Fetch request ──────────────────────────────────────────────
   const { data: requestData, isLoading, isError } = useQuery({
@@ -79,8 +107,8 @@ export default function RequestDetail() {
 
   // ── Offer to help (non-owner) ──────────────────────────────────
   const offerMutation = useMutation({
-    mutationFn: (message) =>
-      api.post('/res/create-response', { requestId: id, message }),
+    mutationFn: ({ message, phone }) =>
+      api.post('/res/create-response', { requestId: id, message, phone }),
     onSuccess: () => {
       toast.success('Offer sent! The requester will review it.');
       setShowOfferInput(false);
@@ -89,6 +117,7 @@ export default function RequestDetail() {
     },
     onError: (err) => toast.error(err.message || 'Failed to send offer'),
   });
+
 
   // ── Accept a helper's offer (owner) ───────────────────────────
   const acceptResponseMutation = useMutation({
@@ -377,10 +406,37 @@ export default function RequestDetail() {
                       value={offerMessage}
                       onChange={(e) => setOfferMessage(e.target.value)}
                     />
+
+                    {requestData.contact === 'call' && !currentUser?.phone && (
+                      <div className="space-y-2 pt-1">
+                        <label htmlFor="helperPhone" className="text-xs font-semibold text-white uppercase tracking-wider">
+                          Phone Number (Required)
+                        </label>
+                        <input
+                          id="helperPhone"
+                          type="tel"
+                          className="flex h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          placeholder="E.g., +91 98765 43210"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          This request uses phone call contact. Please provide your phone number so the requester can call you once they accept your help.
+                        </p>
+                      </div>
+                    )}
+
                     <div className="flex gap-3">
                       <Button
-                        onClick={() => offerMutation.mutate(offerMessage)}
-                        disabled={offerMutation.isPending || !offerMessage.trim()}
+                        onClick={() => {
+                          if (requestData.contact === 'call' && !currentUser?.phone && !phone.trim()) {
+                            toast.error("Phone number is required to offer help on this request");
+                            return;
+                          }
+                          offerMutation.mutate({ message: offerMessage, phone });
+                        }}
+                        disabled={offerMutation.isPending || !offerMessage.trim() || (requestData.contact === 'call' && !currentUser?.phone && !phone.trim())}
                       >
                         {offerMutation.isPending
                           ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -393,6 +449,7 @@ export default function RequestDetail() {
                       </Button>
                     </div>
                   </div>
+
                 ) : (
                   <Button
                     size="lg"
@@ -414,6 +471,39 @@ export default function RequestDetail() {
           {/* ══════════════ OWNER SECTION ══════════════ */}
           {isOwner && (
             <div className="space-y-6">
+
+              {/* Cancel Request Section (within 30 mins) */}
+              {(isOpen || requestData.status === 'in-progress') && (() => {
+                const elapsedMinutes = (timeNow - new Date(requestData.createdAt)) / (1000 * 60);
+                const remainingMinutes = Math.max(0, Math.ceil(30 - elapsedMinutes));
+                if (remainingMinutes > 0) {
+                  return (
+                    <div className="p-5 rounded-2xl border border-destructive/20 bg-destructive/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <h4 className="text-sm font-semibold text-destructive">
+                          Cancel Request
+                        </h4>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          You can cancel this request within 30 minutes of posting. {remainingMinutes} min remaining.
+                        </p>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          if (window.confirm("Are you sure you want to cancel this request?")) {
+                            cancelRequestMutation.mutate();
+                          }
+                        }}
+                        disabled={cancelRequestMutation.isPending}
+                      >
+                        {cancelRequestMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Cancel Request
+                      </Button>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               {/* Responses list */}
               <div>

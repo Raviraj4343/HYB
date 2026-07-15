@@ -3,8 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mail, Lock, User, ArrowRight, Loader2, Eye, EyeOff,
-  ShieldCheck, RefreshCw, CheckCircle2
+  ShieldCheck, RefreshCw, CheckCircle2, Building2, GraduationCap, Home
 } from 'lucide-react';
+
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -98,7 +99,7 @@ function OtpInput({ value, onChange, disabled }) {
 export default function Register() {
   const [step, setStep] = useState('form'); // 'form' | 'verify' | 'success'
   const [formData, setFormData] = useState({
-    fullName: '', userName: '', email: '', password: ''
+    fullName: '', userName: '', email: '', password: '', branch: '', year: '', hostel: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -243,6 +244,52 @@ export default function Register() {
                     required
                   />
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="relative group">
+                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                    <Input
+                      type="text"
+                      name="branch"
+                      placeholder="Branch (e.g. CSE)"
+                      className="pl-12 h-12 bg-white/5 border-white/10 rounded-2xl focus:bg-white/10 transition-all text-base"
+                      value={formData.branch}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="relative group">
+                    <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                    <select
+                      name="year"
+                      className="pl-12 pr-4 h-12 w-full bg-white/5 border border-white/10 rounded-2xl focus:bg-white/10 transition-all text-base text-foreground focus-visible:outline-none focus:bg-neutral-900"
+                      value={formData.year}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="" disabled className="bg-background text-white">Year</option>
+                      <option value="1" className="bg-background text-white">1st Year</option>
+                      <option value="2" className="bg-background text-white">2nd Year</option>
+                      <option value="3" className="bg-background text-white">3rd Year</option>
+                      <option value="4" className="bg-background text-white">4th Year</option>
+                      <option value="5" className="bg-background text-white">5th Year</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="relative group">
+                  <Home className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground transition-colors group-focus-within:text-primary" />
+                  <Input
+                    type="text"
+                    name="hostel"
+                    placeholder="Hostel Number"
+                    className="pl-12 h-12 bg-white/5 border-white/10 rounded-2xl focus:bg-white/10 transition-all text-base"
+                    value={formData.hostel}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
 
                 <div className="relative group">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground transition-colors group-focus-within:text-primary" />

@@ -1,108 +1,145 @@
-
-
 /**
- * Validates a report using AI analysis
+ * Validates a report using Groq AI analysis with the last 15 chat messages as context.
  * @param {Object} params 
  * @param {string} params.reason 
  * @param {string} params.description
+ * @param {Array}  params.recentMessages - last 15 messages [{sender, content, createdAt}]
  * @returns {Promise<boolean>} 
  */
-const validateReport = async ({ reason, description }) => {
+const validateReport = async ({ reason, description, recentMessages = [] }) => {
+  const apiKey = process.env.HYB_REPORT_API_KEY;
+
+  // ------------------------------------------------------------------
+  // Fallback: if no API key, use basic rule-based validation
+  // ------------------------------------------------------------------
+  if (!apiKey) {
+    console.warn('[AI Validator] No HYB_REPORT_API_KEY found – using rule-based fallback');
+    return _ruleBasedValidation({ reason, description });
+  }
+
+  if (!reason || !description) {
+    console.log('[AI Validator] Invalid input: missing reason or description');
+    return false;
+  }
+
   try {
-    // ============================================
-    // MOCK AI LOGIC - Replace with actual AI API
-    // ============================================
-    
-    // Validate input exists
-    if (!reason || !description) {
-      console.log('[AI Validator] Invalid input: missing reason or description');
-      return false;
+    // Build a human-readable transcript of the last 15 messages
+    let chatContext = '';
+    if (recentMessages && recentMessages.length > 0) {
+      chatContext = recentMessages
+        .map((m, i) => {
+          const senderLabel = m.senderName || m.sender?.userName || m.sender?.fullName || 'User';
+          const content = m.isDeleted ? '[deleted message]' : (m.content || '[image]');
+          return `[${i + 1}] ${senderLabel}: ${content}`;
+        })
+        .join('\n');
     }
 
-    // Basic validation rules (mock implementation)
-    const minDescriptionLength = 10;
-    const validReasons = [
-      'spam',
-      'harassment',
-      'inappropriate_content',
-      'fake_profile',
-      'scam',
-      'hate_speech',
-      'violence',
-      'impersonation',
-      'other'
-    ];
+    const systemPrompt = `You are a content moderation AI for a community help platform called HYB (Help Your Buddy).
+Your job is to decide whether a user report is VALID or INVALID based on:
+- The report reason and description provided by the reporter
+- The recent chat messages between the two users (if provided)
 
-    // Check if reason is valid
-    const isValidReason = validReasons.includes(reason.toLowerCase());
-    
-    // Check if description meets minimum requirements
-    const isDescriptionValid = description.trim().length >= minDescriptionLength;
+Rules:
+1. Return ONLY a JSON object with fields: { "valid": boolean, "confidence": number (0-1), "reasoning": string }
+2. A report is VALID if the chat messages or description clearly demonstrate the reported behavior
+3. A report is INVALID if the description is vague, false, or the chat shows no such behavior
+4. Be strict – do not validate reports that are frivolous or retaliatory
+5. Context from messages is more important than description alone
 
-    // Mock AI decision (currently always returns true for valid inputs)
-    // Replace this block with actual AI API call
-    const aiDecision = isValidReason && isDescriptionValid;
+Report reasons: spam, harassment, inappropriate_content, fraud, fake_request, abuse, other`;
 
-    console.log(`[AI Validator] Report validation result: ${aiDecision}`);
-    console.log(`[AI Validator] Reason: ${reason}, Description length: ${description.length}`);
+    const userPrompt = `Report Reason: ${reason}
+Reporter's Description: ${description}
 
-    // ============================================
-    // FUTURE: Integrate with actual AI service
-    // Example implementation:
-    // 
-    // const response = await fetch('YOUR_AI_API_ENDPOINT', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     'Authorization': `Bearer ${process.env.AI_API_KEY}`
-    //   },
-    //   body: JSON.stringify({
-    //     reason,
-    //     description,
-    //     task: 'validate_report'
-    //   })
-    // });
-    // 
-    // const result = await response.json();
-    // return result.isValid;
-    // ============================================
+Recent Chat Messages (last ${recentMessages.length}):
+${chatContext || '(No chat messages available)'}
 
-    return aiDecision;
+Based on the above, is this report valid?`;
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.1,
+        max_tokens: 256,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('[AI Validator] Groq API error:', response.status, errText);
+      return _ruleBasedValidation({ reason, description });
+    }
+
+    const data = await response.json();
+    const rawContent = data?.choices?.[0]?.message?.content;
+
+    if (!rawContent) {
+      console.warn('[AI Validator] Empty response from Groq');
+      return _ruleBasedValidation({ reason, description });
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(rawContent);
+    } catch {
+      console.warn('[AI Validator] Could not parse JSON from Groq response:', rawContent);
+      return _ruleBasedValidation({ reason, description });
+    }
+
+    const isValid = parsed?.valid === true;
+    const confidence = parsed?.confidence ?? 0;
+
+    console.log(`[AI Validator] Result: valid=${isValid}, confidence=${confidence}, reasoning=${parsed?.reasoning}`);
+
+    // Require at least 60% confidence for a valid determination
+    return isValid && confidence >= 0.6;
 
   } catch (error) {
-    console.error('[AI Validator] Error during validation:', error);
-    // In case of AI failure, default to requiring manual review
-    // Return false to prevent automatic warning increment
-    return false;
+    console.error('[AI Validator] Error during AI validation:', error);
+    return _ruleBasedValidation({ reason, description });
   }
 };
 
 /**
+ * Rule-based fallback when AI is unavailable
+ */
+const _ruleBasedValidation = ({ reason, description }) => {
+  const validReasons = [
+    'spam', 'harassment', 'inappropriate_content',
+    'fraud', 'fake_request', 'abuse', 'other'
+  ];
+  const isValidReason = validReasons.includes(reason?.toLowerCase());
+  const isDescriptionValid = (description?.trim()?.length || 0) >= 10;
+  const result = isValidReason && isDescriptionValid;
+  console.log(`[AI Validator] Rule-based fallback: ${result}`);
+  return result;
+};
+
+/**
  * Analyzes report severity using AI
- * @param {Object} params - Report details
- * @param {string} params.reason - The reason category
- * @param {string} params.description - Detailed description
- * @returns {Promise<string>} - Returns severity level: 'low', 'medium', 'high', 'critical'
  */
 const analyzeReportSeverity = async ({ reason, description }) => {
   try {
-    // Mock severity analysis
-    const highSeverityReasons = ['violence', 'hate_speech', 'scam'];
-    const mediumSeverityReasons = ['harassment', 'inappropriate_content', 'impersonation'];
-    
-    if (highSeverityReasons.includes(reason.toLowerCase())) {
-      return 'high';
-    }
-    
-    if (mediumSeverityReasons.includes(reason.toLowerCase())) {
-      return 'medium';
-    }
-    
+    const highSeverityReasons = ['violence', 'hate_speech', 'fraud', 'abuse'];
+    const mediumSeverityReasons = ['harassment', 'inappropriate_content', 'fake_request'];
+
+    if (highSeverityReasons.includes(reason?.toLowerCase())) return 'high';
+    if (mediumSeverityReasons.includes(reason?.toLowerCase())) return 'medium';
     return 'low';
-    
   } catch (error) {
     console.error('[AI Validator] Error analyzing severity:', error);
-    return 'medium'; // Default to medium on error
+    return 'medium';
   }
 };
 

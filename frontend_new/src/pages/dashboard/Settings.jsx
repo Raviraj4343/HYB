@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Loader2, Save, User, MapPin, Link as LinkIcon, Edit3 } from 'lucide-react';
+import { Camera, Loader2, Save, User, Building2, GraduationCap, Home, Phone } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -14,10 +13,12 @@ export default function Settings() {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: user?.fullName || '',
-    bio: user?.bio || '',
-    location: user?.location || '',
-    website: user?.website || '',
+    branch: user?.branch || '',
+    year: user?.year || '',
+    hostel: user?.hostel || '',
+    phone: user?.phone || '',
   });
+
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
@@ -86,52 +87,76 @@ export default function Settings() {
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="bio">Bio</Label>
-                    <div className="relative">
-                      <Edit3 className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
-                      <Textarea
-                        id="bio"
-                        name="bio"
-                        className="pl-10 min-h-[100px]"
-                        value={formData.bio}
-                        onChange={handleChange}
-                        placeholder="Tell us a little bit about yourself"
-                      />
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="branch">Branch</Label>
+                      <div className="relative">
+                        <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input
+                          id="branch"
+                          name="branch"
+                          className="pl-10"
+                          value={formData.branch}
+                          onChange={handleChange}
+                          placeholder="E.g., CSE, ECE"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="year">Year</Label>
+                      <div className="relative">
+                        <GraduationCap className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <select
+                          id="year"
+                          name="year"
+                          className="flex h-11 w-full rounded-xl border border-white/10 bg-white/5 pl-10 pr-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          value={formData.year}
+                          onChange={handleChange}
+                        >
+                          <option value="" disabled className="bg-background text-white">Select Year</option>
+                          <option value="1" className="bg-background text-white">1st Year</option>
+                          <option value="2" className="bg-background text-white">2nd Year</option>
+                          <option value="3" className="bg-background text-white">3rd Year</option>
+                          <option value="4" className="bg-background text-white">4th Year</option>
+                          <option value="5" className="bg-background text-white">5th Year</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
 
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="location">Location</Label>
+                      <Label htmlFor="hostel">Hostel Number</Label>
                       <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Home className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <Input
-                          id="location"
-                          name="location"
+                          id="hostel"
+                          name="hostel"
                           className="pl-10"
-                          value={formData.location}
+                          value={formData.hostel}
                           onChange={handleChange}
-                          placeholder="E.g., New York, NY"
+                          placeholder="E.g., H-3, Block A"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="website">Website</Label>
+                      <Label htmlFor="phone">Phone Number</Label>
                       <div className="relative">
-                        <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <Input
-                          id="website"
-                          name="website"
+                          id="phone"
+                          name="phone"
                           className="pl-10"
-                          value={formData.website}
+                          value={formData.phone}
                           onChange={handleChange}
-                          placeholder="https://yourwebsite.com"
+                          placeholder="E.g., +91 98765 43210"
                         />
                       </div>
                     </div>
                   </div>
+
                 </div>
 
                 <div className="pt-4 flex justify-end">

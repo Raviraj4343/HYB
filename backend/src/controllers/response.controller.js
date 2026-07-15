@@ -11,7 +11,7 @@ import { createAndEmitNotification, emitChatListRefresh, emitRequestChanged } fr
 
 
 const createResponse = asyncHandler(async (req, res) => {
-    const {requestId, message} = req.body;
+    const {requestId, message, phone} = req.body;
 
     const request = await Request.findById(requestId);
     if(!request){
@@ -34,6 +34,17 @@ const createResponse = asyncHandler(async (req, res) => {
         throw new ApiError(400, "You already responded to this request");
     }
 
+    if (request.contact === "call") {
+      const user = await User.findById(req.user._id);
+      if (!user.phone) {
+        if (!phone || !phone.trim()) {
+          throw new ApiError(400, "Phone number is required to offer help for call requests");
+        }
+        user.phone = phone.trim();
+        await user.save();
+      }
+    }
+
     let image = null;
     if(req.file){
         const uploaded = await uploadOnCloudinary(req.file.path);
@@ -50,7 +61,8 @@ const createResponse = asyncHandler(async (req, res) => {
         image
     });
 
-    await response.populate("responder", "fullName userName avatar");
+    await response.populate("responder", "fullName userName avatar helpCount");
+
     
     try {
       await createAndEmitNotification({

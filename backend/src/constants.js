@@ -6,12 +6,14 @@ export const DELETE_WINDOW_MINUTES = 5;
 
 export const BLOCK_THRESHOLD = 11;
 
+export const REQUEST_DELETE_TIME = 30;
+
 // request categories
 export const REQUEST_CATEGORIES = [
     "medicine",
     "notes",
     "sports",
-    "stationary", 
+    "stationary",
     "electronics",
     "books",
     "food",
@@ -35,11 +37,11 @@ export const REPORT_STATUS = [
 ]
 
 export const REQUEST_STATUS = [
-  'open',
-  'in-progress',
-  'fulfilled',
-  'expired',
-  'cancelled'
+    'open',
+    'in-progress',
+    'fulfilled',
+    'expired',
+    'cancelled'
 ];
 
 // request status
@@ -59,10 +61,11 @@ export const NOTIFICATION_TYPES = [
     "request_fullfilled",
     "message",
     "system",
-    "report",           
-    "warning",          
-    "account_blocked",  
-    "account_unblocked"
+    "report",
+    "warning",
+    "account_blocked",
+    "account_unblocked",
+    "report_review"     // super-admin manual review request (AI could not validate)
 ];
 
 export const REPORT_REASON = [

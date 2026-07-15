@@ -58,7 +58,12 @@ export const AuthProvider = ({ children }) => {
             formData.append(key, value);
           }
         });
-        response = await api.post('/auth/register', formData);
+        response = await api.post('/auth/register', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
       } else {
         response = await api.post('/auth/register', userData);
       }
@@ -175,6 +180,46 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
+  const updateProfile = useCallback(async (profileData) => {
+    try {
+      const response = await api.put('/auth/update-profile', profileData);
+      const updatedUser = response.data?.data?.user || response.data?.data;
+      if (updatedUser) {
+        setStoredUser(updatedUser);
+        setUser(updatedUser);
+      }
+      toast.success('Profile updated successfully');
+      return { success: true, user: updatedUser };
+    } catch (error) {
+      const message = error.message || 'Failed to update profile';
+      toast.error(message);
+      return { success: false, error: message };
+    }
+  }, []);
+
+  const updateAvatar = useCallback(async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      const response = await api.put('/auth/update-profile', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      const updatedUser = response.data?.data?.user || response.data?.data;
+      if (updatedUser) {
+        setStoredUser(updatedUser);
+        setUser(updatedUser);
+      }
+      toast.success('Avatar updated successfully');
+      return { success: true, user: updatedUser };
+    } catch (error) {
+      const message = error.message || 'Failed to update avatar';
+      toast.error(message);
+      return { success: false, error: message };
+    }
+  }, []);
+
   const value = {
     user,
     isLoading,
@@ -185,7 +230,10 @@ export const AuthProvider = ({ children }) => {
     logout,
     requestPasswordReset,
     resetPassword,
+    updateProfile,
+    updateAvatar,
   };
+
 
   return (
     <AuthContext.Provider value={value}>

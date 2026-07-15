@@ -4,8 +4,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, MessageSquare, Zap, Calendar, Mail, Building2,
   GraduationCap, Home, Shield, AlertTriangle, Ban, Unlock,
-  Flag, CheckCircle2, XCircle, Eye, Loader2, ChevronDown, Clock
+  Flag, CheckCircle2, XCircle, Eye, Loader2, ChevronDown, Clock, Phone
 } from 'lucide-react';
+
 import { format } from 'date-fns';
 import api from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
@@ -291,6 +292,11 @@ export default function UserProfile() {
                 {(isMe || isSuperAdmin) && userData.email && (
                   <InfoRow icon={Mail} label="Email" value={userData.email} accent="text-primary" />
                 )}
+                {/* Own profile / super admin sees phone */}
+                {(isMe || isSuperAdmin) && userData.phone && (
+                  <InfoRow icon={Phone} label="Phone" value={userData.phone} accent="text-primary" />
+                )}
+
                 {/* Admin sees warning count */}
                 {isAdmin && (
                   <div className="flex items-center gap-3 text-sm">
