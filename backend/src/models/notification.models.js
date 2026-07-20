@@ -40,8 +40,8 @@ const notificationSchema = new mongoose.Schema({
     }
 }, {timestamps:true});
 
-notificationSchema.index({user:1, createdAt: -1});
-notificationSchema.index({ user: 1, isRead: 1 });
+notificationSchema.index({ user: 1, createdAt: -1 });
+notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
 notificationSchema.methods.markAsRead = async function() {
   this.isRead = true;
   this.readAt = new Date();

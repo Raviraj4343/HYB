@@ -2,6 +2,7 @@ import {User} from '../models/user.models.js';
 import {Request} from '../models/request.models.js';
 import {Response} from '../models/response.models.js';
 import { Notification } from '../models/notification.models.js';
+import { Report } from '../models/report.models.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
@@ -179,6 +180,10 @@ const resetUserWarnings = asyncHandler(async (req, res) => {
   if (resetCount) {
     user.warningCount = 0;
     user.reportHistory = [];
+    await Report.updateMany(
+      { reportedUser: userId, status: "pending" },
+      { status: "dismissed", reviewNotes: "Warnings reset by Admin" }
+    );
   }
 
   if (unblock && user.isBlocked) {

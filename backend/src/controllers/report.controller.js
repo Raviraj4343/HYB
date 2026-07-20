@@ -158,16 +158,9 @@ const createReport = asyncHandler(async (req, res) => {
 
   if (isValidReport) {
     // ✅ AI validated — auto-apply warning / block
-    reportedUser.warningCount = (reportedUser.warningCount || 0) + 1;
-    warningCount = reportedUser.warningCount;
-
-    if (warningCount >= BLOCK_THRESHOLD) {
-      reportedUser.isBlocked = true;
-      reportedUser.blockedAt = new Date();
-      isBlocked = true;
-    }
-
-    await reportedUser.save();
+    const warnResult = await reportedUser.incrementWarning(report._id);
+    warningCount = warnResult.warningCount;
+    isBlocked = warnResult.isBlocked;
     await notifyReportedUser(reportedUserId, warningCount, isBlocked);
   } else {
     // ❌ AI could NOT validate — escalate to super-admins for manual review
@@ -478,17 +471,9 @@ const reviewReport = asyncHandler(async (req, res) => {
     const reportedUser = await User.findById(report.reportedUser);
     if (!reportedUser) throw new ApiError(404, 'Reported user not found');
 
-    reportedUser.warningCount = (reportedUser.warningCount || 0) + 1;
-    const warningCount = reportedUser.warningCount;
-    let isBlocked = false;
-
-    if (warningCount >= BLOCK_THRESHOLD) {
-      reportedUser.isBlocked = true;
-      reportedUser.blockedAt = new Date();
-      isBlocked = true;
-    }
-
-    await reportedUser.save();
+    const warnResult = await reportedUser.incrementWarning(report._id);
+    const warningCount = warnResult.warningCount;
+    const isBlocked = warnResult.isBlocked;
 
     report.status      = 'resolved';
     report.isValidated = true;

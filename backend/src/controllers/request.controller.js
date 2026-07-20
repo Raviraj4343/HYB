@@ -53,7 +53,6 @@ const createRequest = asyncHandler(async (req, res) => {
     description,
     category,
     urgency,
-    image: imageUrls.length > 0 ? imageUrls[0] : null,
     images: imageUrls,
     locationHint,
     contact,

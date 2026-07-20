@@ -30,10 +30,6 @@ const requestSchema = new mongoose.Schema({
     enum: URGENCY_LEVELS,
     default: "normal"
   },
-  image: {
-    type: String,
-    default: null
-  },
   images: {
     type: [String],
     default: []
@@ -75,7 +71,28 @@ const requestSchema = new mongoose.Schema({
     default: null
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Virtual getter for primary image
+requestSchema.virtual('image').get(function() {
+  return (this.images && this.images.length > 0) ? this.images[0] : null;
+});
+
+// Cascade delete middleware for orphaned child documents (Response and Notification)
+requestSchema.post(['deleteOne', 'findOneAndDelete'], async function (doc) {
+  try {
+    const filter = this.getFilter ? this.getFilter() : null;
+    const requestId = filter?._id || this?._id || doc?._id;
+    if (requestId) {
+      await mongoose.model('Response').deleteMany({ request: requestId });
+      await mongoose.model('Notification').deleteMany({ request: requestId });
+    }
+  } catch (err) {
+    console.error('Error in Request cascade delete middleware:', err);
+  }
 });
 
 // Index for faster queries
@@ -83,6 +100,5 @@ requestSchema.index({ status: 1, createdAt: -1 });
 requestSchema.index({ requestedBy: 1 });
 requestSchema.index({ category: 1 });
 requestSchema.index({expiresAt: 1});
-
 
 export const Request = mongoose.model("Request", requestSchema);
