@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { MessageSquare, Plus, Clock, AlertCircle, ArrowRight } from 'lucide-react';
+import { MessageSquare, Plus, Clock, AlertCircle, ArrowRight, MapPin } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/api/axios';
 import { Button } from '@/components/ui/button';
@@ -124,12 +124,14 @@ export default function MyRequests() {
                   </p>
                   
                   <div className="flex items-center justify-between pt-4 border-t border-white/10 mt-auto">
-                    <div className="text-sm font-medium">
-                      <span className="text-muted-foreground">Urgency: </span>
-                      <span className={`capitalize ${req.urgency === 'critical' ? 'text-destructive' : req.urgency === 'urgent' ? 'text-orange-400' : 'text-primary'}`}>
-                        {req.urgency}
-                      </span>
-                    </div>
+                    {req.locationHint ? (
+                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <MapPin className="h-3.5 w-3.5 text-primary/70" />
+                        <span className="line-clamp-1 text-xs">{req.locationHint}</span>
+                      </div>
+                    ) : (
+                      <span />
+                    )}
                     <Button variant="ghost" size="sm" className="group-hover:text-primary" onClick={() => navigate(`/dashboard/requests/${req._id}`)}>
                       View <ArrowRight className="ml-1 h-4 w-4" />
                     </Button>

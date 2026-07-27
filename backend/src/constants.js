@@ -8,6 +8,8 @@ export const BLOCK_THRESHOLD = 11;
 
 export const REQUEST_DELETE_TIME = 30;
 
+export const EDIT_WINDOW_MINUTES = 5;
+
 // request categories
 export const REQUEST_CATEGORIES = [
     "medicine",
@@ -22,12 +24,7 @@ export const REQUEST_CATEGORIES = [
 ];
 
 
-// urcency level
-export const URGENCY_LEVELS = [
-    "normal",
-    "urgent",
-    "critical"
-];
+
 
 export const REPORT_STATUS = [
     "pending",

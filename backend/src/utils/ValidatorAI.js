@@ -143,7 +143,109 @@ const analyzeReportSeverity = async ({ reason, description }) => {
   }
 };
 
+/**
+ * Validates a help request using Groq AI.
+ * Checks if the request is spam, irrelevant, trolling, joke, or inappropriate.
+ * @param {Object} params
+ * @param {string} params.title
+ * @param {string} params.description
+ * @param {string} params.category
+ * @returns {Promise<{ isSpamOrIrrelevant: boolean, reasoning: string }>}
+ */
+const validateHelpRequest = async ({ title, description, category }) => {
+  const apiKey = process.env.HYB_REPORT_API_KEY;
+
+  if (!apiKey) {
+    console.warn('[AI Help Request Validator] No HYB_REPORT_API_KEY found – skipping validation');
+    return { isSpamOrIrrelevant: false, reasoning: 'No API key configured.' };
+  }
+
+  if (!title || !description) {
+    return { isSpamOrIrrelevant: true, reasoning: 'Missing title or description.' };
+  }
+
+  try {
+    const systemPrompt = `You are a content moderation AI for a community help platform called HYB (Help Your Buddy).
+Your job is to decide whether a user's help request is SPAM, IRRELEVANT, TROLLING/JOKE, or DIRTY/INAPPROPRIATE.
+
+Rules:
+1. Return ONLY a JSON object with fields: { "isSpamOrIrrelevant": boolean, "confidence": number (0-1), "reasoning": string }
+2. Mark isSpamOrIrrelevant as true if:
+   - The request is spam, advertisements, promotional offers, or links to third-party sites.
+   - The request is irrelevant to a community/campus mutual-help platform (e.g. random chats, testing, gibberish/nonsense, random letters, greeting messages like "hi", "hello" with no context).
+   - The request is trolling, a joke, fake, or obviously non-serious.
+   - The request is inappropriate, offensive, sexually explicit, abusive, or uses vulgar language/profanity.
+3. Mark isSpamOrIrrelevant as false if:
+   - The request is a legitimate query or offer for community/campus help, including sharing notes, academic assistance, looking for keys, buying/selling/borrowing books, lending/borrowing stationary or electronics, ordering/sharing food, seeking medical supplies/medicine, transport help, sports, lost & found, or general mutual aid.
+   
+Be strict – do not allow spam, gibberish, test requests, or inappropriate text.`;
+
+    const userPrompt = `Category: ${category || 'none'}
+Title: ${title}
+Description: ${description}
+
+Based on the above details, is this request spam, irrelevant, trolling, joke, or inappropriate?`;
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.1,
+        max_tokens: 256,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('[AI Help Request Validator] Groq API error:', response.status, errText);
+      return { isSpamOrIrrelevant: false, reasoning: 'API error fallback.' };
+    }
+
+    const data = await response.json();
+    const rawContent = data?.choices?.[0]?.message?.content;
+
+    if (!rawContent) {
+      console.warn('[AI Help Request Validator] Empty response from Groq');
+      return { isSpamOrIrrelevant: false, reasoning: 'Empty response fallback.' };
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(rawContent);
+    } catch {
+      console.warn('[AI Help Request Validator] Could not parse JSON:', rawContent);
+      return { isSpamOrIrrelevant: false, reasoning: 'Parse error fallback.' };
+    }
+
+    const isSpamOrIrrelevant = parsed?.isSpamOrIrrelevant === true;
+    const confidence = parsed?.confidence ?? 0;
+    const reasoning = parsed?.reasoning || '';
+
+    console.log(`[AI Help Request Validator] Result: isSpamOrIrrelevant=${isSpamOrIrrelevant}, confidence=${confidence}, reasoning=${reasoning}`);
+
+    // Require at least 60% confidence for a spam determination
+    return {
+      isSpamOrIrrelevant: isSpamOrIrrelevant && confidence >= 0.6,
+      reasoning
+    };
+
+  } catch (error) {
+    console.error('[AI Help Request Validator] Error during validation:', error);
+    return { isSpamOrIrrelevant: false, reasoning: 'Exception error fallback.' };
+  }
+};
+
 export {
   validateReport,
-  analyzeReportSeverity
+  analyzeReportSeverity,
+  validateHelpRequest
 };

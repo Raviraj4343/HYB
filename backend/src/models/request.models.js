@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import {
   REQUEST_CATEGORIES,
-  URGENCY_LEVELS,
   REQUEST_STATUS,
   CONTACT_OPTION
 } from "../constants.js";
@@ -24,11 +23,6 @@ const requestSchema = new mongoose.Schema({
     type: String,
     enum: REQUEST_CATEGORIES,
     default: "General"
-  },
-  urgency: {
-    type: String,
-    enum: URGENCY_LEVELS,
-    default: "normal"
   },
   images: {
     type: [String],

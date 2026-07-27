@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Loader2, Send, Upload, X, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Loader2, Send, Upload, X, Image as ImageIcon, AlertTriangle, MapPin } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import api from '@/api/axios';
@@ -19,12 +19,14 @@ export default function CreateRequest() {
     title: '',
     description: '',
     category: '',
-    urgency: 'urgent',
+    locationHint: '',
     contact: 'chat',
     phone: '',
     expiryDuration: '24'
   });
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [showModerationModal, setShowModerationModal] = useState(false);
+  const [moderationReason, setModerationReason] = useState('');
 
   useEffect(() => {
     if (currentUser?.phone) {
@@ -43,7 +45,13 @@ export default function CreateRequest() {
       navigate('/dashboard/my-requests');
     },
     onError: (error) => {
-      toast.error(error.message || 'Failed to create request');
+      if (error.message && error.message.includes('AI Moderation Warning:')) {
+        const cleanReason = error.message.replace('AI Moderation Warning:', '').trim();
+        setModerationReason(cleanReason);
+        setShowModerationModal(true);
+      } else {
+        toast.error(error.message || 'Failed to create request');
+      }
     },
   });
 
@@ -76,7 +84,9 @@ export default function CreateRequest() {
     data.append('title', formData.title);
     data.append('description', formData.description);
     data.append('category', formData.category);
-    data.append('urgency', formData.urgency);
+    if (formData.locationHint?.trim()) {
+      data.append('locationHint', formData.locationHint.trim());
+    }
     data.append('contact', formData.contact);
     data.append('expiryDuration', formData.expiryDuration);
     if (formData.contact === 'call') {
@@ -161,17 +171,18 @@ export default function CreateRequest() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="urgency">Urgency</Label>
-                  <select
-                    id="urgency"
-                    className="flex h-11 w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    value={formData.urgency}
-                    onChange={(e) => setFormData({ ...formData, urgency: e.target.value })}
-                  >
-                    <option value="normal" className="bg-background text-white">Low - No rush</option>
-                    <option value="urgent" className="bg-background text-white">Medium - Need it soon</option>
-                    <option value="critical" className="bg-background text-white">High - Urgent help needed</option>
-                  </select>
+                  <Label htmlFor="locationHint">Location Hint <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="locationHint"
+                      placeholder="E.g., Hostel 3 lobby, Library floor 2"
+                      className="pl-9"
+                      value={formData.locationHint}
+                      onChange={(e) => setFormData({ ...formData, locationHint: e.target.value })}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Where can helpers find you or the item?</p>
                 </div>
               </div>
 
@@ -282,6 +293,60 @@ export default function CreateRequest() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Moderation Warning Modal */}
+      {showModerationModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          onClick={() => setShowModerationModal(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ duration: 0.2 }}
+            className="w-full max-w-md bg-gradient-to-br from-slate-900 via-slate-950 to-red-950 border border-red-500/30 rounded-3xl overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="bg-red-500/10 border-b border-red-500/20 px-6 py-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-red-500 to-amber-500 flex items-center justify-center shadow-lg shadow-red-500/30">
+                <AlertTriangle className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-white">Moderation Warning</h3>
+                <p className="text-xs text-red-400 font-medium">Request flagged by AI filter</p>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-300 leading-relaxed">
+                To keep our community safe, clean, and helpful for everyone, we automatically filter out spam, irrelevant, trolling, or inappropriate help requests.
+              </p>
+              <div className="bg-red-950/30 border border-red-500/20 rounded-2xl p-4 space-y-1">
+                <p className="text-xs text-red-400 font-semibold uppercase tracking-wider">AI Reason:</p>
+                <p className="text-sm text-slate-200 font-medium leading-relaxed">
+                  {moderationReason || "The content appears to be spam, joke, or irrelevant to mutual aid requests."}
+                </p>
+              </div>
+              <p className="text-xs text-slate-400">
+                Please edit your request's title and description to make sure it represents a serious query or offer of help (e.g. asking/providing notes, medicine, books, transport, food, stationary, or general campus/neighborhood support).
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="px-6 py-4 bg-slate-950/60 border-t border-white/5 flex justify-end">
+              <Button
+                onClick={() => setShowModerationModal(false)}
+                className="bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl shadow-lg shadow-red-600/20"
+              >
+                Go Back & Edit
+              </Button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

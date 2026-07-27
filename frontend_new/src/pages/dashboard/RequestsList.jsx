@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
-import { Search, Filter, Clock, ArrowRight, Loader2, X } from 'lucide-react';
+import { Search, Filter, Clock, ArrowRight, Loader2, MapPin } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import api from '@/api/axios';
 import { Button } from '@/components/ui/button';
@@ -53,7 +53,6 @@ export default function RequestsList() {
   const [showFilters, setShowFilters] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [urgencyFilter, setUrgencyFilter] = useState('all');
 
   const { data: requestsData, isLoading } = useQuery({
     queryKey: ['all-requests'],
@@ -75,19 +74,17 @@ export default function RequestsList() {
         : req.status === 'fulfilled'; // 'completed'
 
     const matchesCategory = categoryFilter === 'all' || req.category === categoryFilter;
-    const matchesUrgency = urgencyFilter === 'all' || req.urgency === urgencyFilter;
 
-    return matchesSearch && matchesStatus && matchesCategory && matchesUrgency;
+    return matchesSearch && matchesStatus && matchesCategory;
   });
 
   const resetFilters = () => {
     setStatusFilter('all');
     setCategoryFilter('all');
-    setUrgencyFilter('all');
   };
 
   const isAnyFilterActive =
-    statusFilter !== 'all' || categoryFilter !== 'all' || urgencyFilter !== 'all';
+    statusFilter !== 'all' || categoryFilter !== 'all';
 
   return (
     <div className="space-y-8">
@@ -131,7 +128,7 @@ export default function RequestsList() {
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden bg-white/5 border border-white/10 rounded-2xl p-6 space-y-6 backdrop-blur-xl"
             >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Status Filter */}
                 <div className="space-y-2.5">
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -191,32 +188,6 @@ export default function RequestsList() {
                   </div>
                 </div>
 
-                {/* Urgency Filter */}
-                <div className="space-y-2.5">
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Urgency
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { value: 'all', label: 'All Urgency' },
-                      { value: 'normal', label: 'Normal' },
-                      { value: 'urgent', label: 'Urgent' },
-                      { value: 'critical', label: 'Critical' },
-                    ].map((u) => (
-                      <button
-                        key={u.value}
-                        onClick={() => setUrgencyFilter(u.value)}
-                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                          urgencyFilter === u.value
-                            ? 'bg-primary border-primary text-primary-foreground'
-                            : 'bg-white/5 border-white/10 text-muted-foreground hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        {u.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {isAnyFilterActive && (
@@ -271,23 +242,14 @@ export default function RequestsList() {
                       <div className="flex flex-wrap items-center gap-2 mb-1.5">
                         <h3 className="text-lg font-semibold text-white truncate mr-1">{req.title}</h3>
                         {getStatusBadge(req.status)}
-                        <Badge variant="glass" className="capitalize">
-                          {req.category}
-                        </Badge>
-                        <Badge
-                          variant="glass"
-                          className={`capitalize ${
-                            req.urgency === 'critical'
-                              ? 'text-rose-400 border-rose-500/25 bg-rose-500/5'
-                              : req.urgency === 'urgent'
-                              ? 'text-amber-400 border-amber-500/25 bg-amber-500/5'
-                              : 'text-muted-foreground'
-                          }`}
-                        >
-                          {req.urgency}
-                        </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground line-clamp-1">{req.description}</p>
+                      {req.locationHint && (
+                        <div className="flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3 text-primary/70" />
+                          <span className="line-clamp-1">{req.locationHint}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between sm:flex-col sm:items-end gap-3 sm:w-32">
@@ -300,6 +262,7 @@ export default function RequestsList() {
                       </Button>
                     </div>
                   </div>
+
                 </Card>
               </motion.div>
             ))

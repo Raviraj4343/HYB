@@ -234,11 +234,6 @@ export default function RequestDetail() {
       r.responder === currentUser?._id
   );
 
-  const urgencyColor = {
-    critical: 'text-destructive',
-    urgent:   'text-orange-400',
-    normal:   'text-primary',
-  }[requestData.urgency] || 'text-primary';
 
   // Helpers who are still in play (not rejected) — for fulfill selector
   const activeResponders = responses.filter((r) => r.status !== 'rejected');
@@ -258,9 +253,6 @@ export default function RequestDetail() {
             {getStatusBadge(requestData.status)}
             <Badge variant="outline" className="px-3 py-1 border-white/20 text-white capitalize">
               {requestData.category}
-            </Badge>
-            <Badge variant="outline" className={`px-3 py-1 border-white/20 capitalize ${urgencyColor}`}>
-              {requestData.urgency} urgency
             </Badge>
             <div className="flex items-center text-sm text-muted-foreground ml-auto">
               <Clock className="mr-2 h-4 w-4" />

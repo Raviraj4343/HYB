@@ -7,8 +7,9 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { DEFAULT_PAGE_SIZE, DELETE_WINDOW_MINUTES, REQUEST_DELETE_TIME } from "../constants.js";
+import { DEFAULT_PAGE_SIZE, DELETE_WINDOW_MINUTES, REQUEST_DELETE_TIME, EDIT_WINDOW_MINUTES } from "../constants.js";
 import { createAndEmitNotification, emitChatListRefresh, emitRequestChanged } from "../utils/realtime.js";
+import { validateHelpRequest } from "../utils/ValidatorAI.js";
 
 
 const createRequest = asyncHandler(async (req, res) => {
@@ -16,12 +17,17 @@ const createRequest = asyncHandler(async (req, res) => {
     title,
     description,
     category,
-    urgency,
     locationHint,
     contact,
     expiryDuration,
     phone
   } = req.body;
+
+  // AI Moderation Filter
+  const moderationResult = await validateHelpRequest({ title, description, category });
+  if (moderationResult.isSpamOrIrrelevant) {
+    throw new ApiError(400, `AI Moderation Warning: Your request was flagged as ${moderationResult.reasoning || "spam or irrelevant"}. Please revise the title and description to be serious and community-focused.`);
+  }
 
   let imageUrls = [];
 
@@ -52,7 +58,6 @@ const createRequest = asyncHandler(async (req, res) => {
     title,
     description,
     category,
-    urgency,
     images: imageUrls,
     locationHint,
     contact,
@@ -71,7 +76,6 @@ const createRequest = asyncHandler(async (req, res) => {
 const getAllRequests = asyncHandler(async (req, res) => {
   const {
     category,
-    urgency,
     status,
     page = 1,
     limit = DEFAULT_PAGE_SIZE
@@ -80,7 +84,6 @@ const getAllRequests = asyncHandler(async (req, res) => {
   const query = {};
 
   if (category) query.category = category;
-  if (urgency) query.urgency = urgency;
 
   query.status = status
     ? status
@@ -255,17 +258,30 @@ const updateRequest = asyncHandler(async (req, res) => {
     );
   }
 
+  // 5-minute edit window
+  const createdAt = new Date(request.createdAt);
+  const now = new Date();
+  const diffMinutes = (now - createdAt) / (1000 * 60);
+  if (diffMinutes > EDIT_WINDOW_MINUTES) {
+    throw new ApiError(400, `Requests can only be edited within ${EDIT_WINDOW_MINUTES} minutes of posting.`);
+  }
+
   const {
     title,
     description,
     category,
-    urgency,
     locationHint
   } = req.body;
 
+  // AI Moderation Filter
+  const moderationResult = await validateHelpRequest({ title, description, category });
+  if (moderationResult.isSpamOrIrrelevant) {
+    throw new ApiError(400, `AI Moderation Warning: ${moderationResult.reasoning || "spam or irrelevant"}. Please revise the title and description to be serious and community-focused.`);
+  }
+
   const updatedRequest = await Request.findByIdAndUpdate(
     req.params.id,
-    { title, description, category, urgency, locationHint },
+    { title, description, category, locationHint },
     { new: true, runValidators: true }
   ).populate("requestedBy", "fullName userName avatar");
   emitRequestChanged("updated", updatedRequest.toObject());

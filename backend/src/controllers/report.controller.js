@@ -6,7 +6,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
 import { Notification } from "../models/notification.models.js";
-import {validateReport} from "../utils/reportValidatorAI.js"
+import {validateReport} from "../utils/ValidatorAI.js"
 import { BLOCK_THRESHOLD} from "../constants.js";
 import { createAndEmitNotification, emitAdminNotificationCreated, emitNotificationCount } from "../utils/realtime.js";
 import { buildAccountRestrictionEmail, sendMail } from "../utils/mailer.js";
