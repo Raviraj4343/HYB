@@ -1,23 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { MessageSquare, Search } from 'lucide-react';
-import api from '@/api/axios';
+import { MessageSquare, Search, Store } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/context/AuthContext';
+import { useChatList } from '@/hooks/useChat';
 
 export default function Chats() {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
 
-  const { data: chatsData, isLoading } = useQuery({
-    queryKey: ['chats'],
-    queryFn: () => api.get('/chat').then((res) => res.data.data),
-  });
-
-  const chats = chatsData?.chats || [];
+  const { chats, isLoading } = useChatList(true);
 
   return (
     <div className="max-w-4xl mx-auto h-[calc(100vh-8rem)] flex flex-col">
@@ -69,6 +63,14 @@ export default function Chats() {
                     <p className={`text-sm truncate ${isUnread ? 'text-white font-medium' : 'text-muted-foreground'}`}>
                       {chat.lastMessage?.content || 'No messages yet'}
                     </p>
+                    {chat.marketplaceListing && (
+                      <div className="mt-1 flex items-center gap-1.5 text-xs text-primary">
+                        <Store className="h-3 w-3" />
+                        <span className="truncate">
+                          {chat.marketplaceListing.title} · {chat.marketplaceListing.listingType === 'sell' ? 'Sale' : 'Borrow'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   {isUnread && (
                     <div className="h-3 w-3 bg-primary rounded-full"></div>

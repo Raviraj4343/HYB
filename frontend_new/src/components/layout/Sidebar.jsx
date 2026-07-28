@@ -1,7 +1,7 @@
 import React, { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { LayoutDashboard, MessageSquare, Plus, Settings, Users, Globe, HelpCircle, Bell, X, Menu, Shield } from "lucide-react"
+import { LayoutDashboard, MessageSquare, Plus, Settings, Users, Globe, HelpCircle, Bell, X, Menu, Shield, Store } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AppLogo } from "@/components/ui/AppLogo"
 import { useAuth } from "@/context/AuthContext"
@@ -9,6 +9,7 @@ import { useAuth } from "@/context/AuthContext"
 const navItems = [
   { title: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { title: "My Requests", path: "/dashboard/my-requests", icon: HelpCircle },
+  { title: "Marketplace", path: "/dashboard/marketplace", icon: Store },
   { title: "Direct Chats", path: "/dashboard/chats", icon: MessageSquare },
   { title: "Community Chat", path: "/dashboard/global-chat", icon: Globe },
   { title: "Community", path: "/dashboard/users", icon: Users },
@@ -20,8 +21,8 @@ const navItems = [
 const mobileNavItems = [
   { title: "Home", path: "/dashboard", icon: LayoutDashboard },
   { title: "Requests", path: "/dashboard/my-requests", icon: HelpCircle },
+  { title: "Market", path: "/dashboard/marketplace", icon: Store },
   { title: "Chats", path: "/dashboard/chats", icon: MessageSquare },
-  { title: "Community", path: "/dashboard/users", icon: Users },
   { title: "More", path: null, icon: Menu }, // triggers drawer
 ]
 

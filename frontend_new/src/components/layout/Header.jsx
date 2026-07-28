@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
-import { Bell, LogOut, Settings, User, Menu, X, MessageCircle, Check, Trash2, HelpCircle, Loader2 } from "lucide-react"
+import { Bell, LogOut, Settings, User, Menu, X, MessageCircle, Check, Trash2, HelpCircle, Loader2, Store } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useAuth } from "@/context/AuthContext"
@@ -19,6 +19,8 @@ const getNotificationMeta = (type) => {
       return { icon: <HelpCircle className="h-3 w-3 text-primary" />, bg: 'bg-primary/10' };
     case 'chat':
       return { icon: <MessageCircle className="h-3 w-3 text-purple-400" />, bg: 'bg-purple-500/10' };
+    case 'marketplace_request':
+      return { icon: <Store className="h-3 w-3 text-emerald-400" />, bg: 'bg-emerald-500/10' };
     default:
       return { icon: <Bell className="h-3 w-3 text-muted-foreground" />, bg: 'bg-white/5' };
   }
@@ -42,6 +44,7 @@ export function Header({ onMobileMenuToggle, isMobileMenuOpen }) {
     if (path.startsWith("/dashboard/requests")) return "Community Requests";
     if (path.startsWith("/dashboard/my-requests")) return "My Requests";
     if (path.startsWith("/dashboard/chats")) return "Direct Chats";
+    if (path.startsWith("/dashboard/marketplace")) return "Marketplace";
     if (path.startsWith("/dashboard/global-chat")) return "Community Chat";
     if (path.startsWith("/dashboard/users")) return "Community Members";
     if (path.startsWith("/dashboard/notifications")) return "Notifications";

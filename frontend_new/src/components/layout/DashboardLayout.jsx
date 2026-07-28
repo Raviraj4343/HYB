@@ -4,7 +4,7 @@ import { Sidebar, MobileBottomNav } from "./Sidebar"
 import { Header } from "./Header"
 import { useSocket } from "@/context/SocketContext"
 import { toast } from "sonner"
-import { Bell, MessageCircle, CheckCircle2, ThumbsDown, HelpCircle } from "lucide-react"
+import { Bell, MessageCircle, CheckCircle2, ThumbsDown, HelpCircle, Store } from "lucide-react"
 
 // Map backend notification types → icon + accent color
 const NOTIF_META = {
@@ -13,6 +13,7 @@ const NOTIF_META = {
   response_rejected: { icon: ThumbsDown,    color: "text-red-400",     bg: "bg-red-500/15",      label: "Help Declined" },
   request:           { icon: HelpCircle,    color: "text-primary",     bg: "bg-primary/15",      label: "Request Update" },
   chat:              { icon: MessageCircle, color: "text-purple-400",  bg: "bg-purple-500/15",   label: "New Message" },
+  marketplace_request:{ icon: Store,         color: "text-emerald-400", bg: "bg-emerald-500/15",  label: "Marketplace" },
 }
 
 // Real-time notification listener — shows a toast on socket `notification:new`
@@ -38,6 +39,7 @@ function GlobalNotificationListener() {
               // Navigate to request detail if a request is attached
               const reqId = notification?.request?._id || notification?.request
               if (reqId) navigate(`/dashboard/requests/${reqId}`)
+              else if (notification?.data?.listingId) navigate("/dashboard/marketplace")
               else navigate("/dashboard/notifications")
             }}
           >

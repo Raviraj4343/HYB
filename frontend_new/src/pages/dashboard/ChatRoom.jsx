@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Send, Loader2, Flag } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Flag, Store, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 import api from '@/api/axios';
 import { useAuth } from '@/context/AuthContext';
 import { useChat } from '@/hooks/useChat';
@@ -26,7 +27,7 @@ export default function ChatRoom() {
   });
 
   // 2. Fetch Messages and subscribe to live socket updates using useChat hook
-  const { messages, isLoading: loadingMessages, sendMessage } = useChat(id);
+  const { messages, isLoading: loadingMessages, error: chatError, sendMessage } = useChat(id);
 
   // 3. Scroll to bottom
   useEffect(() => {
@@ -41,9 +42,15 @@ export default function ChatRoom() {
     setNewMessage('');
 
     try {
-      await sendMessage(content);
+      const result = await sendMessage(content);
+      if (!result?.success) {
+        setNewMessage(content);
+        toast.error(result?.error || 'Failed to send message');
+      }
     } catch (error) {
       console.error('Failed to send message', error);
+      setNewMessage(content);
+      toast.error(error.message || 'Failed to send message');
     }
   };
 
@@ -59,6 +66,7 @@ export default function ChatRoom() {
 
   const chat = chatData?.chat;
   const otherParticipant = chat?.participants?.find(p => p._id !== currentUser?._id);
+  const marketplaceListing = chat?.marketplaceListing;
 
   return (
     <>
@@ -72,7 +80,7 @@ export default function ChatRoom() {
             <AvatarImage src={otherParticipant?.avatar} />
             <AvatarFallback>{otherParticipant?.fullName?.charAt(0)}</AvatarFallback>
           </Avatar>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-white">{otherParticipant?.fullName}</h2>
             <span className="text-xs text-muted-foreground">@{otherParticipant?.userName}</span>
           </div>
@@ -114,8 +122,42 @@ export default function ChatRoom() {
           )}
         </div>
 
+        {marketplaceListing && (
+          <button
+            onClick={() => navigate('/dashboard/marketplace')}
+            className="flex items-center justify-between gap-4 border-b border-white/10 bg-primary/5 px-4 py-3 text-left hover:bg-primary/10"
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                <Store className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white">{marketplaceListing.title}</p>
+                <p className="text-xs capitalize text-muted-foreground">
+                  {marketplaceListing.listingType === 'sell' ? 'Marketplace sale' : 'Borrow request'} · Rs. {Number(marketplaceListing.price || 0).toLocaleString('en-IN')} · {marketplaceListing.availability}
+                </p>
+              </div>
+            </div>
+          </button>
+        )}
+
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {chatError && (
+            <div className="mx-auto flex max-w-md items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {chatError}
+            </div>
+          )}
+          {!chatError && messages.length === 0 && (
+            <div className="flex h-full min-h-[260px] items-center justify-center text-center">
+              <div>
+                <MessageEmptyIcon />
+                <h3 className="mt-4 font-semibold text-white">Start the conversation</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Discuss price, pickup location, timing, and item condition here.</p>
+              </div>
+            </div>
+          )}
           {messages.map((msg, idx) => {
             const isMe = (msg.sender?._id || msg.sender) === currentUser?._id;
             return (
@@ -175,4 +217,11 @@ export default function ChatRoom() {
   );
 }
 
+function MessageEmptyIcon() {
+  return (
+    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-primary">
+      <Send className="h-6 w-6" />
+    </div>
+  );
+}
 

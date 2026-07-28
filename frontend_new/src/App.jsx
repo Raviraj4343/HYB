@@ -30,6 +30,7 @@ import Landing from './pages/Landing'
 import GlobalChat from './pages/dashboard/GlobalChat'
 import Notifications from './pages/dashboard/Notifications'
 import AdminPanel from './pages/dashboard/AdminPanel'
+import Marketplace from './pages/dashboard/Marketplace'
 
 const queryClient = new QueryClient()
 
@@ -83,6 +84,7 @@ function App() {
                 <Route path="settings" element={<Settings />} />
                 <Route path="global-chat" element={<GlobalChat />} />
                 <Route path="notifications" element={<Notifications />} />
+                <Route path="marketplace" element={<Marketplace />} />
                 <Route path="admin" element={<AdminPanel />} />
               </Route>
 
