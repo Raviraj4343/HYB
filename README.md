@@ -16,13 +16,13 @@
 ![Backend Hosting](https://img.shields.io/badge/Backend-Render-46E3B7?logo=render&logoColor=black)
 ![License](https://img.shields.io/badge/License-ISC-orange)
 
-> **HYB (Help Your Buddy)** is a campus-focused platform that enables students to quickly request and offer help for academic, personal, or logistical needs within a trusted peer network. With real-time chat, notifications, AI-powered report moderation, and role-based admin tools, it ensures safe, fast, and meaningful peer support.
+> **HYB (Help Your Buddy)** is a campus-focused platform that enables students to quickly request and offer help for academic, personal, logistical, or marketplace needs within a trusted peer network. With real-time chat, notifications, AI-powered moderation, and role-based admin tools, it ensures safe, fast, and meaningful peer support.
 
 ---
 
 ## 🌐 Live Links
 
-- 🔗 **Frontend:** https://hyb-theta.vercel.app/
+- 🔗 **Frontend:** https://hlpbdy.vercel.app/
 - 🔗 **Backend:** https://hyb-nlut.onrender.com
 
 ---
@@ -44,8 +44,18 @@
 - Request deletion window (within 5 min of creation, if no chat has started)
 - Cancel window (within 30 min of posting)
 
+### 🛒 Campus Marketplace
+- Unified marketplace for students to **buy, sell, borrow, and lend** campus items
+- Create listings with category, listing type (`sell` / `borrow`), price or borrowing fee, condition, optional phone number, and up to 6 images
+- Borrow listings support optional security deposit and maximum borrowing duration
+- Browse with search, filters, sorting, pagination, and lazy-loaded product images
+- Buy / Request to Borrow flow sends an owner notification and opens a private one-to-one chat
+- Owner controls: edit listing details, mark as sold/lent, and mark borrowed items available again
+- AI moderation blocks spam, irrelevant, unsafe, dirty, or inappropriate listings before publishing
+
 ### 💬 Real-time Chat
 - One-to-one chat auto-created on request acceptance
+- Marketplace chats auto-created when a student requests to buy or borrow an item
 - Socket.IO powered messaging with read receipts
 - Image sharing via Cloudinary
 - Message deletion
@@ -53,12 +63,13 @@
 - Automatic chat cleanup on request completion
 
 ### 🔔 Notifications
-- Real-time in-app notifications for: new responses, acceptance/rejection, fulfillment, reports, warnings, account status changes
+- Real-time in-app notifications for: new responses, marketplace requests, acceptance/rejection, fulfillment, reports, warnings, account status changes
 - Socket-powered live delivery
 
 ### 🚨 Report System
 - Report users/messages with typed reasons: spam, harassment, inappropriate content, fraud, fake request, abuse
 - **AI-powered validation** using Groq API — analyzes the last 15 chat messages as context
+- **AI-powered marketplace moderation** blocks unsafe or irrelevant sell/borrow listings before publishing
 - Rule-based fallback validation if AI is unavailable
 - Report status workflow: `pending → reviewed → resolved / dismissed`
 - Auto-block user if report count exceeds threshold (configurable)
@@ -119,6 +130,7 @@ HYB/
 │       ├── controllers/
 │       │   ├── auth.controller.js
 │       │   ├── chat.controller.js
+│       │   ├── marketplace.controller.js
 │       │   ├── notification.controller.js
 │       │   ├── report.controller.js
 │       │   ├── request.controller.js
@@ -131,6 +143,7 @@ HYB/
 │       │   ├── response.models.js
 │       │   ├── chat.models.js
 │       │   ├── message.models.js
+│       │   ├── marketplaceListing.models.js
 │       │   ├── notification.models.js
 │       │   ├── report.models.js
 │       │   └── globalMessage.models.js
@@ -139,6 +152,7 @@ HYB/
 │       │   ├── request.route.js    # /api/v1/req
 │       │   ├── response.route.js   # /api/v1/res
 │       │   ├── chat.route.js       # /api/v1/chat
+│       │   ├── marketplace.route.js # /api/v1/marketplace
 │       │   ├── notification.route.js # /api/v1/notification
 │       │   ├── report.route.js     # /api/v1/report
 │       │   ├── user.route.js       # /api/v1/user
@@ -191,6 +205,7 @@ HYB/
         │       ├── RequestsList.jsx
         │       ├── RequestDetail.jsx
         │       ├── MyRequests.jsx
+        │       ├── Marketplace.jsx
         │       ├── Chats.jsx
         │       ├── ChatRoom.jsx
         │       ├── GlobalChat.jsx
@@ -289,6 +304,7 @@ App starts on `http://localhost:5173`
 | `GET/POST /api/v1/req/*` | Create, list, update, cancel, delete, fulfill requests |
 | `GET/POST /api/v1/res/*` | Submit, accept, reject, complete responses |
 | `GET/POST /api/v1/chat/*` | List chats, get messages, send messages, delete messages |
+| `GET/POST/PATCH /api/v1/marketplace/*` | Create, browse, request, update, and manage marketplace listings |
 | `GET /api/v1/notification/*` | List & mark notifications read |
 | `POST /api/v1/report/*` | Submit reports, admin review & actions |
 | `GET/PATCH /api/v1/user/*` | User profiles, search, admin block/unblock |
@@ -296,15 +312,16 @@ App starts on `http://localhost:5173`
 
 ---
 
-## 🤖 AI Report Moderation
+## 🤖 AI Moderation
 
-Reports are validated automatically using the **Groq API** (`llama-3.3-70b-versatile` model):
+Reports and marketplace listings are validated automatically using the **Groq API**:
 
 1. The last 15 chat messages between the involved users are fetched as context.
 2. The AI analyzes the report `reason` + `description` against the chat transcript.
 3. Returns `{ valid: boolean, confidence: number, explanation: string }`.
-4. If the AI is unavailable or the API key is missing, a **rule-based fallback** is used.
-5. Reports flagged as needing manual review are queued for super-admin inspection.
+4. Marketplace sell/borrow listings are checked for spam, irrelevant content, unsafe items, dirty language, and inappropriate material before publishing.
+5. If the AI is unavailable or the API key is missing, a **rule-based fallback** is used.
+6. Reports flagged as needing manual review are queued for super-admin inspection.
 
 ---
 
@@ -312,7 +329,8 @@ Reports are validated automatically using the **Groq API** (`llama-3.3-70b-versa
 
 - 🔐 **Role-based auth** — `user`, `moderator`, `admin`, `super_admin` with middleware-enforced access
 - ⚡ **Real-time everything** — chat, notifications, request status changes all via Socket.IO
-- 🤖 **AI-powered moderation** — Groq LLM validates reports with conversation context
+- 🛒 **Campus marketplace** — sell, borrow, lend, request, chat, and manage student listings
+- 🤖 **AI-powered moderation** — Groq LLM validates reports and marketplace listings
 - 🛡️ **Production-ready security** — Helmet, rate limiting, CORS, trust proxy configuration
 - 🗜️ **Performance** — Gzip compression, cluster mode, Cloudinary CDN for media
 - 📧 **Rich email** — styled HTML emails for verification, password reset, and system alerts
