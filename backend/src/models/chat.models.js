@@ -6,6 +6,11 @@ const chatSchema = new mongoose.Schema({
         ref : "Request",
         required : false
     },
+    marketplaceListing: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "MarketplaceListing",
+        required: false
+    },
     participants : {
         type: [
             {
@@ -44,11 +49,11 @@ chatSchema.pre('validate', function (next) {
     if (typeof next === 'function') next();
 });
 
-chatSchema.index(
-  { request: 1, participants: 1 }
-);
+chatSchema.index({ request: 1, participants: 1 });
+chatSchema.index({ marketplaceListing: 1, participants: 1 });
 
 chatSchema.index({request : 1});
+chatSchema.index({marketplaceListing : 1});
 chatSchema.index({participants : 1});
 
 export const Chat = mongoose.model("Chat", chatSchema);

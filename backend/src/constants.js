@@ -23,6 +23,39 @@ export const REQUEST_CATEGORIES = [
     "other"
 ];
 
+export const MARKETPLACE_CATEGORIES = [
+    "books",
+    "electronics",
+    "stationery",
+    "room",
+    "cycle",
+    "lab",
+    "sports",
+    "clothing",
+    "other"
+];
+
+export const MARKETPLACE_LISTING_TYPES = [
+    "sell",
+    "borrow"
+];
+
+export const MARKETPLACE_CONDITIONS = [
+    "new",
+    "like_new",
+    "good",
+    "fair",
+    "used"
+];
+
+export const MARKETPLACE_AVAILABILITY = [
+    "available",
+    "sold",
+    "lent"
+];
+
+export const MAX_IMAGE_IN_LISTING = 6;
+
 
 
 
@@ -59,6 +92,7 @@ export const NOTIFICATION_TYPES = [
     "message",
     "system",
     "report",
+    "marketplace_request",
     "warning",
     "account_blocked",
     "account_unblocked",

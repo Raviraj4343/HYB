@@ -6,6 +6,7 @@ import {User} from '../models/user.models.js';
 import {Notification} from '../models/notification.models.js';
 import {Request} from '../models/request.models.js';
 import {Response} from '../models/response.models.js';
+import { MarketplaceListing } from '../models/marketplaceListing.models.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import ApiResponse from '../utils/ApiResponse.js';
@@ -30,6 +31,7 @@ const getMyChats = asyncHandler(async (req, res) => {
   const chats = await Chat.find({ participants: req.user.id })
     .populate('participants', 'fullName userName avatar')
     .populate('request', 'title status')
+    .populate('marketplaceListing', 'title listingType price availability')
     .sort({ updatedAt: -1 })
     .lean();
 
@@ -66,22 +68,33 @@ const getMyChats = asyncHandler(async (req, res) => {
 });
 
 const ensureChat = asyncHandler(async (req, res) => {
-  const { requestId, otherUserId } = req.body;
+  const { requestId, otherUserId, marketplaceListingId } = req.body;
   if (!otherUserId) {
     throw new ApiError(400, 'otherUserId is required');
   }
 
   // Normal users must provide a requestId, super admins can send without it (direct message)
-  if (req.user.role !== 'super_admin' && !requestId) {
-    throw new ApiError(400, 'requestId is required');
+  if (req.user.role !== 'super_admin' && !requestId && !marketplaceListingId) {
+    throw new ApiError(400, 'requestId or marketplaceListingId is required');
   }
 
   const ownerId = req.user._id;
   const ownerObj = new mongoose.Types.ObjectId(ownerId);
   const otherObj = new mongoose.Types.ObjectId(otherUserId);
   const reqObj = requestId ? new mongoose.Types.ObjectId(requestId) : null;
+  const listingObj = marketplaceListingId ? new mongoose.Types.ObjectId(marketplaceListingId) : null;
 
-  if (req.user.role !== 'super_admin' && requestId) {
+  if (req.user.role !== 'super_admin' && marketplaceListingId) {
+    const listing = await MarketplaceListing.findById(marketplaceListingId);
+    if (!listing) {
+      throw new ApiError(404, "Marketplace listing not found");
+    }
+    const isOwner = listing.owner.toString() === req.user._id.toString();
+    const isOtherOwner = listing.owner.toString() === otherUserId.toString();
+    if (!isOwner && !isOtherOwner) {
+      throw new ApiError(403, "You are not authorized to access this marketplace chat");
+    }
+  } else if (req.user.role !== 'super_admin' && requestId) {
     const request = await Request.findById(requestId);
     if (!request) {
       throw new ApiError(404, "Request not found");
@@ -114,7 +127,11 @@ const ensureChat = asyncHandler(async (req, res) => {
   }
 
   // Find existing chats for this pair
-  let chats = await Chat.find({ request: reqObj, participants: { $all: [ownerObj, otherObj] } }).sort({ updatedAt: -1 });
+  let chats = await Chat.find({
+    request: reqObj,
+    marketplaceListing: listingObj,
+    participants: { $all: [ownerObj, otherObj] }
+  }).sort({ updatedAt: -1 });
 
   let chat;
   if (chats.length > 1) {
@@ -126,10 +143,10 @@ const ensureChat = asyncHandler(async (req, res) => {
     chat = chats[0];
   } else {
     try {
-      chat = await Chat.create({ request: reqObj, participants: [ownerObj, otherObj] });
+      chat = await Chat.create({ request: reqObj, marketplaceListing: listingObj, participants: [ownerObj, otherObj] });
     } catch (err) {
       if (err && err.code === 11000) {
-        chats = await Chat.find({ request: reqObj, participants: { $all: [ownerObj, otherObj] } }).sort({ updatedAt: -1 });
+        chats = await Chat.find({ request: reqObj, marketplaceListing: listingObj, participants: { $all: [ownerObj, otherObj] } }).sort({ updatedAt: -1 });
         if (chats.length > 0) {
           const [keep, ...others] = chats;
           const otherIds = others.map((c) => c._id);
@@ -150,6 +167,9 @@ const ensureChat = asyncHandler(async (req, res) => {
   if (reqObj) {
     await chat.populate('request', 'title status');
   }
+  if (listingObj) {
+    await chat.populate('marketplaceListing', 'title listingType price availability');
+  }
 
   return res.status(200).json(new ApiResponse(200, { chat }, 'Chat ensured'));
 });
@@ -157,9 +177,10 @@ const ensureChat = asyncHandler(async (req, res) => {
 const getChatById = asyncHandler(async (req, res) => {
     const chat = await Chat.findById(req.params.id)
     .populate("participants", "fullName userName avatar")
-    .populate("request", "title status");
+    .populate("request", "title status")
+    .populate("marketplaceListing", "title listingType price availability");
 
-    if(!chat)throw new ApiError("Chat not found", 404);
+    if(!chat)throw new ApiError(404, "Chat not found");
     if(!isParticipant(chat, req.user.id))
         throw new ApiError("Not authorized to access this chat", 403);
 

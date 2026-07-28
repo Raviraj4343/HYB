@@ -244,8 +244,123 @@ Based on the above details, is this request spam, irrelevant, trolling, joke, or
   }
 };
 
+const _ruleBasedMarketplaceValidation = ({ title, description, category, listingType }) => {
+  const text = `${title || ''} ${description || ''} ${category || ''} ${listingType || ''}`.toLowerCase();
+  const compact = text.replace(/\s+/g, '');
+  const blockedTerms = [
+    'sex', 'porn', 'nude', 'drugs', 'weed', 'ganja', 'alcohol', 'weapon',
+    'gun', 'knife', 'escort', 'casino', 'betting', 'hack', 'stolen', 'Condom', 'prostitute', 'escort', 'adult', 'xxx', 'gambling', 'illegal', 'scam', 'fraud', 'fake', 'troll', 'spam', 'test', 'joke', 'gibberish', 'nonsense', 'random letters', 'hi', 'hello'
+  ];
+
+  if (!title?.trim() || !description?.trim()) {
+    return { isSpamOrIrrelevant: true, reasoning: 'Missing title or description.' };
+  }
+  if (title.trim().length < 3 || description.trim().length < 10) {
+    return { isSpamOrIrrelevant: true, reasoning: 'The listing is too short to be useful.' };
+  }
+  if (blockedTerms.some((term) => text.includes(term))) {
+    return { isSpamOrIrrelevant: true, reasoning: 'The listing appears to contain prohibited or inappropriate content.' };
+  }
+  if (/https?:\/\/|www\.|\.com|\.in/.test(text)) {
+    return { isSpamOrIrrelevant: true, reasoning: 'External links or promotional text are not allowed in marketplace listings.' };
+  }
+  if (/(.)\1{7,}/.test(compact) || compact.length < 12) {
+    return { isSpamOrIrrelevant: true, reasoning: 'The listing appears to be gibberish or spam.' };
+  }
+
+  return { isSpamOrIrrelevant: false, reasoning: '' };
+};
+
+/**
+ * Validates a marketplace listing using Groq AI, with a conservative rule-based fallback.
+ * @param {Object} params
+ * @param {string} params.title
+ * @param {string} params.description
+ * @param {string} params.category
+ * @param {string} params.listingType
+ * @returns {Promise<{ isSpamOrIrrelevant: boolean, reasoning: string }>}
+ */
+const validateMarketplaceListing = async ({ title, description, category, listingType }) => {
+  const fallback = _ruleBasedMarketplaceValidation({ title, description, category, listingType });
+  if (fallback.isSpamOrIrrelevant) return fallback;
+
+  const apiKey = process.env.HYB_REPORT_API_KEY;
+  if (!apiKey) {
+    console.warn('[AI Marketplace Validator] No HYB_REPORT_API_KEY found - using rule-based fallback');
+    return fallback;
+  }
+
+  try {
+    const systemPrompt = `You are a strict content moderation AI for HYB Marketplace, a campus-only student marketplace.
+Your job is to decide whether a sell/borrow listing is SPAM, IRRELEVANT, UNSAFE, FAKE, DIRTY, or INAPPROPRIATE.
+
+Return ONLY JSON: { "isSpamOrIrrelevant": boolean, "confidence": number, "reasoning": string }
+
+Mark true if:
+- It is spam, promotional, gibberish, joke/test content, fake, or unrelated to campus buying/borrowing/lending.
+- It sells or lends prohibited, unsafe, illegal, adult, stolen, abusive, hateful, or vulgar items/content.
+- It asks users to leave HYB for suspicious external links.
+
+Mark false if it is a normal campus item such as books, electronics, stationery, room items, cycles, lab equipment, sports items, clothing, or practical student belongings.`;
+
+    const userPrompt = `Listing type: ${listingType || 'none'}
+Category: ${category || 'none'}
+Title: ${title}
+Description: ${description}
+
+Should this HYB Marketplace listing be blocked?`;
+
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: 0.1,
+        max_tokens: 256,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error('[AI Marketplace Validator] Groq API error:', response.status, errText);
+      return fallback;
+    }
+
+    const data = await response.json();
+    const rawContent = data?.choices?.[0]?.message?.content;
+    if (!rawContent) return fallback;
+
+    let parsed;
+    try {
+      parsed = JSON.parse(rawContent);
+    } catch {
+      console.warn('[AI Marketplace Validator] Could not parse JSON:', rawContent);
+      return fallback;
+    }
+
+    const isSpamOrIrrelevant = parsed?.isSpamOrIrrelevant === true;
+    const confidence = parsed?.confidence ?? 0;
+    return {
+      isSpamOrIrrelevant: isSpamOrIrrelevant && confidence >= 0.6,
+      reasoning: parsed?.reasoning || fallback.reasoning
+    };
+  } catch (error) {
+    console.error('[AI Marketplace Validator] Error during validation:', error);
+    return fallback;
+  }
+};
+
 export {
   validateReport,
   analyzeReportSeverity,
-  validateHelpRequest
+  validateHelpRequest,
+  validateMarketplaceListing
 };
